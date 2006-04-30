@@ -13,7 +13,7 @@
 ;*
 ;*   1) IO space:   0x0000pppp	pppp = 16 bit IO port address
 ;*   2) MEM space:  0xnmmmmmmm	(n >= 2) 32 bit flat kernel space address
-;*   3) PCI config: 0x10ccbbdf	cc = 8 bit register offset,
+;*   3) PCI config: 0x10ccbbdf	cc = 8 (possibly 12) bit register offset,
 ;*				bb = 8 bit PCI bus
 ;*				d  = 5 bit PCI device
 ;*				f  = 3 bit PCI function
@@ -28,7 +28,7 @@
 		.386p
 
 _TEXT		SEGMENT DWORD USE16 PUBLIC 'CODE'
-		ASSUME CS:_TEXT
+		ASSUME CS:_TEXT; GS:KernelFlatDS
 
 Argument	EQU	ESP + 4
 CFGAddr 	=	0CF8h
@@ -40,7 +40,8 @@ PreparePCICfg	MACRO
 		CALL	PCIPrep
 		ENDM
 
-; VOID FAR OutB (ULONG Location, UCHAR Value)
+; VOID FAR _fastcall OutB (ULONG Location, UCHAR Value)
+; VOID FAR _fastcall OutB2 (USHORT Addr1, USHORT Addr2, UCHAR Value);
 ;	Location: register dx:ax
 ;	Value:	  register bx
 
@@ -74,7 +75,7 @@ PreparePCICfg	MACRO
 
 @OutB		ENDP
 
-; VOID FAR OutBdms (ULONG Location, UCHAR Value)
+; VOID FAR _fastcall OutBdms (ULONG Location, UCHAR Value)
 ;	Location: register dx:ax
 ;	Value:	  register bx
 ;	Delay:	  1 æs
@@ -90,7 +91,7 @@ OutBdmsLoop:	DEC	AX
 @OutBdms	ENDP
 
 
-; VOID FAR OutBd (ULONG Location, UCHAR Value, USHORT Delay)
+; VOID FAR _fastcall OutBd (ULONG Location, UCHAR Value, USHORT Delay)
 ;	Location: register dx:ax
 ;	Value:	  register bx
 ;	Delay:	  [+ 4]
@@ -106,7 +107,8 @@ OutBdLoop:	DEC	AX
 		RET	2
 @OutBd		ENDP
 
-; VOID FAR OutW (ULONG Location, USHORT Value)
+; VOID FAR _fastcall OutW (ULONG Location, USHORT Value)
+; VOID FAR _fastcall OutW2 (USHORT Addr1, USHORT Addr2, USHORT Value);
 ;	Location: register dx:ax
 ;	Value:	  register bx
 
@@ -140,7 +142,8 @@ OutBdLoop:	DEC	AX
 
 @OutW		ENDP
 
-; VOID FAR OutD (ULONG Location, ULONG Value)
+; VOID FAR _fastcall OutD (ULONG Location, ULONG Value)
+; VOID FAR _fastcall OutD2 (USHORT Addr1, USHORT Addr2, ULONG Value);
 ;	Location: register dx:ax
 ;	Value:	  [+ 4]
 
@@ -195,7 +198,8 @@ PCIPrep 	PROC	NEAR		; AL = reg, DX = bus:8/dev:5/fnc:3
 		RET
 PCIPrep 	ENDP
 
-; UCHAR FAR InB (ULONG Location)
+; UCHAR FAR _fastcall InB (ULONG Location)
+; UCHAR FAR _fastcall InB2 (USHORT Addr1, USHORT Addr2);
 ;	Location: register dx:ax
 
 		PUBLIC	@InB
@@ -230,7 +234,7 @@ PCIPrep 	ENDP
 
 @InB		ENDP
 
-; UCHAR FAR InBdms (ULONG Location)
+; UCHAR FAR _fastcall InBdms (ULONG Location)
 ;	Location: register dx:ax
 ;	Delay:	  1 æs
 
@@ -240,7 +244,7 @@ PCIPrep 	ENDP
 		SHL	BX, 1
 @InBdms 	ENDP
 
-; UCHAR FAR InBd (ULONG Location, USHORT Delay)
+; UCHAR FAR _fastcall InBd (ULONG Location, USHORT Delay)
 ;	Location: register dx:ax
 ;	Delay:	  register bx
 
@@ -255,7 +259,8 @@ InBdLoop:	DEC	BX
 		RET
 @InBd		ENDP
 
-; USHORT FAR InW (ULONG Location)
+; USHORT FAR _fastcall InW (ULONG Location)
+; USHORT FAR _fastcall InW2 (USHORT Addr1, USHORT Addr2);
 ;	Location: register dx:ax
 
 		PUBLIC	@InW
@@ -290,7 +295,7 @@ InBdLoop:	DEC	BX
 
 @InW		ENDP
 
-; USHORT FAR InWdms (ULONG Location)
+; USHORT FAR _fastcall InWdms (ULONG Location)
 ;	Location: register dx:ax
 ;	Delay:	  1 æs
 
@@ -300,7 +305,7 @@ InBdLoop:	DEC	BX
 		SHL	BX, 1
 @InWdms 	ENDP
 
-; UCHAR FAR InWd (ULONG Location, USHORT Delay)
+; UCHAR FAR _fastcall InWd (ULONG Location, USHORT Delay)
 ;	Location: register dx:ax
 ;	Delay:	  register bx
 
@@ -311,7 +316,8 @@ InBdLoop:	DEC	BX
 		JMP	InBdelay
 @InWd		ENDP
 
-; ULONG FAR InD (ULONG Location)
+; ULONG FAR _fastcall InD (ULONG Location)
+; ULONG FAR _fastcall InD2 (USHORT Addr1, USHORT Addr2);
 ;	Location: register dx:ax
 
 		PUBLIC	@InD
@@ -349,7 +355,7 @@ InBdLoop:	DEC	BX
 
 @InD		ENDP
 
-; USHORT FAR InDdms (ULONG Location)
+; USHORT FAR _fastcall InDdms (ULONG Location)
 ;	Location: register dx:ax
 ;	Delay:	  1 æs
 
@@ -359,7 +365,7 @@ InBdLoop:	DEC	BX
 		SHL	BX, 1
 @InDdms 	ENDP
 
-; UCHAR FAR InDd (ULONG Location, USHORT Delay)
+; UCHAR FAR _fastcall InDd (ULONG Location, USHORT Delay)
 ;	Location: register dx:ax
 ;	Delay:	  register bx
 
