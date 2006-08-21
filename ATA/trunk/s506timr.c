@@ -113,7 +113,7 @@ VOID FAR _cdecl DelayedReset (USHORT hResetTimer, PACB pA)
   ADD_CancelTimer (hResetTimer);
   npA->ResetTimerHandle = 0;
 
-  npA->State = ACBS_RESETCHECK;
+  npA->State = ACBS_PATARESET;
   StartSM (npA);
 }
 

@@ -64,6 +64,7 @@ endif
 EXTRN		_IHdr:WORD
 EXTRN		_MemTop:WORD
 EXTRN		_OemHlpIDC:WORD
+EXTRN		_ACPIIDC:WORD
 
 _DATA		ENDS
 
@@ -375,6 +376,40 @@ CallOEMHlpEnd:
 		RET	4
 
 @CallOEMHlp	ENDP
+
+		public	@CallAcpiCA
+@CallAcpiCA	PROC	FAR
+
+		PUSH	BP
+		MOV	BP, SP
+		PUSH	SI
+		PUSH	DI
+		PUSH	GS
+
+		LES	BX, DWORD PTR [BP+6]
+		TEST	WORD PTR [_ACPIIDC.Entry+2], -1
+		JNZ	DoAcpiCA
+
+		MOV	AX, 8100h
+		MOV	WORD PTR ES:[BX+3], AX
+		JMP	SHORT CallAcpiCAEnd
+DoAcpiCA:
+		PUSH	[_ACPIIDC.Entry]
+		PUSH	DS
+		MOV	DS, [_ACPIIDC.DSeg]
+		CALL	DWORD PTR [BP-8]
+		POP	DS
+		ADD	SP, 4
+		MOV	AX, WORD PTR ES:[BX+3]
+CallAcpiCAEnd:
+		AND	AX, 8000h
+		POP	GS
+		POP	DI
+		POP	SI
+		LEAVE
+		RET	4
+
+@CallAcpiCA	ENDP
 
 FCode		ENDS
 

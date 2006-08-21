@@ -205,7 +205,7 @@ typedef struct _U
 #define UCBF_READY	    0x00000010
 #define UCBF_SMSENABLED     0x00000020
 #define UCBF_LBAMODE	    0x00000040
-#define UCBF_DISABLERESET   0x00000080	/* DISABLERESET current setting */
+#define UCBF_DISABLERESET   0x00000080
 #define UCBF_BM_DMA	    0x00000100
 #define UCBF_FORCE	    0x00000200
 #define UCBF_BECOMING_READY 0x00000400
@@ -517,7 +517,6 @@ typedef struct _A
 #define ACBF_BMINT_SEEN 	0x1000
 #define ACBF_SM_ACTIVE		0x0800
 #define ACBF_MULTIPLEMODE	0x0200
-#define ACBF_DISABLERESET	0x0080
 #define ACBF_DISABLERETRY	0x0040
 
 #define ATBF_DISABLED		0x8000
@@ -584,8 +583,9 @@ typedef struct _A
 #define ACBS_INTERRUPT	2	/* Start verify portion of write      */
 #define ACBS_DONE	3	/* I/O is done. 		      */
 #define ACBS_ERROR	4	/* Have an error		      */
-#define ACBS_RESETCHECK 5	/*				      */
-#define ACBS_SUSPEND	6	/* Wait while another DD uses this HW */
+#define ACBS_PATARESET	5	/*				      */
+#define ACBS_SATARESET	6	/*				      */
+#define ACBS_SUSPEND	7	/* Wait while another DD uses this HW */
 
 /* ACB->InsertState values */
 

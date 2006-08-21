@@ -39,7 +39,7 @@
 #pragma optimize(OPTIMIZE, on)
 
 #define PCITRACER 0
-#define TRPORT 0xC810
+#define TRPORT 0xC410
 
 /*------------------------------------*/
 /*				      */
@@ -174,11 +174,15 @@ T('a')
 
   if (Data1 & FX_DRQ) {
     UCHAR i = 0;
+    USHORT j;
+
     do {
       InWdms (DATAREG);
     } while (--i != 0);
 
     if (BMSTATUSREG) OutB (BMSTATUSREG, InB (BMSTATUSREG));
+
+    for (j = ATA_BACKOFF/2; i > 0; i--) IODly (2*IODelayCount);
 
     if (WaitNotBusyDRQ (npA)) goto Fault;
   } else {
@@ -239,7 +243,7 @@ USHORT FAR Execute (UCHAR ADDHandle, NPIORB npIORB)
 
   DISABLE
   while (!(npIORB->Status & IORB_DONE)) {
-    DevHelp_ProcBlock ((ULONG)(PIORB)npIORB, -1, WAIT_IS_NOT_INTERRUPTABLE);
+    DevHelp_ProcBlock ((ULONG)(PIORB)npIORB, -1, WAIT_IS_INTERRUPTABLE);
     DISABLE
   }
   ENABLE
@@ -505,6 +509,11 @@ TEND
 
   rc = FALSE;
 
+  // de-bunk some ATAPI devices...
+  { USHORT i;
+    for (i = ATA_BACKOFF; i > 0; i--) IODly (IODelayCount);
+  }
+
 S506_Deinstall:
 
   if (rc) {
@@ -571,6 +580,7 @@ void NEAR SetupPCI (void) {
 void AssignPCIChips (void) {
   UCHAR Count;
 
+  ACPISetup();
   Count = EnumPCIDevices();
 
 TWRITE(8)
@@ -1128,6 +1138,8 @@ USHORT FAR ParseCmdLine (PSZ pCmdLine)
       Value = *(NPUSHORT)(pOutBuf+2);
 
       switch (pOutBuf[1]) {
+	case TOK_RESET:
+	case TOK_NORESET:
 	case TOK_FORCE:
 	case TOK_ATAPI:
 	case TOK_NOT_ATAPI:
@@ -1278,19 +1290,6 @@ USHORT FAR ParseCmdLine (PSZ pCmdLine)
 	  }
 	  break;
 
-
-	/*-------------------------------------------*/
-	/* Allow/Prevent Adapter Resets - /R, /!R    */
-	/*					     */
-	/*-------------------------------------------*/
-
-	case TOK_RESET:
-	  break;
-
-	case TOK_NORESET:
-
-	  npA->Flags |= ACBF_DISABLERESET;
-	  break;
 
 	/*-------------------------------------------*/
 	/* PCI location - /LOC: 		     */

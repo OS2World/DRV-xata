@@ -488,6 +488,7 @@ VOID   NEAR ProgramALIChip (NPA npA);
 BOOL   NEAR AcceptGeneric (NPA npA);
 BOOL   NEAR AcceptNetCell (NPA npA);
 BOOL   NEAR AcceptJM (NPA npA);
+BOOL   NEAR AcceptMarvell (NPA npA);
 USHORT NEAR GetGenericPio (NPA npA, UCHAR Unit);
 VOID   NEAR SetupGeneric (NPA npA);
 VOID   NEAR GenericInitComplete (NPA npA);
@@ -504,6 +505,7 @@ ULONG  NEAR GetAHCISCR (NPA npA, USHORT Port);
 #pragma alloc_text (FCode, AcceptGeneric)
 #pragma alloc_text (FCode, AcceptNetCell)
 #pragma alloc_text (FCode, AcceptJM)
+#pragma alloc_text (FCode, AcceptMarvell)
 #pragma alloc_text (FCode, GenericInitComplete)
 #pragma alloc_text (FCode, GenericSATA)
 #pragma alloc_text (FCode, GetAHCISCR)
@@ -707,7 +709,10 @@ VOID FAR  _cdecl StubVDMInt13CallBack (VOID);
  *---------------------------------------------------------------*/
 
 BOOL FAR ACPISetup (VOID);
+USHORT FAR _fastcall CallAcpiCA (PRPH pRPH);
+LIN FAR AcpiPointer (PVOID p);
 
 #pragma alloc_text (ACPICode, ACPISetup)
+#pragma alloc_text (ACPICode, AcpiPointer)
 
 

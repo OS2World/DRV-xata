@@ -38,7 +38,7 @@
 #pragma optimize(OPTIMIZE, on)
 
 #define PCITRACER 0
-#define TRPORT 0xE00C
+#define TRPORT 0xD020
 
 void NEAR DoIOCTLs (PRP_GENIOCTL);
 
@@ -136,7 +136,6 @@ VOID FAR _cdecl S506Str1 (VOID)
       PVOID p;
 
       InitComplete = 1;
-
       // attach to APM
       if (!(noAPM = APMAttach())) {
 	// if attached, register for suspend and resume
@@ -856,6 +855,10 @@ void NEAR DoIOCTLs (PRP_GENIOCTL pRP_IOCTL)
     }
     npA = npU->npA;
   }
+#if PCITRACER
+  outpw (TRPORT+2, npU);
+  outpw (TRPORT+2, npA);
+#endif
 
   if (pRP_IOCTL->Category == DSKSP_CAT_SMART) {
     UCHAR  Parameter;
@@ -942,6 +945,7 @@ void NEAR DoIOCTLs (PRP_GENIOCTL pRP_IOCTL)
       case DSKSP_READ_SECTOR:	       Size = 512; break;
       case DSKSP_GET_DEVICETABLE:      Size = pRP_IOCTL->DataLen;
 				       if (Size == 0) Size = 512; break;
+      case DSKSP_POWER: 	       Size = 1;
 #if 0
       case DSKSP_TEST_LASTACCESSED:    Size = 1; break;
 #endif
@@ -1031,6 +1035,21 @@ void NEAR DoIOCTLs (PRP_GENIOCTL pRP_IOCTL)
 	pIORB->DeviceTableLen = pRP_IOCTL->DataLen;
 
 	GetDeviceTable ((PIORB)pIORB);
+	break;
+      }
+
+      case DSKSP_RESET:
+	npU->ReqFlags |= ACBR_RESETCONTROLLER;
+	NoOp (npU);
+	break;
+
+      case DSKSP_POWER: {
+	PowerState = Parameter;
+	if (0 == PowerState) {
+	  APMResume();
+	} else {
+	  APMSuspend (PowerState);
+	}
 	break;
       }
 

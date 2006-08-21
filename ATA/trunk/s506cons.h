@@ -34,7 +34,9 @@
 /* every 200ms. 			 */
 /*---------------------------------------*/
 #define DELAYED_RESET_MAX	(30*1000L)
-#define DELAYED_RESET_INTERVAL	200L
+#define DELAYED_RESET_INTERVAL	      200L
+
+#define RESET_ASSERT_TIME		50 // microseconds
 
 /*------------------------------------------*/
 /* TimeOut for IRQ from last interrupt (5s) */
@@ -107,13 +109,18 @@
 /*---------------------------------------*/
 /* Maximum Transfer - Overall		 */
 /*---------------------------------------*/
-#define MAX_XFER_SEC			256
+#define MAX_XFER_SEC		       256
 
 /*---------------------------------------*/
 /* Suspend Count			 */
 /*---------------------------------------*/
-#define DEFERRED_COUNT			  5
-#define IMMEDIATE_COUNT 		  1
+#define DEFERRED_COUNT			 5
+#define IMMEDIATE_COUNT 		 1
+
+/*---------------------------------------*/
+/* ATAPI: ATA_BACKOFF æs		 */
+/*---------------------------------------*/
+#define ATA_BACKOFF		   100000
 
 /*-------------------------------*/
 /* Miscellaneous		 */

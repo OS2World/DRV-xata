@@ -90,42 +90,61 @@ ATA/133: 7.5 ns
 
 BOOL NEAR AcceptSIS (NPA npA)
 {
-  UCHAR save57, SATAofs, PCR;
+  UCHAR save57, PCR, SATAmul = 1;
 
   SetRegB (PCIAddr, PCI_SIS2_IDECTRL,			       // change DevId
 	   (UCHAR)(~0x80 & (save57 = GetRegB (PCIAddr, PCI_SIS2_IDECTRL))));
   MEMBER(npA).Device = GetRegW (PCIAddr, PCIREG_DEVICE_ID);
   sprntf (npA->PCIDeviceMsg, SiS5513Msgtxt, MEMBER(npA).Device);
 
-  switch (MEMBER(npA).Device) {
+  switch (PciInfo->CompatibleID) {
+    case 0x1180:
+      PCR = GetRegB (PCIAddr, 0x67);
+      if (PCR & 0x10) {
+	npA->maxUnits = 1;
+	SATAmul = 2;
+	goto SATAcommon;
+      }
+    /* fall through */
+
     case 0x0182:
       npA->maxUnits = 2;
-      SATAofs = 0x20;
       goto SATAcommon;
+
     case 0x0180:
-    case 0x0181:
-      PCR = (GetRegB (PCIAddr, 0x90) & 0x30) >> 4;
-      npA->maxUnits = 2;
-      switch (PCR) {
-	case 0 : npA->maxUnits = 1; break;
-	case 2 : break;
-	default: PCR >>= 1;
-		 if (npA->IDEChannel != PCR) goto SiS5518common; // combined PATA & SATA
+      PCR = GetRegB (PCIAddr, 0x90);
+      if (PCR & 0x30) {
+	if (!npA->IDEChannel) goto SiS5518common; // combined PATA & SATA
+	npA->maxUnits = 2;
+      } else {
+	npA->maxUnits = 1;
+	SATAmul = 2;
       }
-      SATAofs = 0x40;
+
     SATAcommon: {
+      UCHAR Port;
       NPU npU = npA->UnitCB;
 
-      // SiS 180 SATA
       PciInfo->Level = SISH;
       GenericSATA (npA);
-      SSTATUS = npA->npC->BAR[5].Addr;
+      Port = npA->IDEChannel * SATAmul;
       if (SSTATUS) {
-	SSTATUS += npA->IDEChannel * SATAofs;
+	SSTATUS = npA->npC->BAR[5].Addr + Port * 0x20;
+	npU++;
+	Port++;
+	SSTATUS = npA->npC->BAR[5].Addr + Port * 0x20;
       } else {
-	SSTATUS = ((ULONG)PCICONFIG (0xC0 + npA->IDEChannel * 0x10) << 16) | PCIAddr;
+
+	SSTATUS = ((ULONG)PCICONFIG (0xC0 + Port * 0x10) << 16) | PCIAddr;
 	SERROR	 = SSTATUS | 0x40000;
 	SCONTROL = SSTATUS | 0x80000;
+	if (npA->maxUnits > 1) {
+	  npU++;
+	  Port++;
+	  SSTATUS = ((ULONG)PCICONFIG (0xC0 + Port * 0x10) << 16) | PCIAddr;
+	  SERROR   = SSTATUS | 0x40000;
+	  SCONTROL = SSTATUS | 0x80000;
+	}
 	npA->SCR.Offsets = 0;  // do *not* allocate SCR ports by default method
       }
     }

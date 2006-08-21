@@ -106,10 +106,10 @@ VOID NEAR SiISATA (NPA npA)
     DEVCTLREG = DATAREG + 10;
     BMCMDREG  = BA5 | PortOffsetBM[npA->IDEChannel];
     CollectPorts (npA);
+    BMCMDREG	|= 0x10; // enable large PRD mode, thus don't touch Sii3114 "magic bit"
+    BMSTATUSREG |= 0x10;
 
     if (PciInfo->CompatibleID == PCIDEV_SII3114) {
-      BMCMDREG |= 0x10; // enable large PRD mode, thus don't touch Sii3114 "magic bit"
-			// do *not* use largePRD in SiI3112!
       // magic "4 ports" bit
       if (npA->IDEChannel == 0) OutB (BA5 | 0x200, 0x02);
       npC->numChannels = 4;
@@ -122,6 +122,7 @@ VOID NEAR SiISATA (NPA npA)
     OutB (DATAREG | 0x21, 0x31);
     OutD (SSTATUS | 0x4C, 0x10401554);
     OutD (SSTATUS | 0x48, 0);  // disable SATA interrupts
+    OutD (SERROR, InD (SERROR));
     if (npA->IDEChannel == (npC->numChannels - 1))
       OutW (BA5 | 0x4A, 0); // unmask interrupts
   }
@@ -313,6 +314,7 @@ VOID NEAR SIIStartStop (NPA npA, UCHAR State)
   OutD (Port, Leds ? 0x0201FC00 : 0x0301FC00);
 }
 
+#if 0
 int NEAR SIICheckIRQ (NPA npA) {
   DISABLE
   BMSTATUS = InB (BMSTATUSREG);
@@ -321,7 +323,7 @@ int NEAR SIICheckIRQ (NPA npA) {
 
     OutB (BMSTATUSREG, (UCHAR)(BMSTATUS & BMISTA_MASK));
     if ((Data = InB (DATAREG | 0x21)) & 0x08) {
-      if (Data & 0x10) OutB (DATAREG | 0x21, Data);
+      if (Data & 0x10) OutB (DATAREG | 0x21, Data); // Watchdog!
 //	if (npA->BM_CommandCode & BMICOM_START)
 	OutB (BMCMDREG, npA->BM_CommandCode &= ~BMICOM_START); /* turn OFF Start bit */
       STATUS = InB (STATUSREG);
@@ -338,5 +340,46 @@ int NEAR SIICheckIRQ (NPA npA) {
     return (0);
   }
 }
+#else
 
+int NEAR SIICheckIRQ (NPA npA) {
+  union {
+    ULONG Status2;
+    struct {
+      UCHAR Cmd;
+      UCHAR filler1;
+      UCHAR Status;
+      UCHAR filler2;
+    };
+  } BM;
+
+  DISABLE
+  BM.Status2 = InD (BMCMDREG);
+  BMSTATUS = BM.Status;
+  if ((BMSTATUS & BMISTA_INTERRUPT) || (BM.Cmd & 0x10)) { // interrupt is signalled pending
+    UCHAR Data;
+
+    if (BM.Cmd & 0x10) {
+      NPU npU = npA->UnitCB + 0;
+      OutD (SERROR, InD (SERROR));
+    }
+
+    BM.Status &= BMISTA_MASK;
+    BM.Cmd     = (BM.Cmd & ~BMICOM_START) | 0x10;
+    BM.filler2 = 0;
+    OutD (BMCMDREG, BM.Status2);
+//	if (Data & 0x10) OutB (DATAREG | 0x21, Data); // Watchdog!
+    if (BMSTATUS & BMISTA_INTERRUPT) {
+      STATUS = InB (STATUSREG);
+      npA->Flags |= ACBF_BMINT_SEEN;
+    }
+    ENABLE
+    return (1);
+  } else {
+    ENABLE
+    return (0);
+  }
+}
+
+#endif
 

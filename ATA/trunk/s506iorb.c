@@ -36,7 +36,7 @@
 #pragma optimize(OPTIMIZE, on)
 
 #define PCITRACER 0
-#define TRPORT 0xA010
+#define TRPORT 0xD020
 
 #ifdef CHECK_HANDLES
 VOID NEAR Trap3 (USHORT Code, void *value)
@@ -92,7 +92,7 @@ VOID FAR _loadds _cdecl ADDEntryPoint (PIORBH pIORB)
     // confirm the resulting pointer are referencing valid internal
     // structures.
     // Validate the unit handle.
-    int a, u;
+    int a;
 
     if (npU) {
       for (a = 0; a < cAdapters; a++) {
@@ -110,8 +110,11 @@ goodUCB:
 
     // Validate the ACB pointer.
     if (npA) {
-      if (npA == ACBPtrs[a])
+      if (npA == ACBPtrs[a]) {
+outpw (TRPORT+2, npA);
+outp  (TRPORT+2, a);
 	goto goodACB;
+      }
     }
 
     // This is an invalid ACB.

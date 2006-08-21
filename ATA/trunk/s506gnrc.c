@@ -83,22 +83,43 @@ BOOL NEAR AcceptNetCell (NPA npA)
 
 BOOL NEAR AcceptJM (NPA npA)
 {
-  NPC npC  = npA->npC;
-
-  switch (PciInfo->Level) {
-    case 0: npC->numChannels = 1; break;
-    case 1: npC->numChannels = 2; break;
-  }
+  NPC npC = npA->npC;
+  UCHAR combined;
 
   /* AHCI mode is not supported yet! */
-  if (GetRegB (PAdr, PCIREG_SUBCLASS) == PCI_SATA_CONTROLLER) return (FALSE);
+  if (GetRegB (PAdr, PCIREG_SUBCLASS) != PCI_IDE_CONTROLLER) return (FALSE);
 
-  if (npA->IDEChannel == 0) {
-    npA->SCR.Offsets = 0x3120;
-    npA->UnitCB[0].SStatus = GetAHCISCR (npA, 0);
-    GenericSATA (npA);
+  switch (PciInfo->Level) {
+    case 0 : npC->numChannels = 1;
+    default: npC->numChannels = 2;
   }
+goto JMexit;
+  combined = GetRegB (PAdr, 0x42) & 0x80;
+
+  if (combined) {  // combined, primary SATA, secondary PATA
+    npA->maxUnits = 2;
+    if (npA->IDEChannel > 0) goto JMexit; // PATA channel
+  } else {
+    npA->maxUnits = 1;
+  }
+
+  npA->SCR.Offsets = 0x3120;
+  GenericSATA (npA);
+  npA->UnitCB[0].SStatus = GetAHCISCR (npA, npA->IDEChannel + 0);
+  if (npA->maxUnits > 1)
+    npA->UnitCB[1].SStatus = GetAHCISCR (npA, npA->IDEChannel + 1);
+
+JMexit:
+  npA->FlagsT |= ATBF_BIOSDEFAULTS;
   sprntf (npA->PCIDeviceMsg, JMMsgtxt, MEMBER(npA).Device & 0xFFF);
+  return (TRUE);
+}
+
+BOOL NEAR AcceptMarvell (NPA npA)
+{
+  npA->Cap |= CHANCAP_SPEED | CHANCAP_CABLE80;
+  npA->FlagsT |= ATBF_BIOSDEFAULTS;
+  npA->maxUnits = 2;
   return (TRUE);
 }
 

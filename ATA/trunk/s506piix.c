@@ -77,6 +77,8 @@
 #define  ICH6SRPCIIDE_DEV_ID  0x2652
 #define    ICH7PCIIDE_DEV_ID  0x27DF
 #define   ICH7SPCIIDE_DEV_ID  0x27C0
+#define   ICH8SPCIIDE_DEV_ID  0x2820
+#define  ICH8S2PCIIDE_DEV_ID  0x2825
 
 #define  SLC66PCIIDE_DEV_ID  0x9130
 
@@ -173,11 +175,16 @@ BOOL NEAR AcceptPIIX (NPA npA)
 	if ((map & 1) != npA->IDEChannel) goto ICHCommon; // combined, PATA port
       }
       goto SATACommon;
-    case ICH6SPCIIDE_DEV_ID:
-      val = '6';
-      goto SATACommon1;
+    case ICH8SPCIIDE_DEV_ID:
+      npA->maxUnits = 2;
+    case ICH8S2PCIIDE_DEV_ID: // master only!
+      val = '8';
+      goto SATACommon;
     case ICH7SPCIIDE_DEV_ID:
       val = '7';
+      goto SATACommon1;
+    case ICH6SPCIIDE_DEV_ID:
+      val = '6';
     SATACommon1:
       npA->maxUnits = 2;
       if (map & (1 << npA->IDEChannel)) goto ICHCommon;  // combined, PATA port

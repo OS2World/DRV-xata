@@ -38,7 +38,7 @@
 #pragma optimize(OPTIMIZE, on)
 
 #define PCITRACER 0
-#define TRPORT 0xC810
+#define TRPORT 0xD020
 
 #if 0
 void IBeep (USHORT freq) {
@@ -91,7 +91,7 @@ VOID NEAR StartSM (NPA npA)
 	    TERR(npA->npU,0xBB)
 	    RetryState (npA);
 	    break;
-	  case ACBS_RESETCHECK:
+	  case ACBS_PATARESET:
 	    ResetCheck (npA);
 	    break;
 	  case ACBS_ERROR:
@@ -274,8 +274,6 @@ VOID NEAR StartState (NPA npA)
   // All I/O operations should be started with:
   //   - retrys enabled
   //   - multiple mode disabled
-  //   - geometry reset not required
-  //   - resets enabled if initialization determined OK
   // The controlling bits for these behaviors can only be changed
   // from within the state machine.
   //
@@ -284,8 +282,6 @@ VOID NEAR StartState (NPA npA)
 
   npA->Flags &= ~(ACBF_DISABLERETRY | ACBF_MULTIPLEMODE);
   npU->Flags &= ~UCBF_DISABLERESET;
-  if (npA->Flags & ACBF_DISABLERESET) npU->Flags |= UCBF_DISABLERESET;
-
   npA->State = ACBS_DONE; // default to done
 
   /*------------------------------------------------*/
@@ -1103,6 +1099,12 @@ VOID NEAR InterruptState (NPA npA)
     METHOD(npA).StopDMA (npA);
     /* Fix so that Bus Master errors will definitely result in retries */
     if (BMSTATUS & BMISTA_ERROR) {
+      USHORT PCIStatus;
+
+      PciGetReg (npA->PCIInfo.PCIAddr, PCIREG_STATUS, (PULONG)&PCIStatus, 2);
+      if (PCIStatus & PCI_STATUS_MASTER_ABORT) {
+	PciSetReg (npA->PCIInfo.PCIAddr, PCIREG_STATUS, PCI_STATUS_MASTER_ABORT, 2);
+      }
       ++npU->DeviceCounters.TotalBMErrors;
       rc = 1;
     }
@@ -1609,7 +1611,7 @@ VOID NEAR ErrorState (NPA npA)
     }
   }
 
-  if (Reset && !(npU->Flags & (UCBF_DISABLERESET | UCBF_ATAPIDEVICE)))
+  if (Reset && !(npU->Flags & UCBF_DISABLERESET))
     DoReset (npA);
 
   else if (RemovableNotReady) {
@@ -1690,16 +1692,11 @@ VOID NEAR SetRetryState(NPA npA)
 
 /*---------------------------------------------*/
 /* DoReset				       */
-/* -------				       */
-/*					       */
-/*					       */
-/*					       */
 /*---------------------------------------------*/
 
 VOID NEAR DoReset (NPA npA)
 {
-  USHORT DiagCode;
-  USHORT i;
+  NPU npU;
 
   if (npA->ResetTimerHandle) return;
 
@@ -1714,24 +1711,16 @@ VOID NEAR DoReset (NPA npA)
   /* UCBs.					 */
   /*---------------------------------------------*/
 
-  if (npA->ReqMask != ACBR_RESETCONTROLLER) {
-    NPU npU;
-
-    for (i = 0; i < npA->cUnits; i++) {
-      npU = &(npA->UnitCB[i]);
-      ReInitUnit (npU);
-    }
-
-    npU = npA->npU;
-    npA->ReqFlags |= npU->ReqFlags & ACBR_SETUP;
+  for (npU = npA->UnitCB; npU < (npA->UnitCB + npA->cUnits); npU++) {
+    ReInitUnit (npU);
   }
 
-  /*------------------------------------*/
-  /* Issue the RESET to the controller	*/
-  /*------------------------------------*/
-  npA->cResets++;
-  SendReset (npA);
+  npU = npA->npU;
+  npA->ReqFlags |= npU->ReqFlags & ACBR_SETUP;
+  npA->ReqFlags &= ~ACBR_RESETCONTROLLER;
+  npU->ReqFlags &= ~ACBR_RESETCONTROLLER;
 
+  npA->cResets++;
   npA->DelayedResetCtr = (DELAYED_RESET_MAX / DELAYED_RESET_INTERVAL);
 
   /*------------------------------------*/
@@ -1741,7 +1730,17 @@ VOID NEAR DoReset (NPA npA)
   /* Disable drives which failed to	*/
   /* recover.				*/
   /*------------------------------------*/
-  npA->State = ACBS_RESETCHECK;
+  npA->State = ACBS_PATARESET;
+
+  if (METHOD(npA).PreReset) METHOD(npA).PreReset (npA);
+
+#if PCITRACER
+  outpw (TRPORT, 0xDEF6);
+  outpw (TRPORT, npA);
+  outpw (TRPORT, DEVCTLREG);
+#endif
+  OutBd (DEVCTLREG, FX_DCRRes | FX_SRST, IODelayCount * RESET_ASSERT_TIME); // assert SRST
+  OutBd (DEVCTLREG, DEVCTL = FX_DCRRes,  IODelayCount * 5); // deassert SRST for at least 5us
 }
 
 /*---------------------------------------------*/
@@ -1757,8 +1756,9 @@ VOID NEAR DoReset (NPA npA)
 
 VOID NEAR ResetCheck (NPA npA)
 {
-  USHORT ResetComplete = 1;
-  UCHAR  Status;
+  NPU	npU;
+  UCHAR connected = TRUE;
+  UCHAR ResetComplete = TRUE;
 
   /*-----------------------------------*/
   /* See if we should continue	       */
@@ -1767,27 +1767,58 @@ VOID NEAR ResetCheck (NPA npA)
   if (npA->DelayedResetCtr) {
     npA->DelayedResetCtr--;
 
+    for (npU = npA->UnitCB; npU < (npA->UnitCB + npA->cUnits); npU++) {
+      if (npU->Flags & UCBF_NOTPRESENT) continue;
+
+      if ((npA->Cap & CHIPCAP_SATA) && SSTATUS) {
+	if ((InD (SSTATUS) & SSTAT_DET) != SSTAT_COM_OK) {
+	  connected = FALSE;
+	  npU->Flags &= ~UCBF_PHYREADY;
+	} else {
+	  OutD (SERROR, InD (SERROR));	      // clear SERROR
+	  npU->Flags |= UCBF_PHYREADY;
+	}
+      }
+    }
+
+    if (connected) {
+      for (npU = npA->UnitCB; npU < (npA->UnitCB + npA->cUnits); npU++) {
+	if (npU->Flags & UCBF_NOTPRESENT) continue;
+
+	SelectUnit (npU);
+	if ((GetStatusReg (npA) & ~FX_BUSY) == ~FX_BUSY) {
+	  // Controller is gone, more retries are not going to help.
+	  // So stop retrying and report the error.
+	  npA->DelayedResetCtr = 0;
+	  npA->TimerFlags |= ACBT_RESETFAIL;
+	  npA->State = ACBS_DONE;
+
+	} else if (STATUS & FX_BUSY) {
+	  ResetComplete = FALSE;
+	} else {
+	  ERROR = InBd (ERRORREG, npA->IODelayCount);
+	  if ((ERROR & ~FX_DIAG_DRIVE1) != FX_DIAG_PASSED) {
+	    npU->Flags	    |= UCBF_DIAG_FAILED;
+	    npA->TimerFlags |= ACBT_RESETFAIL;
+	  }
+	}
+      }
+    } else {
+      ResetComplete = FALSE;
+    }
+
     /*-----------------------------------------*/
     /* If diagnostic results are not available */
     /* schedule another retry		       */
     /*-----------------------------------------*/
-    if (GetDiagResults (npA, &Status)) {
-      if (Status == 0xff) {
-	// Controller is gone, more retries are not going to help.
-	// So stop retrying and report the error.
-	npA->DelayedResetCtr = 0;
-	npA->TimerFlags |= ACBT_RESETFAIL;
-	npA->State = ACBS_DONE;
-      } else {
-	ADD_StartTimerMS (&npA->ResetTimerHandle, npA->DelayedResetInterval,
-			  (PFN)DelayedReset, npA);
-	npA->Flags |= ACBF_WAITSTATE;
-      }
-
-      ResetComplete = 0;
+    if (!ResetComplete && npA->DelayedResetCtr) {
+      ADD_StartTimerMS (&npA->ResetTimerHandle, npA->DelayedResetInterval,
+			(PFN)DelayedReset, npA);
+      npA->Flags |= ACBF_WAITSTATE;
     }
-  } else
+  } else {
     npA->TimerFlags |= ACBT_RESETFAIL;
+  }
 
   /*---------------------------------------------------------*/
   /* If the RESET is complete but failed:		     */
@@ -1810,6 +1841,7 @@ VOID NEAR ResetCheck (NPA npA)
   }
 }
 
+#if 0
 /*----------------------------------------------------*/
 /*						      */
 /* GetDiagResults				      */
@@ -1881,7 +1913,7 @@ USHORT NEAR GetDiagResults (NPA npA, PUCHAR Status)
 
   return (rc);
 }
-
+#endif
 
 /*---------------------------------------------*/
 /* SendCmdPacket			       */
@@ -2003,22 +2035,6 @@ USHORT NEAR CheckReady (NPA npA)
 USHORT NEAR CheckBusy (NPA npA)
 {
   return CheckWorker (npA, FX_BUSY, 0);
-}
-
-/*---------------------------------------------*/
-/* SendReset				       */
-/* ----------				       */
-/*					       */
-/*					       */
-/*					       */
-/*---------------------------------------------*/
-
-USHORT NEAR SendReset (NPA npA)
-{
-  if (METHOD(npA).PreReset) METHOD(npA).PreReset (npA);
-
-  OutBd (DEVCTLREG, FX_DCRRes | FX_SRST, IODelayCount * 25); // assert SRST for at least 25us
-  OutBd (DEVCTLREG, DEVCTL = FX_DCRRes,  IODelayCount *  5); // deassert SRST for at least 5us
 }
 
 

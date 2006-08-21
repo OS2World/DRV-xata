@@ -83,7 +83,7 @@ typedef enum {
   undetermined = 0,
   Cmd640, RZ1000, Intel, Via, ALi, SiS, CMD64x, Promise, Cyrix,
   HPT36x, HPT37x, AEC, ServerWorks, Opti, AMD, NVidia, PromiseTX,
-  SiI68x, ITE, NetCell, ATI, SiISata, JMicron, PromiseMIO, Initio,
+  SiI68x, ITE, NetCell, ATI, SiISata, JMicron, PromiseMIO, Marvell, Initio,
   generic = -1
 } tHardwareType;
 
@@ -115,7 +115,8 @@ typedef enum {
 #define PCID_ATIIXPSATA    21  /* ATI IXP SATA */
 #define PCID_JMicron	   22  /* JMicron SATA */
 #define PCID_PromiseMIO    23  /* Promise MMIO */
-#define PCID_Initio	   24  /* Initio */
+#define PCID_Marvell	   24  /* Marvell */
+//#define PCID_Initio	     24  /* Initio */
 #define PCID_Generic	   25  /* Generic IDE */
 
 #define MAX_PCI_DEVICE_DESCRIPT  PCID_Generic+1
@@ -351,6 +352,8 @@ typedef ULONG	DWORD, NEAR *NPDWORD, FAR *PDWORD;
 #define DSKSP_SET_PROTECT_MBR	    0x45  /* set protection of sector 0 */
 #define DSKSP_READ_SECTOR	    0x46  /* read one sector */
 #define DSKSP_GET_DEVICETABLE	    0x47  /* query ADD device table */
+#define DSKSP_POWER		    0x48  /* call suspend/resume function */
+#define DSKSP_RESET		    0x49  /* issue channel reset */
 //#define DSKSP_TEST_LASTACCESSED     0x47  /* is last accessed unit ? */
 
 #define DSKSP_CAT_TEST_CALLS	    0xF0  /* internal testing calls category */

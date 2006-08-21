@@ -31,9 +31,9 @@
  #include "s506pro.h"
 
 #define YEAR  2006
-#define MONTH 4
-#define DAY   17
-#define PCMCIAVERSION 0x175
+#define MONTH 8
+#define DAY   21
+#define PCMCIAVERSION 0x176
 
 /*-------------------------------------------------------------------*/
 /*								     */
@@ -139,7 +139,6 @@ UCHAR ALI_UltraModeSets[4][5] = {
 };
 
 UCHAR ALI_Ultra100ModeSets[7] = {
-//  0x04, 0x03, 0x02, 0x01, 0x00, 0x07, 0x06  /* 30/33 Mhz PCI clock timings */
   0x04, 0x03, 0x02, 0x01, 0x00, 0x07, 0x05  /* 30/33 Mhz PCI clock timings */
 };
 
@@ -301,13 +300,9 @@ UCHAR VIA_Ultra100ModeSets[4][7] = {
 
 UCHAR VIA_Ultra133ModeSets[4][7] = {
   { 0xCE, 0xC8, 0xC6, 0xC4, 0xC2, 0xC1, 0xC0 },   /* 30/33 Mhz PCI clock timings */
-//  { 0xC7, 0xC7, 0xC6, 0xC4, 0xC2, 0xC1, 0xC0 },   /* 30/33 Mhz PCI clock timings */
   { 0xCA, 0xC6, 0xC4, 0xC3, 0xC1, 0xC0, 0xC0 },   /* 25 Mhz PCI clock timings */
-//  { 0xC7, 0xC7, 0xC4, 0xC3, 0xC1, 0xC0, 0xC0 },   /* 25 Mhz PCI clock timings */
   { 0xCF, 0xCA, 0xC7, 0xC5, 0xC3, 0xC1, 0xC1 },   /* 37 Mhz PCI clock timings */
-//  { 0xC7, 0xC7, 0xC7, 0xC5, 0xC3, 0xC1, 0xC1 },   /* 37 Mhz PCI clock timings */
   { 0xCF, 0xCC, 0xC8, 0xC6, 0xC3, 0xC2, 0xC1 }	  /* 41 Mhz PCI clock timings */
-//  { 0xC7, 0xC7, 0xC7, 0xC6, 0xC3, 0xC2, 0xC1 }    /* 41 Mhz PCI clock timings */
 };
 
 UCHAR OSB_ModeSets[4][3] = {
@@ -389,6 +384,7 @@ USHORT CListCIntel[] = {
 	0x27C2, 0x27C0,     // ICH7R SATA -> ICH7 SATA
 	0x27C3, 0x27C0,     // ICH7R SATA -> ICH7 SATA
 	0x27C4, 0x27C0,     // ICH7M SATA -> ICH7 SATA
+	0x2828, 0x2825,     // ICH8M SATA -> ICH8 SATA2
 		0 };
 USHORT CListFIntel[] = {
 		0x1230,     // PIIX	  82371FB
@@ -405,6 +401,8 @@ USHORT CListFIntel[] = {
 		0x2651,     // ICH6 SATA  82801FB
 		0x27DF,     // ICH7	  82801GB
 		0x27C0,     // ICH7 SATA  82801GB
+		0x2820,     // ICH8 SATA  82801HB 4 ports
+		0x2825,     // ICH8 SATA2 82801HB 2 ports
 		0 };
 USHORT CListCVia[] = {
 	0x4149, 0x3149,     // VT6420 -> VT8237 SATA
@@ -429,14 +427,18 @@ USHORT CListFALi[] = {
 		0x5289,     // ALi SATA
 		0 };
 USHORT CListCSiS[] = {
-	0x0181, 0x0180,     // SiS 181 -> SiS 180
-	0x0182, 0x0180,     // SiS 182 -> SiS 180
+	0x0181, 0x0180,     // SiS 181	-> SiS 180
+	0x1182, 0x0182,     // SiS 1182 -> SiS 182
+	0x1183, 0x0182,     // SiS 1183 -> SiS 182
+	0x1184, 0x1180,     // SiS 1184 -> SiS 1180
 		0 };
 USHORT CListFSiS[] = {
 		0x5513,     // SiS 5513
 		0x5517,     // SiS 5517
 		0x5518,     // SiS 5518
 		0x0180,     // SiS 180 SATA
+		0x0182,     // SiS 182 SATA
+		0x1180,     // SiS 1180 SATA
 		0 };
 USHORT CListFCMD[] = {
 		0x0640,     // CMD640
@@ -544,6 +546,7 @@ USHORT CListCNvidia[] = {
 	0x00E5, 0x00D5,     // nForce3 CK8 -> nForce3
 	0x0053, 0x0035,     // nForce4 C04 -> nForce4 M04
 	0x036E, 0x0265,     // nForce5 M55 -> nForce5 M51
+	0x03EC, 0x0265,     // nForce5 M61 -> nForce5 M51
 	0x00E3, 0x008E,     // nForce3 CK8 SATA  -> nForce2 SATA
 	0x00EE, 0x008E,     // nForce3 CK8 SATA2 -> nForce2 SATA
 	0x0036, 0x008E,     // nForce4 M04 SATA  -> nForce2 SATA
@@ -554,6 +557,13 @@ USHORT CListCNvidia[] = {
 	0x0267, 0x008E,     // nForce5 M51 SATA2 -> nForce2 SATA
 	0x037E, 0x008E,     // nForce5 M55 SATA  -> nForce2 SATA
 	0x037F, 0x008E,     // nForce5 M55 SATA2 -> nForce2 SATA
+	0x03F6, 0x008E,     // nForce6 M61 SATA  -> nForce2 SATA
+	0x03F7, 0x008E,     // nForce6 M61 SATA1 -> nForce2 SATA
+	0x03E7, 0x008E,     // nForce6 M61 SATA2 -> nForce2 SATA
+	0x045C, 0x008E,     // nForce6 M65 SATA  -> nForce2 SATA
+	0x045D, 0x008E,     // nForce6 M65 SATA2 -> nForce2 SATA
+	0x045E, 0x008E,     // nForce6 M65 SATA3 -> nForce2 SATA
+	0x045F, 0x008E,     // nForce6 M65 SATA4 -> nForce2 SATA
 		0 };
 USHORT CListFNvidia[] = {
 		0x008E,     // Nvidia nForce SATA
@@ -562,6 +572,7 @@ USHORT CListFNvidia[] = {
 		0x00D5,     // Nvidia nForce3
 		0x0035,     // Nvidia nForce4 M04
 		0x0265,     // Nvidia nForce5 M51
+		0x0448,     // Nvidia nForce6 M65
 		0 };
 USHORT CListFNatSemi[] = {
 		0x0502,     // NS Geode SCx200
@@ -601,17 +612,23 @@ USHORT CListNetCell[] = {
 		0 };
 USHORT CListJMicron[] = {
 		0x2360,     // JMB360 SATA
-		0x2361,     // JMB361 SATA 6 PATA
+		0x2361,     // JMB361 SATA & PATA
 		0x2363,     // JMB363 SATA & PATA
 		0x2365,     // JMB365 SATA & PATA
 		0x2366,     // JMB366 SATA & PATA
+		0x2368,     // JMB368 SATA & PATA
 		0 };
+USHORT CListMarvell[] = {
+		0x6101,     // Marvell 641x PATA
+		0 };
+#if 0
 USHORT CListCInitio[] = {
 	0x1623, 0x1622,     // 1623 -> 162x
 		0 };
 USHORT CListInitio[] = {
 		0x1622,     // Initio 162x
 		0 };
+#endif
 
 /*
 ** PCIDevice is an array of adapter specific information.  Each
@@ -832,6 +849,15 @@ PCI_DEVICE PCIDevice[] =
       CListCPromiseS, CListFPromiseS,
       0x04, 0x04, 0x00, 0x00, 0x10,
       NULL },
+  { { 0, 0x11AB, Marvell, MODE_NATIVE_OK, 0, 2,
+      AcceptMarvell, CfgGeneric,
+      NULL, BMCheckIRQ,
+      NULL, SetupCommon,
+      CalculateGenericAdapterTiming, NULL, NULL},
+      CListNULL, CListMarvell,
+      0x04, 0x04, 0x00, 0x00, 0x10,
+      NULL },
+#if 0
   { { 0, 0x1101, Initio, MODE_NATIVE_OK, 0, 2,
       AcceptInitio, CfgGeneric,
       NULL, InitioCheckIRQ,
@@ -840,6 +866,7 @@ PCI_DEVICE PCIDevice[] =
       CListCInitio, CListInitio,
       0x04, 0x04, 0x00, 0x00, 0x10,
       NULL },
+#endif
   { { 0, 0, generic, MODE_NATIVE_OK, 0, 2,
       AcceptGeneric, CfgGeneric,
       GenericInitComplete, NonsharedCheckIRQ,
@@ -881,7 +908,7 @@ struct CI_Info CIInfo = {
   offsetof (struct CI_Info, CI_Name), sizeof (CIInfo.CI_Name),
   offsetof (struct CI_Info, CI_Vendor), sizeof (CIInfo.CI_Vendor),
   "DaniS506 EIDE Driver",
-  "Copyright Daniela Engert 2005, all rights reserved"
+  "Copyright Daniela Engert 2006, all rights reserved"
 };
 
 CCB	       ChipTable[MAX_ADAPTERS] = { 0 };
@@ -905,7 +932,8 @@ ACB	       AdapterTable[MAX_ADAPTERS] =
 BOOT_RECORD	      BootRecord	  = { 0 };
 PARTITION_BOOT_RECORD PartitionBootRecord = { 0 };
 
-RP_GENIOCTL    IOCtlRP = {{sizeof (IOCtlRP), 0, 0x10}, 0x80, PCI_FUNC};
+RP_GENIOCTL    IOCtlRP	 = {{sizeof (IOCtlRP), 0, 0x10}, 0x80, PCI_FUNC};
+RP_GENIOCTL    IOCtlACPI = {{sizeof (IOCtlACPI), 0, 0x10}, 0x88};
 IORB_EXECUTEIO InitIORB 		  = { 0 };
 CHAR	       DTMem[(MAX_ADAPTERS+1)*MR_1K_LIMIT-1] = { 0 };
 
@@ -990,7 +1018,7 @@ UCHAR  NsSCxMsgtxt[]   = "NS Geode SCx200";
 UCHAR  NetCellMsgtxt[] = "NetCell SyncRAID";
 UCHAR  JMMsgtxt[]      = "JMicron JMB%x";
 UCHAR  PromiseMIOtxt[] = "Promise %dxx";
-UCHAR  InitioMsgtxt[]  = "Initio INIC-%x";
+//UCHAR  InitioMsgtxt[]  = "Initio INIC-%x";
 UCHAR  GenericMsgtxt[] = "Generic";
 UCHAR ParmErrMsg[] = " Warning: DANIS506.ADD - Invalid CONFIG.SYS parameters near pos %d";
 UCHAR VersionMsg[] = "            Daniela's Bus Master IDE Driver for OS/2 Version "VERSION;

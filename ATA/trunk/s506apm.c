@@ -161,7 +161,7 @@ USHORT NEAR APMResume()
   NPC  npC;
   CHAR Adapter, Unit;
 
-//DevHelp_Beep (200, 30);
+DevHelp_Beep (200, 30);
 
   for (npC = ChipTable; npC < (ChipTable + MAX_ADAPTERS); npC++) {
     if ((USHORT)npC->npA[0] | (USHORT)npC->npA[1])
@@ -182,8 +182,14 @@ USHORT NEAR APMResume()
       CardRemoval (npA);
       METHOD(npA).Setup (npA);
       StartDetect (npA);
-    } else {
+    } else if ((npA->FlagsT & ATBF_ON) && (npA->cUnits > 0)) {
 
+      METHOD(npA).Setup (npA);
+
+      // de-bunk some ATAPI devices...
+      { USHORT i;
+	for (i = ATA_BACKOFF; i > 0; i--) IODly (IODelayCount);
+      }
       // static adapter: wake up units
 
       npU = npA->UnitCB;
@@ -197,12 +203,13 @@ USHORT NEAR APMResume()
 	  if (!CheckBusy (npA)) break;
 
 	npU->LongTimeout = TRUE;
-	IdentifyDevice (npU, (NPIDENTIFYDATA)ScratchBuf, (UCHAR)(npU->Flags & UCBF_ATAPIDEVICE));
+//	  IdentifyDevice (npU, (NPIDENTIFYDATA)ScratchBuf, (UCHAR)(npU->Flags & UCBF_ATAPIDEVICE));
 	ReInitUnit (npU);
-	if (npU->Flags & UCBF_ATAPIDEVICE) NoOp (npU); // issue settings
+	NoOp (npU); // issue settings
       }
     }
   }
+DevHelp_Beep (2000, 30);
   return 0;
 }
 
@@ -280,7 +287,7 @@ VOID NEAR StartDetect (NPA npA) {
   DRVHD = 0xA0;
 
   OutBdms (DRVHDREG, DRVHD);
-  OutBd (DEVCTLREG, (DEVCTL = FX_DCRRes | FX_SRST | FX_nIEN), IODelayCount * 25); // assert SRST for at least 25us
+  OutBd (DEVCTLREG, (DEVCTL = FX_DCRRes | FX_SRST | FX_nIEN), IODelayCount * RESET_ASSERT_TIME); // assert SRST
   OutBdms (DEVCTLREG, (DEVCTL = FX_DCRRes | FX_nIEN));
 
   *(NPUSHORT)(npA->Controller) = 0;
@@ -296,9 +303,9 @@ VOID NEAR IssueSATAReset (NPU npU) {
   DISABLE
   temp = InD (SCONTROL) & ~0xF;
   OutD (SCONTROL, temp);	      // deassert COMRESET
-  OutD (SCONTROL, temp | 1);	      // issue COMRESET for 25 æs
+  OutD (SCONTROL, temp | 1);	      // issue COMRESET
   ENABLE
-  InDd (SSTATUS, 25 * IODelayCount);  // flush write, wait
+  InDd (SSTATUS, RESET_ASSERT_TIME * IODelayCount);  // flush write, wait
   OutD (SCONTROL, temp);	      // deassert COMRESET
   InD  (SSTATUS);		      // flush write
   OutD (SERROR, InD (SERROR));	      // clear SERROR
