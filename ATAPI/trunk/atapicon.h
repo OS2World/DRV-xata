@@ -144,7 +144,7 @@
 /*---------------------------------------*/
 /* Maximum Transfer - MultiBlock Mode	 */
 /*---------------------------------------*/
-#define MAX_MULTMODE_BLK		 16
+#define MAX_MULTMODE_BLK	      16
 
 /*---------------------------------------*/
 /* Maximum Transfer - Bytes		 */
@@ -155,7 +155,12 @@
 /*---------------------------------------*/
 /* Maximum Transfer - Overall		 */
 /*---------------------------------------*/
-#define MAX_XFER_SEC			256
+#define MAX_XFER_SEC		      256
+
+/*---------------------------------------*/
+/* ATA command back-off time  æs	 */
+/*---------------------------------------*/
+#define ATA_BACKOFF		    65000
 
 /* Miscellaneous constants */
 

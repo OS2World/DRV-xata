@@ -37,7 +37,7 @@
 #pragma optimize(OPTIMIZE, on)
 
 #define PCITRACER 0
-#define TRPORT 0x9010
+#define TRPORT 0xc410
 
 #if PCITRACER
 #define TR(x) outp (TRPORT,(x));
@@ -212,6 +212,11 @@ NPU NEAR ConfigureUnit (NPA npA, NPIDENTIFYDATA npID, UCHAR Reconfigure)
 #define  NEC_CDR_250	 2
 #define  MATSHITA_CR_571 3
 
+  {
+    USHORT i;
+    for (i = ATA_BACKOFF; i > 0; i--) IODelay();
+  }
+
   npU->LUN = 0;
   npU->DriveLUN.Rev_17B = 0;
 
@@ -369,13 +374,13 @@ NPU NEAR ConfigureUnit (NPA npA, NPIDENTIFYDATA npID, UCHAR Reconfigure)
 
     } else if (UnitType == UIB_TYPE_CDROM) {
       npU->Flags |= UCBF_XLATECDB6;
-      GetCDCapabilities (npU); // not in 0.3.15a2, a3
+      GetCDCapabilities (npU);
 
     } else if (UnitType == ONSTREAM_TAPE) {
       InitOnstream (npU);
     }
     if (!(npU->Flags & UCBF_XLATECDB6)) GetCDBTranslation (npU);
-    GetLUNMode (npU, npID->LastLUN); // not in 0.3.15a1, a3
+    GetLUNMode (npU, npID->LastLUN);
   }
   return (npU);
 }
@@ -1478,12 +1483,8 @@ VOID NEAR GetLUNMode (NPU npU, USHORT LastLUN)
 
   GetSCSIInquiry (npU);
 
-//  return; // return here in 0.3.15a4
-
   Type0 = *Buffer & 0x1F;
   GetMaxLUN (npU);
-
-//  return; // return here in 0.3.15a5
 
   LUN = 0;
   minMode = 1; maxMode = 2;

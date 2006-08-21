@@ -93,9 +93,8 @@ LIBS  =  $(LIB)\libh.lib $(RMLIB)\rmcalls.lib $(APM)\apmcalls.lib $(LIB)\os2286p
 # executables and dlls etc. that are generated.
 #****************************************************************************
 
-HDR = addcalls.h
-#HDR = addcalls.h apmcalls.h atapicon.h atapiext.h atapipro.h atapireg.h \
-#      atapityp.h cmdparse.h cmdpdefs.h cmdpext.h cmdproto.h dhcalls.h iorb.h
+HDR = addcalls.h apmcalls.h atapicon.h atapiext.h atapipro.h atapireg.h \
+      atapityp.h cmdparse.h cmdpdefs.h cmdpext.h cmdproto.h dhcalls.h iorb.h
 
 #
 # OBJ files

@@ -606,10 +606,14 @@ VOID NEAR InterruptState (NPA npA)
 	  if ((npA->ISMFlags & ACBIF_PIO32) && !(cXferBytes & 3))
 	    npCmdIO->IOSGPtrs.Mode |= 0x80;
 	  ADD_XferIO (&npCmdIO->IOSGPtrs);
-
   TR(0x51)
 
 	  if (npA->ISMFlags & ACBIF_ATA_OPERATION) {
+	    USHORT i;
+
+	    // de-bunk some devices after an ATA command
+	    for (i = 0; i < ATA_BACKOFF; i++) IODelay();
+
 	    BSYWAIT (npA);
 	    INTRSN = inp (INTRSNREG);
 	  }
