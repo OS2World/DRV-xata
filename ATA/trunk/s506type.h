@@ -80,6 +80,8 @@ typedef struct _C
   NPA		npA[MAX_CHANNELS];
   USHORT	Cap;
   tBAR		BAR[6];
+  UCHAR 	IrqPIC;
+  UCHAR 	IrqAPIC;
   USHORT	HWSpecial;
   UCHAR 	numChannels;
   UCHAR 	populatedChannels;

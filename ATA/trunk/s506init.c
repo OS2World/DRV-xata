@@ -60,7 +60,7 @@ UCHAR NEAR TestStatus50us (NPA npA)
   USHORT Stop;
   UCHAR  Data;
 
-  Stop = /*(npA->Cap & CHIPCAP_SATA) ? 0 :*/ 50;
+  Stop = 50;
   while (--Stop != 0) { // wait for BUSY | DRDY | ERR within 50us
     Data = InBdms (STATUSREG);
     if (Data & (FX_BUSY | FX_DRQ | FX_ERROR)) break;
@@ -118,14 +118,34 @@ USHORT NEAR TestChannel (NPA npA, UCHAR UnitId)
   USHORT Stop;
   UCHAR  Controller = CtNone;
 
+  Data0 = UnitId ? 0xB0 : 0xA0;
   DISABLE
-  OutBdms (DRVHDREG, (UCHAR)(UnitId ? 0xB0 : 0xA0)); /* Select Unit */
+  OutBdms (DRVHDREG, Data0); /* Select Unit */
   OutBd (DEVCTLREG, FX_DCRRes | FX_nIEN, 10 * IODelayCount);
+  for (Stop = 0; Stop < 100; Stop++) {
+    Data1 = InBdms (DRVHDREG);
+    if (!((Data1 ^ Data0) & 0x10)) break;
+    OutBdms (DRVHDREG, Data0); /* Select Unit */
+  }
   Data0 = InBdms (STATUSREG);
   ENABLE
 
+TS("%02X:",Data1);
 TS("%02X",Data0);
-  if (Data0 & FX_DRQ) goto Fault; // probably remains from write to non-existent unit
+//  if (Data0 & FX_DRQ) goto Fault; // probably remains from write to non-existent unit
+  if (Data0 & FX_DRQ) { // probably remains from write to non-existent unit
+    for (Stop = 1; Stop <= 4096; Stop++) {
+      InWdms (DATAREG);
+      Data0 = InBdms (STATUSREG);
+      if (!(Data0 & FX_DRQ)) break;
+    }
+    if (Data0 & FX_DRQ) goto Fault;
+
+    if (BMSTATUSREG) OutB (BMSTATUSREG, InB (BMSTATUSREG));
+
+    TS("r%d",Stop)
+    TS(":%02X",Data0);
+  }
 
   if (WaitNotBusy (npA)) {
     Data0 = InBdms (STATUSREG);

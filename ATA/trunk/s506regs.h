@@ -108,7 +108,7 @@
 
 #define FX_nIEN      0x02	  /* Interrupt Enable (0=enable; 1=disable)  */
 #define FX_SRST      0x04	  /* Soft Reset 			     */
-#define FX_DCRRes    0x08	  /* Device Control Reg - reserved bits      */
+#define FX_DCRRes    0x00	  /* Device Control Reg - reserved bits      */
 #define FX_HOB	     0x80	  /* LBA48 read high order bits 	     */
 
 /* Error Register bits */

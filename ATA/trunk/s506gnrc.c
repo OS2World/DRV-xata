@@ -84,21 +84,37 @@ BOOL NEAR AcceptNetCell (NPA npA)
 BOOL NEAR AcceptJM (NPA npA)
 {
   NPC npC = npA->npC;
-  UCHAR combined;
+  ULONG Control;
+
+  Control = GetRegD (PAdr, 0x40);
+
+  // check if port is enabled
+  if (!(Control & (UCHAR)(1 << (4 * npA->IDEChannel)))) return (FALSE);
+
+  // switch controller into IDE mode
+  if ((Control >> 16) & 3) {
+    Control &= ~(3ul << 16);
+    SetRegD (PAdr, 0x40, Control);
+  }
 
   /* AHCI mode is not supported yet! */
   if (GetRegB (PAdr, PCIREG_SUBCLASS) != PCI_IDE_CONTROLLER) return (FALSE);
+
+  sprntf (npA->PCIDeviceMsg, JMMsgtxt, MEMBER(npA).Device & 0xFFF);
 
   switch (PciInfo->Level) {
     case 0 : npC->numChannels = 1;
     default: npC->numChannels = 2;
   }
-goto JMexit;
-  combined = GetRegB (PAdr, 0x42) & 0x80;
 
-  if (combined) {  // combined, primary SATA, secondary PATA
+  if ((Control >> 16) & 0x80) {  // combined, primary SATA, secondary PATA
     npA->maxUnits = 2;
-    if (npA->IDEChannel > 0) goto JMexit; // PATA channel
+    if (npA->IDEChannel > 0) { // PATA channel
+      npA->Cap |= CHANCAP_SPEED;
+      if (!(Control & 0x08))
+	npA->Cap |= CHANCAP_CABLE80 | CHANCAP_SPEED;
+      return (TRUE);
+    }
   } else {
     npA->maxUnits = 1;
   }
@@ -109,9 +125,8 @@ goto JMexit;
   if (npA->maxUnits > 1)
     npA->UnitCB[1].SStatus = GetAHCISCR (npA, npA->IDEChannel + 1);
 
-JMexit:
+  npA->Cap    |= CHIPCAP_ATAPIDMA;
   npA->FlagsT |= ATBF_BIOSDEFAULTS;
-  sprntf (npA->PCIDeviceMsg, JMMsgtxt, MEMBER(npA).Device & 0xFFF);
   return (TRUE);
 }
 

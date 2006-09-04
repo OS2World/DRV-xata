@@ -31,9 +31,9 @@
  #include "s506pro.h"
 
 #define YEAR  2006
-#define MONTH 8
-#define DAY   21
-#define PCMCIAVERSION 0x176
+#define MONTH 9
+#define DAY   4
+#define PCMCIAVERSION 0x177
 
 /*-------------------------------------------------------------------*/
 /*								     */
@@ -826,16 +826,16 @@ PCI_DEVICE PCIDevice[] =
   { { 0, 0x1002, SiISata, MODE_NATIVE_OK, 0, 2,
       AcceptIXPSATA, CfgGeneric,
       NULL, SIICheckIRQ,
-      GetSIISATAPio, SetupCommon,
-      CalculateAdapterTiming, SIITimingValue, ProgramSIISATAChip},
+      GetGenericPio, SetupCommon,
+      CalculateGenericAdapterTiming, NULL, NULL},
       CListCIXPS, CListFIXPS,
       0xA1, 0xB1, 0x00, 0x00, 0x10,
       IXPMsgtxt },
   { { 0, 0x197B, JMicron, MODE_NATIVE_OK, 0, 2,
       AcceptJM, CfgGeneric,
       NULL, BMCheckIRQ,
-      NULL, SetupCommon,
-      CalculateGenericAdapterTiming, NULL, NULL},
+      GetGenericPio, SetupCommon,
+      CalculateAdapterTiming, NULL, NULL},
       CListNULL, CListJMicron,
       0x04, 0x04, 0x00, 0x00, 0x10,
       NULL },

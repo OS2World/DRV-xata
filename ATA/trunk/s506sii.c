@@ -78,20 +78,18 @@ VOID NEAR SiISATA (NPA npA)
   ULONG  BA5 = npC->BAR[5].Addr;
 
   GenericSATA (npA);
+  npA->SCR.Offsets = 0x021;
+  SSTATUS = BA5 | PortOffsetSC[npA->IDEChannel];
+
   if (npA->FlagsT & ATBF_BIOSDEFAULTS) {  // use generic PIO mode
     npA->Cap |= CHIPCAP_ATAPIDMA;
-    npA->maxUnits = 1;
     if (PciInfo->CompatibleID == PCIDEV_SII3114) {
       npA->maxUnits = 2;
       npU[1].SStatus = BA5 + PortOffsetSC[npA->IDEChannel + 2];
     }
-    npU[0].SStatus = BA5 + PortOffsetSC[npA->IDEChannel];
-    npA->SCR.Offsets = 0x021;
     npA->FlagsT &= ~ATBF_BIOSDEFAULTS;
 
   } else {				 // use MMIO
-    npA->SCR.Offsets = 0x021;
-    SSTATUS	     = BA5 | PortOffsetSC[npA->IDEChannel];
 
     MEMBER(npA).CfgTable   = CfgNull;
     METHOD(npA).GetPIOMode = GetSIISATAPio;
@@ -156,9 +154,8 @@ BOOL NEAR AcceptSII (NPA npA)
 BOOL NEAR AcceptIXPSATA (NPA npA)
 {
   PciInfo->Level = 3;
+  npA->FlagsT	|= ATBF_BIOSDEFAULTS;
   SiISATA (npA);
-METHOD(npA).CheckIRQ   = BMCheckIRQ;
-DevHelp_Beep (1000,50);
   return (TRUE);
 }
 
@@ -367,6 +364,7 @@ int NEAR SIICheckIRQ (NPA npA) {
     BM.Status &= BMISTA_MASK;
     BM.Cmd     = (BM.Cmd & ~BMICOM_START) | 0x10;
     BM.filler2 = 0;
+BM.filler1 |= 0x3F;
     OutD (BMCMDREG, BM.Status2);
 //	if (Data & 0x10) OutB (DATAREG | 0x21, Data); // Watchdog!
     if (BMSTATUS & BMISTA_INTERRUPT) {

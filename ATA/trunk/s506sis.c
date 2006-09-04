@@ -97,7 +97,8 @@ BOOL NEAR AcceptSIS (NPA npA)
   MEMBER(npA).Device = GetRegW (PCIAddr, PCIREG_DEVICE_ID);
   sprntf (npA->PCIDeviceMsg, SiS5513Msgtxt, MEMBER(npA).Device);
 
-  switch (PciInfo->CompatibleID) {
+  switch (MEMBER(npA).Device) {
+    case 0x1184:
     case 0x1180:
       PCR = GetRegB (PCIAddr, 0x67);
       if (PCR & 0x10) {
@@ -107,10 +108,14 @@ BOOL NEAR AcceptSIS (NPA npA)
       }
     /* fall through */
 
+    case 0x1183:
+    case 0x1182:
     case 0x0182:
       npA->maxUnits = 2;
       goto SATAcommon;
+      break;
 
+    case 0x0181:
     case 0x0180:
       PCR = GetRegB (PCIAddr, 0x90);
       if (PCR & 0x30) {

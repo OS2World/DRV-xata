@@ -374,6 +374,8 @@ USHORT FAR EnumPCIDevices (void)
 	    for (i = 0; i <= 5; i++)
 	      GetBAR (npC->BAR + i, Enum.PCIAddr, i);
 
+	    npC->IrqPIC = Int;
+
 	    for (Channel = 0; Channel < npC->numChannels; Channel++) {
 	      USHORT savedAdapterFlags;
 	      UCHAR EnableReg, EnableBit, Enable;
