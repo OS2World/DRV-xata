@@ -100,7 +100,7 @@ USHORT FAR _cdecl APMEventHandler (PAPMEVENT Event)
 
 void NEAR InitUnitSync (NPU npU) {
   npU->Flags &= ~(UCBF_MULTIPLEMODE | UCBF_DIAG_FAILED);
-				       npU->ReqFlags |= UCBR_SETPIOMODE; // | UCBR_RECAL;
+				       npU->ReqFlags |= UCBR_SETPIOMODE;
   if (npU->Flags & UCBF_BM_DMA)        npU->ReqFlags |= UCBR_SETDMAMODE;
   if (npU->IdleTime != 0)	       npU->ReqFlags |= UCBR_SETIDLETIM;
   if (npU->Flags & UCBF_ATAPIDEVICE) return;
@@ -203,7 +203,7 @@ DevHelp_Beep (200, 30);
 	  if (!CheckBusy (npA)) break;
 
 	npU->LongTimeout = TRUE;
-//	  IdentifyDevice (npU, (NPIDENTIFYDATA)ScratchBuf, (UCHAR)(npU->Flags & UCBF_ATAPIDEVICE));
+//	  IdentifyDevice (npU, (NPIDENTIFYDATA)ScratchBuf);
 	ReInitUnit (npU);
 	NoOp (npU); // issue settings
       }
@@ -235,7 +235,7 @@ USHORT NEAR ReConfigureUnit (NPU npU)
   outpw (TRPORT-2, npA->FlagsT);
   outpw (TRPORT-2, npA->Cap);
 #endif
-    IdentifyDevice (npU, npID, (UCHAR)(npU->Flags & UCBF_ATAPIDEVICE));
+    IdentifyDevice (npU, npID);
 #if PCITRACER
   outpw (TRPORT, 0xDF01);
 #endif

@@ -72,6 +72,8 @@ BOOL NEAR AcceptGeneric (NPA npA)
   return (TRUE);
 }
 
+// ---------------------------------------------------------------
+
 BOOL NEAR AcceptNetCell (NPA npA)
 {
   npA->Cap &= ~(CHIPCAP_ATAPIPIO32 | CHIPCAP_ATAPIDMA);
@@ -81,62 +83,66 @@ BOOL NEAR AcceptNetCell (NPA npA)
   return (TRUE);
 }
 
-BOOL NEAR AcceptJM (NPA npA)
-{
-  NPC npC = npA->npC;
-  ULONG Control;
-
-  Control = GetRegD (PAdr, 0x40);
-
-  // check if port is enabled
-  if (!(Control & (UCHAR)(1 << (4 * npA->IDEChannel)))) return (FALSE);
-
-  // switch controller into IDE mode
-  if ((Control >> 16) & 3) {
-    Control &= ~(3ul << 16);
-    SetRegD (PAdr, 0x40, Control);
-  }
-
-  /* AHCI mode is not supported yet! */
-  if (GetRegB (PAdr, PCIREG_SUBCLASS) != PCI_IDE_CONTROLLER) return (FALSE);
-
-  sprntf (npA->PCIDeviceMsg, JMMsgtxt, MEMBER(npA).Device & 0xFFF);
-
-  switch (PciInfo->Level) {
-    case 0 : npC->numChannels = 1;
-    default: npC->numChannels = 2;
-  }
-
-  if ((Control >> 16) & 0x80) {  // combined, primary SATA, secondary PATA
-    npA->maxUnits = 2;
-    if (npA->IDEChannel > 0) { // PATA channel
-      npA->Cap |= CHANCAP_SPEED;
-      if (!(Control & 0x08))
-	npA->Cap |= CHANCAP_CABLE80 | CHANCAP_SPEED;
-      return (TRUE);
-    }
-  } else {
-    npA->maxUnits = 1;
-  }
-
-  npA->SCR.Offsets = 0x3120;
-  GenericSATA (npA);
-  npA->UnitCB[0].SStatus = GetAHCISCR (npA, npA->IDEChannel + 0);
-  if (npA->maxUnits > 1)
-    npA->UnitCB[1].SStatus = GetAHCISCR (npA, npA->IDEChannel + 1);
-
-  npA->Cap    |= CHIPCAP_ATAPIDMA;
-  npA->FlagsT |= ATBF_BIOSDEFAULTS;
-  return (TRUE);
-}
+// ---------------------------------------------------------------
 
 BOOL NEAR AcceptMarvell (NPA npA)
 {
-  npA->Cap |= CHANCAP_SPEED | CHANCAP_CABLE80;
+  NPC	npC  = npA->npC;
+//  ULONG BAR5 = npC->BAR[5].Addr;
+
   npA->FlagsT |= ATBF_BIOSDEFAULTS;
+  npA->Cap    &= ~(CHIPCAP_ATAPIDMA | CHIPCAP_PIO32);
   npA->maxUnits = 2;
+
+  switch (PciInfo->Level) {
+    case 0 :
+      npC->numChannels = 1; // 6101
+      break;
+
+    default:
+      npC->numChannels = 2;
+      if (0 == npA->IDEChannel) {  // PATA
+//	  if (BAR5 && !(InD (BAR5 | 0x0C) & 0x10))  // PATA enabled
+      } else {
+	GenericSATA (npA);
+      }
+      break;
+  }
+
+  if (!(npA->Cap & CHIPCAP_SATA)) {
+    if (!(InB (BMCMDREG + 1) & 1))
+      npA->Cap |= CHANCAP_SPEED | CHANCAP_CABLE80;
+  }
+
   return (TRUE);
 }
+
+// ---------------------------------------------------------------
+
+#define AHCI_GHC 4
+#define AHCI_GHC_AHCIENABLED 1
+
+BOOL NEAR AcceptAHCI (NPA npA)
+{
+  NPC	npC  = npA->npC;
+  ULONG BAR5 = npC->BAR[5].Addr;
+
+  // AHCI mode enabled?
+  if (BAR5 && (InD (BAR5 | AHCI_GHC) & AHCI_GHC_AHCIENABLED)) return (FALSE);
+
+  npA->FlagsT |= ATBF_BIOSDEFAULTS;
+
+  npA->maxUnits = 2;
+  npA->SCR.Offsets = 0x3120;
+  GenericSATA (npA);
+  npA->Cap |= CHIPCAP_ATAPIDMA;
+  npA->UnitCB[0].SStatus = GetAHCISCR (npA, npA->IDEChannel * 2 + 0);
+  npA->UnitCB[1].SStatus = GetAHCISCR (npA, npA->IDEChannel * 2 + 1);
+
+  return (TRUE);
+}
+
+// ---------------------------------------------------------------
 
 USHORT NEAR GetGenericPio (NPA npA, UCHAR Unit) {
   NPU npU = &(npA->UnitCB[Unit]);
@@ -273,26 +279,19 @@ int NEAR BMCheckIRQ (NPA npA) {
 
 VOID NEAR GenericSetupTF (NPA npA)
 {
-  USHORT IOMask;
-  ULONG  Port;
-  NPCH	 p;
-
-  IOMask = npA->IOPendingMaskSave = npA->IOPendingMask;
-  npA->IOPendingMask = 0;
+  USHORT IOMask = npA->IOPendingMaskSave = npA->IOPendingMask;
   if (IOMask & FM_HIGH) {  // LBA48 addressing
     if (IOMask & FM_HFEAT  ) { outpdelay (FEATREG  , 0);    } // FEAT	H
     if (IOMask & FM_HSECCNT) { outpdelay (SECCNTREG, 0);    } // SECCNT H
-    if (IOMask & FM_LBA3   ) { outpdelay (SECTORREG, LBA3); } // LBA3
-    if (IOMask & FM_LBA4   ) { outpdelay (CYLLREG  , 0);    } // LBA4
-    if (IOMask & FM_LBA5   ) { outpdelay (CYLHREG  , 0);    } // LBA5
+    if (IOMask & FM_LBA3   ) { outpdelay (LBA3REG,   LBA3); } // LBA3
+    if (IOMask & FM_LBA4   ) { outpdelay (LBA4REG,   LBA4); } // LBA4
+    if (IOMask & FM_LBA5   ) { outpdelay (LBA5REG,   LBA5); } // LBA5
   }
-  p = &FEAT;
-  IOMask &= FM_LOW & ~FM_PCMD;
-  for (Port = FI_PFEAT; IOMask; Port++) {
-    IOMask >>= 1;
-    if (IOMask & 1) outpdelay (npA->IOPorts[Port], *p);
-    p++;
-  }
+    if (IOMask & FM_PFEAT  ) { outpdelay (FEATREG  , FEAT); } // FEAT
+    if (IOMask & FM_PSECCNT) { outpdelay (SECCNTREG, SECCNT);} // SECCNT
+    if (IOMask & FM_LBA0   ) { outpdelay (LBA0REG,   LBA0); } // LBA0
+    if (IOMask & FM_LBA1   ) { outpdelay (LBA1REG,   LBA1); } // LBA1
+    if (IOMask & FM_LBA2   ) { outpdelay (LBA2REG,   LBA2); } // LBA2
 }
 
 /*--------------------------------------------*/

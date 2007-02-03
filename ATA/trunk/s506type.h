@@ -317,7 +317,7 @@ typedef enum { CtNone = 0, CtATA = 1, CtATAPI = 2} eControllerType;
 #define METHOD(x) (x)->PCIInfo.Ident
 #define MEMBER(x) (x)->PCIInfo.Ident
 
-#define FI_MAX_REGS	12
+#define FI_MAX_REGS	14
 
 typedef struct _A
 {

@@ -149,6 +149,7 @@
 /* Output Regs */
 
 #define FI_PDAT      0		   /* read/write data			      */
+
 #define FI_PFEAT     1		   /* features register 		      */
 #define FI_PSECCNT   2		   /* sector count register		      */
 #define FI_PINTRSN   2		   /* ATAPI interrupt reason		      */
@@ -158,7 +159,12 @@
 #define FI_PDRHD     6		   /* drive/head register		      */
 #define FI_PCMD      7		   /* command register			      */
 #define FI_PLBA3     8		   /* LBA3 register			      */
-#define FI_RFDR      9		   /* fixed disk register		      */
+#define FI_PLBA4     9		   /* LBA4 register			      */
+#define FI_PLBA5    10		   /* LBA5 register			      */
+
+#define FI_RFDR     11		   /* fixed disk register		      */
+#define FI_PERR     12		   /* error register			      */
+#define FI_PSTAT    13		   /* status register			      */
 
 #define FM_PDAT    (  1 << FI_PDAT   ) /* read/write data		      */
 #define FM_PFEAT   (  1 << FI_PFEAT  ) /* features register		      */
@@ -176,13 +182,9 @@
 #define FM_LBA3    (128 << FI_PSECNUM) /* LBA3 register 		      */
 #define FM_LBA4    (128 << FI_PCYLL  ) /* LBA4 register 		      */
 #define FM_LBA5    (128 << FI_PCYLH  ) /* LBA5 register 		      */
-#define FM_LOW	   (FM_PFEAT | FM_PSECCNT | FM_PSECNUM | FM_PCYLL | FM_PCYLH | FM_PCMD)
+#define FM_LOW	   (FM_PFEAT | FM_PSECCNT | FM_LBA0 | FM_LBA1 | FM_LBA2 | FM_PCMD)
 #define FM_HIGH    (FM_HFEAT | FM_HSECCNT | FM_LBA3 | FM_LBA4 | FM_LBA5)
 
-/* Input Regs */
-
-#define FI_PERR     10		   /* error register			      */
-#define FI_PSTAT    11		   /* status register			      */
 
 #define DATAREG     (npA->IOPorts[FI_PDAT])
 #define DEVCTL	    (npA->IORegs[FI_RFDR])
@@ -205,6 +207,11 @@
 #define CYLHREG     (npA->IOPorts[FI_PCYLH])
 #define LBA2REG     (npA->IOPorts[FI_PCYLH])
 #define LBA3	    (npA->IORegs[FI_PLBA3])
+#define LBA3REG     (npA->IOPorts[FI_PSECNUM])
+#define LBA4	    (npA->IORegs[FI_PLBA4])
+#define LBA4REG     (npA->IOPorts[FI_PCYLL])
+#define LBA5	    (npA->IORegs[FI_PLBA5])
+#define LBA5REG     (npA->IOPorts[FI_PCYLH])
 #define DRVHD	    (npA->IORegs[FI_PDRHD])
 #define DRVHDREG    (npA->IOPorts[FI_PDRHD])
 #define COMMAND     (npA->IORegs[FI_PCMD])

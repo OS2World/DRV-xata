@@ -110,6 +110,7 @@ BOOL NEAR AcceptSIS (NPA npA)
 
     case 0x1183:
     case 0x1182:
+    case 0x0183:
     case 0x0182:
       npA->maxUnits = 2;
       goto SATAcommon;

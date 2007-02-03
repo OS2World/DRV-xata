@@ -122,7 +122,8 @@ BOOL NEAR AcceptVIA (NPA npA)
 		     }
       }
       break;
-    case 0x3164: PciInfo->Level = VIAF; Name = "VT6410"; break;
+    case 0x5324: Name = "CX700";  PciInfo->Level = VIAF; break;
+    case 0x3164: Name = "VT6410"; PciInfo->Level = VIAF; break;
     case 0x3149: {
 	UCHAR SATAInc = 0x40;
 
@@ -171,21 +172,9 @@ BOOL NEAR AcceptVIA (NPA npA)
 	}
       }
       break;
-    case 0x3349: {
-	NPC npC = npA->npC;
-
-	/* AHCI mode is not supported yet! */
-	if (GetRegB (PAdr, PCIREG_SUBCLASS) == PCI_SATA_CONTROLLER) return (FALSE);
-
-	PciInfo->Level = VIAG; Name = "VT8251";
-
-	npA->maxUnits = 2;
-	npA->SCR.Offsets = 0x3120;
-	GenericSATA (npA);
-	npA->Cap |= CHIPCAP_ATAPIDMA;
-	npA->UnitCB[0].SStatus = GetAHCISCR (npA, npA->IDEChannel * 2 + 0);
-	npA->UnitCB[1].SStatus = GetAHCISCR (npA, npA->IDEChannel * 2 + 1);
-      }
+    case 0x3349:
+      PciInfo->Level = VIAG; Name = "VT8251";
+      if (!AcceptAHCI (npA)) return (FALSE);
       break;
   }
 
@@ -460,10 +449,9 @@ VOID ProgramVIAChip (NPA npA)
       WConfigB (PCI_VIA_IDEASU, PCIDataB);	// address setup 4 clocks
     }
 
-//    PCIDataB = RConfigB (PCI_VIA_IDECONFIG) & ~(Ch ? 0x30 : 0xC0);
-//    if (!(npA->FlagsT & ATBF_ATAPIPRESENT))
-//	PCIDataB |= (Ch ? 0x30 : 0xC0); 	// enable prefetch/post buffers
     PCIDataB = RConfigB (PCI_VIA_IDECONFIG);
+    if (npA->FlagsT & ATBF_ATAPIPRESENT)
+      PCIDataB &= (Ch ? ~0x30 : ~0xC0);       // disble prefetch/post buffers
     if (CurLevel == AMDB) PCIDataB &= ~0xF0;  // AMD76x/nForce prefetch bug!
     if (CurLevel == VIAF) PCIDataB |=  0xF0;  // VIA ATA/133 can always prefetch
     if (PCIDataB != RConfigB (PCI_VIA_IDECONFIG))

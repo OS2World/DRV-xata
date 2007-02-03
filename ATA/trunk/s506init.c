@@ -229,19 +229,27 @@ USHORT NEAR CheckController (NPA npA)
 
 T('R') T('(')
 
-  rc  = TestChannel (npA, 0);
+  if (npA->UnitCB[0].FlagsT & UTBF_DISABLED)
+    npA->Controller[0] = CtNone;
+  else
+    TestChannel (npA, 0);
+
+  rc = !(npA->Controller[0]);
 
   if (npA->FlagsT & (ATBF_PCMCIA | ATBF_BAY)) {
 //    npA->Controller[1] = CtATA;
   } else {
-    if (npA->maxUnits < 2)
+    if (npA->maxUnits < 2) {
       npA->Controller[1] = CtNone;
-    else
-      rc &= TestChannel (npA, 1);
-  }
+    } else {
+      if (npA->UnitCB[1].FlagsT & UTBF_DISABLED)
+	npA->Controller[1] = CtNone;
+      else
+	TestChannel (npA, 1);
 
-  if (npA->UnitCB[0].FlagsT & UTBF_DISABLED) npA->Controller[0] = CtNone;
-  if (npA->UnitCB[1].FlagsT & UTBF_DISABLED) npA->Controller[1] = CtNone;
+      rc &= !(npA->Controller[1]);
+    }
+  }
 
   OutBdms (DRVHDREG, (UCHAR)(((npA->maxUnits > 1) && (npA->Controller[0] == CtNone)) ? 0xB0 : 0xA0));
 
@@ -704,7 +712,7 @@ T('V') T('[')
       if (!(npU->Flags & UCBF_NOTPRESENT)) {
 	NPIDENTIFYDATA npID = (NPIDENTIFYDATA) ScratchBuf;
 T('a')
-	IdentifyDevice (npU, npID, (UCHAR)(npU->Flags & UCBF_ATAPIDEVICE));
+	IdentifyDevice (npU, npID);
 TTIME
       }
 
@@ -942,7 +950,7 @@ TSTR("F:%X/%X", npA->Flags, npA->FlagsT);
 TSTR("u%X/%lX", npU->FlagsT, npU->Flags);
 
     if (npU->Flags & UCBF_NOTPRESENT) continue;
-    IdentifyDevice (npU, npID, (UCHAR)(npU->Flags & UCBF_ATAPIDEVICE));
+    IdentifyDevice (npU, npID);
 
 TS("H:%X,", npID->HardwareTestResult)
 T('i')
@@ -2470,44 +2478,35 @@ USHORT NEAR GetChipPIOMode (NPA npA) {
 /* For ATA or ATAPI devices	     */
 /*-----------------------------------*/
 
-VOID NEAR IdentifyDevice (NPU npU, NPIDENTIFYDATA npID, UCHAR ATAPIDevice)
+VOID NEAR IdentifyDevice (NPU npU, NPIDENTIFYDATA npID)
 {
   NPA	npA    = npU->npA;
   UCHAR UnitId = npU->UnitIndex;
-  UCHAR save   = npU->Flags;
 
 #define npTI (&npA->PTIORB)
 #define npicp (&npA->icp)
 
   TS("I(U%d", UnitId)
-//TS("bm{%x}", InB (BMSTATUSREG))
 
   Retry:
 
   ClearIORB (npA);
 
-  npicp->TaskFileIn.Command  = ATAPIDevice ? FX_ATAPI_IDENTIFY : FX_IDENTIFY;
-  npicp->RegisterTransferMap = (PTA_RTMWR_COMMAND  |
-				PTA_RTMWR_FEATURES |
-				PTA_RTMRD_ERROR    |
-				PTA_RTMRD_STATUS);
+  npicp->TaskFileIn.Command  = (npU->Flags & UCBF_ATAPIDEVICE) ? FX_ATAPI_IDENTIFY : FX_IDENTIFY;
+  npicp->RegisterMapW = RTM_COMMAND | RTM_FEATURES;
+  npicp->RegisterMapR = RTM_STATUS  | RTM_ERROR;
 
   ScratchSGList.ppXferBuf  = ppDataSeg + (USHORT)npID;
   ScratchSGList.XferBufLen = 512;
 
   npU->ReqFlags = 0;
-  if (ATAPIDevice) npU->Flags |= UCBF_ATAPIDEVICE;
-
   npTI->cSGList = 1;
   npTI->pSGList = &ScratchSGList;
 
   IssueCommand (npU);
 
-  *(NPCH)&(npU->Flags) = save;
-
 #if TRACES
   if (Debug & 8) {
-//TS("bm{%x}", InB (BMSTATUSREG))
     TraceStr ("s%X/%X", npicp->TaskFileOut.Status,npTI->iorbh.ErrorCode);
   }
 #endif

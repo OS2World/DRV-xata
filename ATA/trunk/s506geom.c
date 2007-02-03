@@ -244,40 +244,43 @@ T('b')
 void NEAR UnlockMax (NPU npU, NPIDENTIFYDATA npID)
 {
   volatile ULONG *pTotal;
+  char isLBA48 = !!((npU->CmdSupported >> 16) & FX_LBA48SUPPORTED);
 
   if (!(npU->CmdEnabled & UCBS_HPROT)) return;
 
-  pTotal = (ULONG *)(((npU->CmdSupported >> 16) & FX_LBA48SUPPORTED) ?
-		    &(npID->LBA48TotalSectorsL) : &(npID->LBATotalSectors));
-
   npU->PhysGeom.SectorsPerTrack = npID->LogSectorsPerTrack;
   npU->PhysGeom.NumHeads	= npID->LogNumHeads;
-  npU->FoundLBASize = *pTotal;
 
-  if (((npU->CmdSupported >> 16) & FX_LBA48SUPPORTED) &&
-      (npU->FoundLBASize < ((1ul << 28) - 1))) {
-    ((NPUSHORT)&(npU->CmdSupported))[1] &= ~FX_LBA48SUPPORTED;
-    npU->ReqFlags |= UCBR_READMAX | UCBR_SETMAXNATIVE;
-    NoOp (npU);
-    ((NPUSHORT)&(npU->CmdSupported))[1] |= FX_LBA48SUPPORTED;
+  if (isLBA48) {
+    if (npID->LBA48TotalSectorsH) {
+      npU->FoundLBASize = -1;
+      npU->CmdEnabled &= ~UCBS_HPROT;
+      goto UnlockMaxExit;
+    }
+    pTotal = (ULONG *)&(npID->LBA48TotalSectorsL);
+  } else {
+    pTotal = (ULONG *)&(npID->LBATotalSectors);
   }
+
+  npU->FoundLBASize = *pTotal;
 
   npU->ReqFlags |= UCBR_READMAX | UCBR_SETMAXNATIVE | UCBR_SETPARAM;
   NoOp (npU);
 
-  IdentifyDevice (npU, npID, ATA_DEVICE);
+  IdentifyDevice (npU, npID);
+  npU->ReqFlags = 0;
   if (*pTotal == npU->FoundLBASize) npU->CmdEnabled &= ~UCBS_HPROT;
+
+UnlockMaxExit: ;
 
 #if TRACES
   TS("P%X", !!((USHORT)npU->CmdEnabled & UCBS_HPROT));
   TS("N:%lX:",npU->FoundLBASize)
-  if (npID->CommandSetSupported[1] & FX_LBA48SUPPORTED)
+  if (isLBA48)
     TraceStr("%lX%08lX,", npID->LBA48TotalSectorsH, npID->LBA48TotalSectorsL);
   else
     TraceStr("%lX,", npID->LBATotalSectors);
 #endif
-
-  npU->ReqFlags = 0;
 }
 
 

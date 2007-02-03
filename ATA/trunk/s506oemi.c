@@ -79,6 +79,20 @@ USHORT NEAR GetPCIBuses (void) {
     PCInumBuses = 1;
   else
     if (SetupOEMHlp()) PCInumBuses = 0;
+
+#if 0
+  { ULONG x;
+    x = GetRegD (0x500, 0x40);
+//    x |= 0x400000;  // swap
+    x |= 0x000200;  // fnc1=AHCI
+    x &=~0x800000;  // combined
+    SetRegD (0x500, 0x40, x);
+  }
+  SetRegB (0x500, PCIREG_HEADER_TYPE, 0x80);
+  SetRegW (0x501, PCIREG_COMMAND, PCI_CMD_BME_MEM);
+  SetRegW (0x501, PCIREG_INT_LINE, GetRegW (0x500, PCIREG_INT_LINE));
+#endif
+
   return (PCInumBuses);
 }
 
@@ -161,7 +175,7 @@ VOID NEAR GetBAR (NPBAR npB, USHORT PCIAddr, UCHAR Index) {
 }
 
 UCHAR NEAR ProbeChannel (NPA npA) {
-  UCHAR Dev;
+  UCHAR Dev, Dev0, Dev1;
 
   Dev = InB (DRVHDREG);
 
@@ -172,20 +186,30 @@ UCHAR NEAR ProbeChannel (NPA npA) {
   if ((Dev == FX_BUSY) || (Dev == (FX_BUSY | 0x50))) return (1);
   if ((Dev & 0x6F) == 0x6F) {
     OutBdms (DRVHDREG, 0xE0);
+    Dev0 = InB (DRVHDREG);
+
+#if TRACES
+   if (Debug & 8) TS(":%02X",Dev0)
+#endif
+
+    if ((Dev0 & 0x6F) == 0x6F) {
+      OutBdms (DRVHDREG, 0xF0);
+      Dev1 = InB (DRVHDREG);
+
+  #if TRACES
+      if (Debug & 8) TS(":%02X",Dev1)
+  #endif
+    }
+
+  }
+
+  if (Dev == 0) {
+    OutBdms (DRVHDREG, 0xF0);
     Dev = InB (DRVHDREG);
 
 #if TRACES
   if (Debug & 8) TS(":%02X",Dev)
 #endif
-
-    if ((Dev & 0x6F) == 0x6F) {
-      OutBdms (DRVHDREG, 0xF0);
-      Dev = InB (DRVHDREG);
-
-  #if TRACES
-    if (Debug & 8) TS(":%02X",Dev)
-  #endif
-    }
   }
 
   if ((Dev & ~0x10) == FX_DF) return (0);
@@ -199,7 +223,8 @@ UCHAR NEAR ProbeChannel (NPA npA) {
   if (Debug & 8) TS(":%02X)", Dev)
 #endif
   return (((Dev & 0xEF) == 0xEA) ||  // expected result
-	  ((Dev & 0xAF) == 0xA0));  // some ATAPI units with fixed reserved bits
+	  ((Dev & 0xAF) == 0xA0)     // some ATAPI units with fixed reserved bits
+	  );
 }
 
 VOID NEAR SetupT13StandardController (NPA npA)
@@ -378,6 +403,7 @@ USHORT FAR EnumPCIDevices (void)
 
 	    for (Channel = 0; Channel < npC->numChannels; Channel++) {
 	      USHORT savedAdapterFlags;
+	      UCHAR  savedUnitFlags[2];
 	      UCHAR EnableReg, EnableBit, Enable;
 	      USHORT Base0 = -1;
 
@@ -442,6 +468,8 @@ USHORT FAR EnumPCIDevices (void)
 	      npU[0].SStatus = npU[1].SStatus = 0;
 
 	      savedAdapterFlags = npA->FlagsT;
+	      savedUnitFlags[0] = npU[0].FlagsT;
+	      savedUnitFlags[1] = npU[1].FlagsT;
 
 	      if (npDev->Ident.ChipAccept (npA) &&
 		  !HandleFoundAdapter (npA, npDev)) {
@@ -452,6 +480,8 @@ USHORT FAR EnumPCIDevices (void)
 		#endif
 	      } else {
 		npA->FlagsT = savedAdapterFlags; // restore cmdline options
+		npU[0].FlagsT = savedUnitFlags[0];
+		npU[1].FlagsT = savedUnitFlags[1];
 		DATAREG = 0;  // return adapter slot for reuse
 	      }
 	    }
@@ -478,8 +508,11 @@ UCHAR NEAR HandleFoundAdapter (NPA npA, NPPCI_DEVICE npDev)
   isPopulated = FALSE;
   for (npU = npA->UnitCB; npU < (npA->UnitCB + npA->maxUnits); npU++) {
     if (CollectSCRPorts (npU)) {
+      UCHAR isAttached;
       hasPhy = TRUE;
-      isPopulated |= CheckSATAPhy (npU);
+      isAttached   = CheckSATAPhy (npU);
+      isPopulated |= isAttached;
+      if (!isAttached) npU->FlagsT |= UTBF_DISABLED;
     }
   }
   if (!hasPhy)

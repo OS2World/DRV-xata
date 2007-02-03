@@ -178,20 +178,21 @@ static process_format (NPFMTPARMS fs)
   UCHAR c;
 
   fs->len = fs->prc = fs->flags = 0;
-  fs->pad   = ' ';
+  fs->pad = ' ';
 
   fp = fs->fmtstrt = fs->fmtptr;
   c = *fp;
 
   /**********************/
-  /* Ouput Literal Data */
+  /* Output Literal Data */
   /**********************/
 
-  while (c && c != '%' )
+  while (c && c != '%')
     {
       *(fs->buf+fs->off) = c;
       fs->off++;
       c = *++fp;
+      if (fs->off >= 100) c = 0;
     }
 
   *(fs->buf+fs->off) = 0;

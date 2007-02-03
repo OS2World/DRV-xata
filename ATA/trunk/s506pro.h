@@ -216,7 +216,7 @@ VOID   NEAR GetDeviceULTRAMode (NPU npU, NPIDENTIFYDATA npID);
 VOID   NEAR GetDeviceDMAMode (NPU npU, NPIDENTIFYDATA npID);
 USHORT NEAR GetDevicePIOMode (NPU npU, NPIDENTIFYDATA npID);
 VOID   NEAR UCBSetupDMAPIO (NPU npU, NPIDENTIFYDATA npID);
-VOID   NEAR IdentifyDevice (NPU npU, NPIDENTIFYDATA npID, UCHAR ATAPIDevice);
+VOID   NEAR IdentifyDevice (NPU npU, NPIDENTIFYDATA npID);
 VOID   FAR  CollectPorts (NPA npA);
 ULONG  FAR  PortToPhys (ULONG Port, NPA npA);
 
@@ -243,6 +243,7 @@ ULONG  FAR  PortToPhys (ULONG Port, NPA npA);
 #pragma alloc_text (FCode, DeallocAdapterResources)
 #pragma alloc_text (FCode, AssignAdapterResources)
 #endif
+
 /*----------------------------------------------------------------------------*
  *	S506PRTF.C Procedures						      *
  *----------------------------------------------------------------------------*/
@@ -486,8 +487,8 @@ VOID   NEAR ProgramALIChip (NPA npA);
 /*	S506GNRC.C Procedures					  */
 /*----------------------------------------------------------------*/
 BOOL   NEAR AcceptGeneric (NPA npA);
+BOOL   NEAR AcceptAHCI (NPA npA);
 BOOL   NEAR AcceptNetCell (NPA npA);
-BOOL   NEAR AcceptJM (NPA npA);
 BOOL   NEAR AcceptMarvell (NPA npA);
 USHORT NEAR GetGenericPio (NPA npA, UCHAR Unit);
 VOID   NEAR SetupGeneric (NPA npA);
@@ -503,8 +504,8 @@ VOID   NEAR GenericSATA (NPA npA);
 ULONG  NEAR GetAHCISCR (NPA npA, USHORT Port);
 
 #pragma alloc_text (FCode, AcceptGeneric)
+#pragma alloc_text (FCode, AcceptAHCI)
 #pragma alloc_text (FCode, AcceptNetCell)
-#pragma alloc_text (FCode, AcceptJM)
 #pragma alloc_text (FCode, AcceptMarvell)
 #pragma alloc_text (FCode, GenericInitComplete)
 #pragma alloc_text (FCode, GenericSATA)
@@ -661,6 +662,16 @@ VOID   NEAR InitioStopDMA (NPA npA);
 VOID   NEAR InitioErrorDMA (NPA npA);
 
 #pragma alloc_text (FCode, AcceptInitio)
+
+/*----------------------------------------------------------------*/
+/*	S506JMB.C Procedures					  */
+/*----------------------------------------------------------------*/
+BOOL   NEAR AcceptJMB (NPA npA);
+USHORT NEAR GetJMBPio (NPA npA, UCHAR Unit);
+VOID   NEAR JMBTimingValue (NPU npU);
+VOID   NEAR ProgramJMBChip (NPA npA);
+
+#pragma alloc_text (FCode, AcceptJMB)
 
 /*---------------------------------------------------------------*
  *	S506GEOM.C Procedures					 *

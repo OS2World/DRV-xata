@@ -86,6 +86,7 @@ VOID NEAR SiISATA (NPA npA)
     if (PciInfo->CompatibleID == PCIDEV_SII3114) {
       npA->maxUnits = 2;
       npU[1].SStatus = BA5 + PortOffsetSC[npA->IDEChannel + 2];
+      npU[1].FlagsT |= UTBF_NOTUNLOCKHPA;
     }
     npA->FlagsT &= ~ATBF_BIOSDEFAULTS;
 
@@ -281,7 +282,7 @@ VOID NEAR SIIStartOp (NPA npA)
     OutB (DRVHDREG, (UCHAR)(DRVHD & ~0x0F));
     OutB (FEATREG, FEAT);
     OutD (DATAREG | 0x10, *(ULONG *)(npA->IORegs));
-    OutD (DATAREG | 0x18, LBA3 << 8);
+    OutD (DATAREG | 0x18, *(ULONG *)&LBA2 & 0xFFFFFF00);
     OutW (DATAREG | 0x14, *(USHORT *)&LBA1);
     OutB (DATAREG | 0x17, COMMAND);
   } else {

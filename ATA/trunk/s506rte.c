@@ -315,17 +315,16 @@ int NEAR DoSMART (NPU npU, BYTE bySubFunction, BYTE byParameter, PVOID pBuffer)
   ClearIORB (npA);
 
   npicp = &npA->icp;
-  npicp->TaskFileIn.CylinderLow  = 0x4F;	/* magic key for SMART */
-  npicp->TaskFileIn.CylinderHigh = 0xC2;
-  npicp->TaskFileIn.SectorCount  = byParameter;
-  npicp->TaskFileIn.SectorNumber = byParameter;
-  npicp->TaskFileIn.Features	 = bySubFunction;
-  npicp->TaskFileIn.Command	 = FX_SMARTCMD;
+  npicp->TaskFileIn.Lba1_CylLo	= 0x4F;        /* magic key for SMART */
+  npicp->TaskFileIn.Lba2_CylHi	= 0xC2;
+  npicp->TaskFileIn.SectorCount = byParameter;
+  npicp->TaskFileIn.Lba0_SecNum = byParameter;
+  npicp->TaskFileIn.Features	= bySubFunction;
+  npicp->TaskFileIn.Command	= FX_SMARTCMD;
 
-  npicp->RegisterTransferMap = PTA_RTMWR_FEATURES | PTA_RTMWR_SECTORCOUNT |
-			       PTA_RTMWR_CYLINDERLOW | PTA_RTMWR_CYLINDERHIGH |
-			       PTA_RTMWR_SECTORNUMBER | PTA_RTMWR_COMMAND |
-			       PTA_RTMRD_ERROR | PTA_RTMRD_STATUS;
+  npicp->RegisterMapW = RTM_FEATURES | RTM_SECCNT | RTM_CYL |
+			RTM_SECNUM | RTM_COMMAND;
+  npicp->RegisterMapR = RTM_ERROR | RTM_STATUS;
 
   if (pBuffer) {			     /* if involving data transfer */
     ScratchSGList.ppXferBuf  = ppDataSeg + (USHORT)ScratchBuf;
@@ -361,16 +360,13 @@ int NEAR GetSmartStatus (NPU npU, PDWORD pData)
   ClearIORB (npA);
 
   npicp = &npA->icp;
-  npicp->TaskFileIn.CylinderLow  = 0x4F;	/* magic key for SMART */
-  npicp->TaskFileIn.CylinderHigh = 0xC2;
-  npicp->TaskFileIn.Features	 = FX_SMART_STATUS;
-  npicp->TaskFileIn.Command	 = FX_SMARTCMD;
+  npicp->TaskFileIn.Lba1_CylLo = 0x4F;	      /* magic key for SMART */
+  npicp->TaskFileIn.Lba2_CylHi = 0xC2;
+  npicp->TaskFileIn.Features   = FX_SMART_STATUS;
+  npicp->TaskFileIn.Command    = FX_SMARTCMD;
 
-  npicp->RegisterTransferMap = PTA_RTMWR_FEATURES | PTA_RTMWR_SECTORCOUNT |
-			       PTA_RTMWR_CYLINDERLOW | PTA_RTMWR_CYLINDERHIGH |
-			       PTA_RTMWR_COMMAND |
-			       PTA_RTMRD_CYLINDERLOW | PTA_RTMRD_CYLINDERHIGH |
-			       PTA_RTMRD_ERROR | PTA_RTMRD_STATUS;
+  npicp->RegisterMapW = RTM_FEATURES | RTM_SECCNT | RTM_CYL | RTM_COMMAND;
+  npicp->RegisterMapR = RTM_CYL | RTM_ERROR | RTM_STATUS;
 
   IssueCommand (npU);
 
@@ -380,7 +376,7 @@ int NEAR GetSmartStatus (NPU npU, PDWORD pData)
     npA->PTIORB.iorbh.Status |= IORB_ERROR;
     npA->PTIORB.iorbh.ErrorCode = IOERR_DEVICE_REQ_NOT_SUPPORTED;
     *pData = -1;
-  } else switch (*(NPUSHORT)&(npicp->TaskFileOut.CylinderLow)) {
+  } else switch (*(NPUSHORT)&(npicp->TaskFileOut.Lba1_CylLo)) {
     case 0xC24F : *pData = 0; break;
     case 0xF42C : *pData = 1; break;
   }
@@ -450,9 +446,7 @@ int NEAR GetInquiryData (NPU npU, PBYTE pBuffer, USHORT Buffersize)
 
   npA->icp.TaskFileIn.Command = (npU->Flags & UCBF_ATAPIDEVICE) ?
 				 FX_ATAPI_IDENTIFY : FX_IDENTIFY;
-
-  npA->icp.RegisterTransferMap = PTA_RTMWR_COMMAND | PTA_RTMWR_FEATURES |
-				 PTA_RTMRD_ERROR | PTA_RTMRD_STATUS;
+  npA->icp.RegisterMapW = RTM_COMMAND;
 
   ScratchSGList.ppXferBuf  = ppDataSeg + (USHORT)ScratchBuf;
   ScratchSGList.XferBufLen = 512;
@@ -476,8 +470,8 @@ int NEAR IssueOneByte (NPU npU, BYTE Cmd)
 
   ClearIORB (npA);
 
-  npA->icp.TaskFileIn.Command  = Cmd;
-  npA->icp.RegisterTransferMap = PTA_RTMWR_COMMAND;
+  npA->icp.TaskFileIn.Command = Cmd;
+  npA->icp.RegisterMapW = RTM_COMMAND;
 
   return (IssueCommandTO (npU, 200));
 }
@@ -492,43 +486,41 @@ int NEAR IssueSetMax (NPU npU, PULONG numSectors, SHORT set)
   ClearIORB (npA);
 
   npicp = &npA->icp;
-  npicp->TaskFileIn.Command   = FX_READMAX;
-  npicp->TaskFileIn.DriveHead = npU->UnitId ? 0x50 : 0x40;
-  npicp->RegisterTransferMap = PTA_RTMWR_COMMAND | PTA_RTMWR_DRIVEHEAD |
-			       PTA_RTMRD_CYLINDERLOW | PTA_RTMRD_CYLINDERHIGH |
-			       PTA_RTMRD_SECTORNUMBER | PTA_RTMRD_DRIVEHEAD |
-			       PTA_RTMRD_ERROR;
+    npicp->RegisterMapR       = RTM_LBA | RTM_ERROR;
+  if ((npU->CmdSupported >> 16) & FX_LBA48SUPPORTED) {
+    npicp->RegisterMapR      |= RTM_LBA4 | RTM_LBA5;
+    npicp->TaskFileIn.Command = FX_READMAXEXT;
+  } else {
+    npicp->TaskFileIn.Command = FX_READMAX;
+  }
+  npicp->RegisterMapW = RTM_COMMAND;
   rc = IssueCommandTO (npU, 200);
   if (rc) return (rc);
 
-  npicp->TaskFileOut.DriveHead &= 0x0F;
-  numNative = 1 + *(ULONG *)&(npicp->TaskFileOut.SectorNumber);
+  if (*(USHORT *)&(npicp->TaskFileOut.Lba4))
+    numNative = -1;
+  else
+    numNative = 1 + *(ULONG *)&(npicp->TaskFileOut.Lba0_SecNum);
 
   if (set > 0) {
-    *(ULONG *)&(npicp->TaskFileIn.SectorNumber) |=
-					 ((*numSectors - 1)& 0x0FFFFFFFUL);
+    *(ULONG *)&(npicp->TaskFileIn.Lba0_SecNum) = *numSectors - 1;
   } else {
     *numSectors = numNative;
     return (0);
   }
 
   fclrmem (&npA->PTIORB, sizeof (npA->PTIORB));
-  npicp->TaskFileIn.Command	= FX_SETMAX;
-  npicp->TaskFileIn.Features	= 0;
-  npicp->TaskFileIn.SectorCount = 0;
-  if (set & 2) {
-    npicp->TaskFileIn.SectorCount = 1;
-    npicp->TaskFileIn.DriveHead  |= 0x40;   // LBA mode
+  npicp->RegisterMapW = RTM_COMMAND | RTM_FEATURES | RTM_SECCNT | RTM_LBA;
+  if ((npU->CmdSupported >> 16) & FX_LBA48SUPPORTED) {
+    npicp->RegisterMapW      |= RTM_LBA4 | RTM_LBA5;
+    npicp->TaskFileIn.Command = FX_SETMAXEXT;
+  } else {
+    npicp->TaskFileIn.Command = FX_SETMAX;
   }
-
-  npicp->RegisterTransferMap = PTA_RTMWR_COMMAND | PTA_RTMWR_FEATURES |
-			       PTA_RTMWR_SECTORCOUNT | PTA_RTMWR_DRIVEHEAD |
-			       PTA_RTMRD_CYLINDERLOW | PTA_RTMRD_CYLINDERHIGH |
-			       PTA_RTMRD_SECTORNUMBER | PTA_RTMRD_DRIVEHEAD |
-			       PTA_RTMRD_ERROR;
-  if (set)
-    npicp->RegisterTransferMap |= PTA_RTMWR_SECTORNUMBER | PTA_RTMWR_CYLINDERLOW |
-				  PTA_RTMWR_CYLINDERHIGH;
+  npicp->TaskFileIn.Features	= 0;
+  npicp->TaskFileIn.Lba4	= 0;
+  npicp->TaskFileIn.Lba5	= 0;
+  npicp->TaskFileIn.SectorCount = (set & 2) ? 1 : 0;
 
   return (IssueCommandTO (npU, 200));
 }
@@ -546,14 +538,10 @@ int NEAR IssueSetFeatures (NPU npU, BYTE SubCommand, BYTE Arg)
 
   ClearIORB (npA);
 
-  npA->icp.TaskFileIn.Command = FX_SETFEAT;
-  npA->icp.TaskFileIn.Features = SubCommand;
+  npA->icp.TaskFileIn.Command	  = FX_SETFEAT;
+  npA->icp.TaskFileIn.Features	  = SubCommand;
   npA->icp.TaskFileIn.SectorCount = Arg;
-
-  npA->icp.RegisterTransferMap = PTA_RTMWR_COMMAND | PTA_RTMWR_FEATURES |
-				 PTA_RTMWR_SECTORCOUNT |
-				 PTA_RTMRD_CYLINDERLOW | PTA_RTMRD_CYLINDERHIGH |
-				 PTA_RTMRD_SECTORNUMBER | PTA_RTMRD_ERROR;
+  npA->icp.RegisterMapW = RTM_COMMAND | RTM_FEATURES | RTM_SECCNT;
 
   return (IssueCommand (npU));
 }
@@ -571,9 +559,8 @@ int NEAR IssueGetPowerStatus (NPU npU)
 
   ClearIORB (npA);
 
-  npA->icp.TaskFileIn.Command  = FX_CPWRMODE;
-  npA->icp.RegisterTransferMap = PTA_RTMWR_COMMAND |
-				 PTA_RTMRD_SECTORCOUNT | PTA_RTMRD_STATUS;
+  npA->icp.TaskFileIn.Command = FX_CPWRMODE;
+  npA->icp.RegisterMapW = RTM_COMMAND;
 
   return (IssueCommand (npU));
 }
@@ -590,11 +577,9 @@ int NEAR IssueSetIdle (NPU npU, UCHAR Cmd, BYTE Arg)
 
   ClearIORB (npA);
 
-  npA->icp.TaskFileIn.Command = Cmd ? FX_SETSTANDBY : FX_SETIDLE;
+  npA->icp.TaskFileIn.Command	  = Cmd ? FX_SETSTANDBY : FX_SETIDLE;
   npA->icp.TaskFileIn.SectorCount = Arg;
-
-  npA->icp.RegisterTransferMap = PTA_RTMWR_COMMAND | PTA_RTMWR_SECTORCOUNT |
-				 PTA_RTMRD_ERROR | PTA_RTMRD_STATUS;
+  npA->icp.RegisterMapW = RTM_COMMAND | RTM_SECCNT;
 
   return (IssueCommandTO (npU, 100));
 }
@@ -613,9 +598,9 @@ int NEAR IssueGetMediaStatus (NPU npU)
 
   ClearIORB (npA);
 
-  npA->icp.TaskFileIn.Command  = FX_GET_MEDIA_STATUS;
-  npA->icp.RegisterTransferMap = PTA_RTMWR_COMMAND |
-				 PTA_RTMRD_ERROR | PTA_RTMRD_STATUS;
+  npA->icp.TaskFileIn.Command = FX_GET_MEDIA_STATUS;
+  npA->icp.RegisterMapW = RTM_COMMAND;
+  npA->icp.RegisterMapR = RTM_ERROR | RTM_STATUS;
 
   rc = IssueCommand (npU);
 
@@ -665,7 +650,8 @@ VOID NEAR ProcessLockUnlockEject (NPU npU, PIORB pIORB, UCHAR Function)
 
   if (npU->Flags & UCBF_PCMCIA) return;
 
-  npicp->RegisterTransferMap = PTA_RTMWR_COMMAND | PTA_RTMRD_ERROR | PTA_RTMRD_STATUS;
+  npicp->RegisterMapW = RTM_COMMAND;
+  npicp->RegisterMapR = RTM_ERROR | RTM_STATUS;
 
   rc = IssueCommand (npU);
 

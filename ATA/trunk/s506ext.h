@@ -277,6 +277,7 @@ extern UCHAR	      NsSCxMsgtxt[];
 extern UCHAR	      NetCellMsgtxt[];
 extern UCHAR	      JMMsgtxt[];
 extern UCHAR	      PromiseMIOtxt[];
+extern UCHAR	      MarvellMsgtxt[];
 extern UCHAR	      InitioMsgtxt[];
 extern UCHAR	      GenericBMMsgtxt[];
 extern UCHAR	      GenericMsgtxt[];

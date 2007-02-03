@@ -30,10 +30,10 @@
  #include "s506ext.h"
  #include "s506pro.h"
 
-#define YEAR  2006
-#define MONTH 9
-#define DAY   4
-#define PCMCIAVERSION 0x177
+#define YEAR  2007
+#define MONTH 1
+#define DAY   30
+#define PCMCIAVERSION 0x178
 
 /*-------------------------------------------------------------------*/
 /*								     */
@@ -381,10 +381,35 @@ USHORT CListCIntel[] = {
 	0x2652, 0x2651,     // ICH6R SATA -> ICH6 SATA
 	0x2653, 0x2651,     // ICH6M SATA -> ICH6 SATA
 	0x2680, 0x2651,     // ESB2  SATA -> ICH6 SATA
-	0x27C2, 0x27C0,     // ICH7R SATA -> ICH7 SATA
+	0x2681, 0x2651,     // ESB2  AHCI -> ICH6 SATA
+	0x2682, 0x2651,     // ESB2  RAID -> ICH6 SATA
+	0x2683, 0x2651,     // ESB2  RAID -> ICH6 SATA
+	0x27C1, 0x27C0,     // ICH7  AHCI -> ICH7 SATA
 	0x27C3, 0x27C0,     // ICH7R SATA -> ICH7 SATA
 	0x27C4, 0x27C0,     // ICH7M SATA -> ICH7 SATA
+	0x27C5, 0x27C0,     // ICH7M AHCI -> ICH7 SATA
+	0x2821, 0x2820,     // ICH8  AHCI -> ICH8 SATA
+	0x2822, 0x2820,     // ICH8  RAID -> ICH8 SATA
+	0x2824, 0x2820,     // ICH8  AHCI -> ICH8 SATA
 	0x2828, 0x2825,     // ICH8M SATA -> ICH8 SATA2
+	0x2829, 0x2825,     // ICH8M AHCI -> ICH8 SATA2
+	0x282A, 0x2825,     // ICH8M RAID -> ICH8 SATA2
+	0x2921, 0x2920,     // ICH9 SATA2 -> ICH9 SATA
+	0x2922, 0x2920,     // ICH9 AHCI  -> ICH9 SATA
+	0x2923, 0x2920,     // ICH9 AHCI2 -> ICH9 SATA
+	0x2924, 0x2920,     // ICH9 AHCI3 -> ICH9 SATA
+	0x2925, 0x2920,     // ICH9 AHCI4 -> ICH9 SATA
+	0x2926, 0x2920,     // ICH9 SATA3 -> ICH9 SATA
+	0x2927, 0x2920,     // ICH9 AHCI5 -> ICH9 SATA
+	0x2928, 0x2920,     // ICH9MSATA  -> ICH9 SATA
+	0x2929, 0x2920,     // ICH9MAHCI  -> ICH9 SATA
+	0x292A, 0x2920,     // ICH9MAHCI2 -> ICH9 SATA
+	0x292B, 0x2920,     // ICH9MAHCI3 -> ICH9 SATA
+	0x292D, 0x2920,     // ICH9MSATA2 -> ICH9 SATA
+	0x292E, 0x2920,     // ICH9MSATA3 -> ICH9 SATA
+	0x292F, 0x2920,     // ICH9MAHCI4 -> ICH9 SATA
+	0x294D, 0x2920,     // ICH9 AHCI6 -> ICH9 SATA
+	0x294E, 0x2920,     // ICH9MAHCI5 -> ICH9 SATA
 		0 };
 USHORT CListFIntel[] = {
 		0x1230,     // PIIX	  82371FB
@@ -403,10 +428,16 @@ USHORT CListFIntel[] = {
 		0x27C0,     // ICH7 SATA  82801GB
 		0x2820,     // ICH8 SATA  82801HB 4 ports
 		0x2825,     // ICH8 SATA2 82801HB 2 ports
+		0x2920,     // ICH9 SATA
 		0 };
 USHORT CListCVia[] = {
-	0x4149, 0x3149,     // VT6420 -> VT8237 SATA
-	0x0591, 0x3149,     // VT8237A -> VT8237 SATA
+	0x4149, 0x3149,     // VT6420	-> VT8237 SATA
+	0x0581, 0x3149,     // CX/VX700 -> VT8237 SATA
+	0x0591, 0x3149,     // VT8237A	-> VT8237 SATA
+	0x5337, 0x3149,     // VT8237A	-> VT8237 SATA
+	0x7372, 0x3149,     // VT8237S	-> VT8237 SATA
+	0x5287, 0x3349,     // VT8251	-> VT8251 SATA ?
+	0x6287, 0x3349,     // VT8251	-> VT8251 SATA
 		0 };
 USHORT CListFVia[] = {
 		0x0571,     // VIA 571
@@ -415,6 +446,7 @@ USHORT CListFVia[] = {
 		0x3164,     // VT6410 PATA
 		0x3249,     // VT6421 SATA/PATA
 		0x3349,     // VT8251 SATA
+		0x5324,     // CX700  PATA
 		0 };
 USHORT CListCALi[] = {
 	0x5288, 0x5289,     // ALi M5288 -> ALi M5289
@@ -429,6 +461,7 @@ USHORT CListFALi[] = {
 USHORT CListCSiS[] = {
 	0x0181, 0x0180,     // SiS 181	-> SiS 180
 	0x1182, 0x0182,     // SiS 1182 -> SiS 182
+	0x0183, 0x0182,     // SiS 183	-> SiS 182
 	0x1183, 0x0182,     // SiS 1183 -> SiS 182
 	0x1184, 0x1180,     // SiS 1184 -> SiS 1180
 		0 };
@@ -564,6 +597,10 @@ USHORT CListCNvidia[] = {
 	0x045D, 0x008E,     // nForce6 M65 SATA2 -> nForce2 SATA
 	0x045E, 0x008E,     // nForce6 M65 SATA3 -> nForce2 SATA
 	0x045F, 0x008E,     // nForce6 M65 SATA4 -> nForce2 SATA
+	0x0550, 0x008E,     // nForce6 M67 SATA  -> nForce2 SATA
+	0x0551, 0x008E,     // nForce6 M67 SATA2 -> nForce2 SATA
+	0x0552, 0x008E,     // nForce6 M67 SATA3 -> nForce2 SATA
+	0x0553, 0x008E,     // nForce6 M67 SATA4 -> nForce2 SATA
 		0 };
 USHORT CListFNvidia[] = {
 		0x008E,     // Nvidia nForce SATA
@@ -573,6 +610,7 @@ USHORT CListFNvidia[] = {
 		0x0035,     // Nvidia nForce4 M04
 		0x0265,     // Nvidia nForce5 M51
 		0x0448,     // Nvidia nForce6 M65
+		0x0560,     // Nvidia nForce6 M67
 		0 };
 USHORT CListFNatSemi[] = {
 		0x0502,     // NS Geode SCx200
@@ -605,21 +643,34 @@ USHORT CListCIXPS[] = {
 		0 };
 USHORT CListFIXPS[] = {
 		0x436E,     // ATI IXP300 SATA
-//		  0x4380,     // ATI IXP600 SATA
+		0 };
+USHORT CListCIXPA[] = {
+	0x4381, 0x4380,     // IXP600 SATA -> IXP600 SATA
+		0 };
+USHORT CListFIXPA[] = {
+		0x4380,     // ATI IXP600 SATA
 		0 };
 USHORT CListNetCell[] = {
 		0x0044,     // SR510x/310x
 		0 };
 USHORT CListJMicron[] = {
-		0x2360,     // JMB360 SATA
-		0x2361,     // JMB361 SATA & PATA
-		0x2363,     // JMB363 SATA & PATA
-		0x2365,     // JMB365 SATA & PATA
-		0x2366,     // JMB366 SATA & PATA
-		0x2368,     // JMB368 SATA & PATA
+		0x2360,     // JMB360 1xSATA
+		0x2361,     // JMB361 1xSATA & 1xPATA
+		0x2363,     // JMB363 2xSATA & 1xPATA
+		0x2365,     // JMB365 ?xSATA & ?xPATA
+		0x2366,     // JMB366 2xSATA & 2xPATA
+		0x2368,     // JMB368 2xPATA
+		0 };
+USHORT CListCMarvell[] = {
+	0x6111, 0x6145,     // Marvell 6111 -> Marvell 6145
+	0x6120, 0x6145,     // Marvell 6120 -> Marvell 6145
+	0x6121, 0x6145,     // Marvell 6121 -> Marvell 6145
+	0x6140, 0x6145,     // Marvell 6140 -> Marvell 6145
+	0x6141, 0x6145,     // Marvell 6141 -> Marvell 6145
 		0 };
 USHORT CListMarvell[] = {
 		0x6101,     // Marvell 641x PATA
+		0x6145,     // Marvell 641x PATA & SATA
 		0 };
 #if 0
 USHORT CListCInitio[] = {
@@ -832,9 +883,9 @@ PCI_DEVICE PCIDevice[] =
       0xA1, 0xB1, 0x00, 0x00, 0x10,
       IXPMsgtxt },
   { { 0, 0x197B, JMicron, MODE_NATIVE_OK, 0, 2,
-      AcceptJM, CfgGeneric,
+      AcceptJMB, CfgGeneric,
       NULL, BMCheckIRQ,
-      GetGenericPio, SetupCommon,
+      GetJMBPio, SetupCommon,
       CalculateAdapterTiming, NULL, NULL},
       CListNULL, CListJMicron,
       0x04, 0x04, 0x00, 0x00, 0x10,
@@ -854,9 +905,17 @@ PCI_DEVICE PCIDevice[] =
       NULL, BMCheckIRQ,
       NULL, SetupCommon,
       CalculateGenericAdapterTiming, NULL, NULL},
-      CListNULL, CListMarvell,
+      CListCMarvell, CListMarvell,
       0x04, 0x04, 0x00, 0x00, 0x10,
-      NULL },
+      MarvellMsgtxt },
+  { { 0, 0x1002, AHCI, MODE_NATIVE_OK, 0, 2,
+      AcceptAHCI, CfgGeneric,
+      NULL, BMCheckIRQ,
+      GetGenericPio, SetupCommon,
+      CalculateGenericAdapterTiming, NULL, NULL},
+      CListCIXPA, CListFIXPA,
+      0x04, 0x04, 0x00, 0x00, 0x10,
+      IXPMsgtxt },
 #if 0
   { { 0, 0x1101, Initio, MODE_NATIVE_OK, 0, 2,
       AcceptInitio, CfgGeneric,
@@ -1018,6 +1077,7 @@ UCHAR  NsSCxMsgtxt[]   = "NS Geode SCx200";
 UCHAR  NetCellMsgtxt[] = "NetCell SyncRAID";
 UCHAR  JMMsgtxt[]      = "JMicron JMB%x";
 UCHAR  PromiseMIOtxt[] = "Promise %dxx";
+UCHAR  MarvellMsgtxt[] = "Marvell";
 //UCHAR  InitioMsgtxt[]  = "Initio INIC-%x";
 UCHAR  GenericMsgtxt[] = "Generic";
 UCHAR ParmErrMsg[] = " Warning: DANIS506.ADD - Invalid CONFIG.SYS parameters near pos %d";

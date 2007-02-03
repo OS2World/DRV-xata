@@ -84,6 +84,7 @@ typedef enum {
   Cmd640, RZ1000, Intel, Via, ALi, SiS, CMD64x, Promise, Cyrix,
   HPT36x, HPT37x, AEC, ServerWorks, Opti, AMD, NVidia, PromiseTX,
   SiI68x, ITE, NetCell, ATI, SiISata, JMicron, PromiseMIO, Marvell, Initio,
+  AHCI,
   generic = -1
 } tHardwareType;
 
@@ -116,8 +117,9 @@ typedef enum {
 #define PCID_JMicron	   22  /* JMicron SATA */
 #define PCID_PromiseMIO    23  /* Promise MMIO */
 #define PCID_Marvell	   24  /* Marvell */
-//#define PCID_Initio	     24  /* Initio */
-#define PCID_Generic	   25  /* Generic IDE */
+#define PCID_ATIIXPAHCI    25  /* ATI IXP AHCI */
+//#define PCID_Initio	     26  /* Initio */
+#define PCID_Generic	   26  /* Generic IDE */
 
 #define MAX_PCI_DEVICE_DESCRIPT  PCID_Generic+1
 

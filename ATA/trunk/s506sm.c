@@ -396,11 +396,9 @@ VOID NEAR RetryState(NPA npA)
 
 USHORT NEAR InitACBRequest (NPA npA)
 {
-  PIORB        pIORB;
-  UCHAR        CmdCod, CmdMod;
-  NPU	       npU;
-  PPassThruATA picp;
-  PIORB_ADAPTER_PASSTHRU piorb_pt;
+  PIORB pIORB;
+  UCHAR CmdCod, CmdMod;
+  NPU	npU;
 
   pIORB  = npA->pIORB;
   CmdCod = pIORB->CommandCode;
@@ -409,9 +407,11 @@ USHORT NEAR InitACBRequest (NPA npA)
   npU = npA->npU;
   npU->Flags &= ~UCBF_DIAG_FAILED;
 
-  *(NPUSHORT)&FEAT   = 0;
-  *(NPUSHORT)&SECTOR = 0;
-  *(NPUSHORT)&CYLH   = 0;
+  *(NPUSHORT)&FEAT = 0;
+  *(NPUSHORT)&LBA0 = 0;
+  *(NPUSHORT)&LBA2 = 0;
+	      LBA3 = 0;
+  *(NPUSHORT)&LBA4 = 0;
 
   memset (&(npA->ReqFlags), 0,
 	  offsetof (struct _A, cResets) + 1 - offsetof (struct _A, ReqFlags));
@@ -537,13 +537,15 @@ BOOL NEAR SetupFromATA (NPA npA, NPU npU)
 {
   PPassThruATA		 picp;
   PIORB_ADAPTER_PASSTHRU piorb_pt;
+  USHORT		 Map;
 
   /* Setup pointers to IORB and IssueCommandParameters Structures */
 
   piorb_pt = (PIORB_ADAPTER_PASSTHRU) npA->pIORB;
   picp = (PPassThruATA) piorb_pt->pControllerCmd;
 
-  if (!(picp->RegisterTransferMap & PTA_RTMWR_COMMAND)) {
+  Map = picp->RegisterMapW;
+  if (!(Map & RTM_COMMAND)) {
     return (FALSE);
   } else if (picp->TaskFileIn.Command == FX_SMARTCMD) {
     if (picp->TaskFileIn.Features == 0xD7) {
@@ -554,14 +556,19 @@ BOOL NEAR SetupFromATA (NPA npA, NPU npU)
   npA->IOSGPtrs.cSGList = piorb_pt->cSGList;
   npA->IOSGPtrs.pSGList = piorb_pt->pSGList;
 
-  // copy caller supplied tack file register info
+  // copy caller supplied task file register info
 
-  *(NPUSHORT)&FEAT   = *(PUSHORT)&picp->TaskFileIn.Features;
-  *(NPUSHORT)&SECTOR = *(PUSHORT)&picp->TaskFileIn.SectorNumber;
-  *(NPUSHORT)&CYLH   = *(PUSHORT)&picp->TaskFileIn.CylinderHigh;
-  DRVHD = (DRVHD & 0x4F) | (npU->DriveHead & ~0x4F);
-  COMMAND	     = picp->TaskFileIn.Command;
-  npA->IOPendingMask = (picp->RegisterTransferMap & PTA_RTMWR_REGMASK) | FM_PDRHD;
+  if (Map & RTM_FEATURES) FEAT	 = picp->TaskFileIn.Features;
+  if (Map & RTM_SECCNT	) SECCNT = picp->TaskFileIn.SectorCount;
+  if (Map & RTM_LBA0	) LBA0	 = picp->TaskFileIn.Lba0_SecNum;
+  if (Map & RTM_LBA1	) LBA1	 = picp->TaskFileIn.Lba1_CylLo;
+  if (Map & RTM_LBA2	) LBA2	 = picp->TaskFileIn.Lba2_CylHi;
+  if (Map & RTM_LBA3	) LBA3	 = picp->TaskFileIn.Lba3;
+  if (Map & RTM_LBA4	) LBA4	 = picp->TaskFileIn.Lba4;
+  if (Map & RTM_LBA5	) LBA5	 = picp->TaskFileIn.Lba5;
+			 COMMAND = picp->TaskFileIn.Command;
+  DRVHD   = npU->DriveHead;
+  npA->IOPendingMask = Map | FM_PDRHD;
 
   // initialize mode, don't know yet
   npA->IOSGPtrs.Mode = 0;
@@ -690,13 +697,10 @@ VOID NEAR InitBlockIO (NPA npA)
 
 USHORT NEAR StartOtherIO (NPA npA)
 {
-  USHORT	ReqFlags;  // USHORT is ok here!
-  NPU		npU = npA->npU;
-  USHORT	Data;
-  UCHAR 	longWait = FALSE;
-  PPassThruATA	picp;
-  PIORB_ADAPTER_PASSTHRU piorb_pt;
-
+  USHORT ReqFlags;  // USHORT is ok here!
+  NPU	 npU = npA->npU;
+  USHORT Data;
+  UCHAR  longWait = FALSE;
   USHORT i;
 
 #if PCITRACER
@@ -704,11 +708,7 @@ USHORT NEAR StartOtherIO (NPA npA)
   outpw (TRPORT, npA->ReqFlags);
 #endif
   if (!(npA->ReqFlags & ACBR_PASSTHRU)) {
-    *(NPUSHORT)&FEAT   = 0;
-    *(NPUSHORT)&SECTOR = 0;
-    *(NPUSHORT)&CYLH   = 0;
-
-    DRVHD = npU->DriveHead;
+    FEAT = 0;
     npA->IOPendingMask |= FM_PFEAT | FM_PDRHD | FM_PCMD;
   } else {
     npA->IOPendingMask |= FM_PDRHD | FM_PCMD;
@@ -719,6 +719,7 @@ USHORT NEAR StartOtherIO (NPA npA)
     }
   }
 
+  DRVHD    = npU->DriveHead;
   ReqFlags = npA->ReqFlags;
 
   if (ReqFlags & ACBR_RESETCONTROLLER) {
@@ -728,37 +729,25 @@ USHORT NEAR StartOtherIO (NPA npA)
   }
 
   if (ReqFlags & ACBR_READMAX) {
-    SECCNT		= 0;
-    npA->IOPendingMask |= FM_PSECCNT;
-    DRVHD		= (DRVHD & 0xF0) | 0x40;
     COMMAND		= (npU->CmdSupported >> 16) & FX_LBA48SUPPORTED ?
 			  FX_READMAXEXT : FX_READMAX;
     npA->ReqMask	= ACBR_READMAX;
 
   } else if (ReqFlags & ACBR_SETMAXNATIVE) {
+    SECCNT		= 0;
     if ((npU->CmdSupported >> 16) & FX_LBA48SUPPORTED) {
       COMMAND		= FX_SETMAXEXT;
-      npA->IOPendingMask= FM_PCMD;
+      npA->IOPendingMask |= FM_HIGH;
     } else {
       COMMAND		= FX_SETMAX;
-      LBA0		= InB (LBA0REG);
-      LBA1		= InB (LBA1REG);
-      LBA2		= InB (LBA2REG);
-      DRVHD	       |= InB (DRVHDREG) & 0x0F;
-      npA->IOPendingMask |= FM_LBA0 | FM_LBA1 | FM_LBA2;
+      DRVHD	       |= LBA3 & 0x0F;
+      npA->IOPendingMask &= ~FM_LBA3;
     }
+    npA->IOPendingMask |= FM_PSECCNT | FM_LBA0 | FM_LBA1 | FM_LBA2;
     npA->ReqMask	= ACBR_SETMAXNATIVE;
 
   } else if (ReqFlags & ACBR_SETPARAM) {
-    /*------------------------------------------*/
-    /* Set Device Control Register for >8 Heads */
-    /*						*/
-    /* Some BIOSes set this on a per-device	*/
-    /* basis which caues problems if one drive	*/
-    /* has more than 8 heads and one has less.	*/
-    /*------------------------------------------*/
     outpdelay (DEVCTLREG, DEVCTL);
-
     COMMAND		= FX_SETP;
     SECCNT		= npU->PhysGeom.SectorsPerTrack;
     DRVHD	       |= 0x0F & (npU->PhysGeom.NumHeads - 1);
@@ -1020,12 +1009,6 @@ VOID NEAR SetIOAddress (NPA npA)
       npA->ReqFlags |= ACBR_DMAIO;
     }
   }
-
-  /*--------------------------------------------*/
-  /* Calculate I/O address. Calculation depends */
-  /* on whether we are running the controller	*/
-  /* in RBA or CHS mode.			*/
-  /*--------------------------------------------*/
 
   if (npA->RBA & 0xF0000000) {	// LBA48 addressing required
     *(ULONG *)&SECTOR = npA->RBA & 0x00FFFFFFUL;
@@ -1374,9 +1357,23 @@ VOID NEAR DoOtherIO (NPA npA)
   if ((npA->ReqMask == ACBR_SETMULTIPLE) && (npU->Flags & UCBF_SMSENABLED))
     npU->Flags |= UCBF_MULTIPLEMODE;
 
-  if ((npA->ReqMask & (ACBR_SETPIOMODE | ACBR_SETDMAMODE)) &&
-      METHOD(npA).PostInitUnit)
-    METHOD(npA).PostInitUnit (npU);
+  if (npA->ReqMask & (ACBR_SETPIOMODE | ACBR_SETDMAMODE)) {
+    if (METHOD(npA).PostInitUnit) METHOD(npA).PostInitUnit (npU);
+
+  } else if (npA->ReqMask & ACBR_READMAX) {
+    if ((npU->CmdSupported >> 16) & FX_LBA48SUPPORTED) {
+      OutB (DEVCTLREG, (UCHAR)(DEVCTL | FX_HOB));
+      LBA5 = InB (LBA5REG);
+      LBA4 = InB (LBA4REG);
+      LBA3 = InB (LBA3REG);
+      OutB (DEVCTLREG, DEVCTL);
+    } else {
+      LBA3 = InB (DRVHDREG) & 0x0F;
+    }
+    LBA0   = InB (LBA0REG);
+    LBA1   = InB (LBA1REG);
+    LBA2   = InB (LBA2REG);
+  }
 }
 
 /*---------------------------------------------*/
@@ -1426,16 +1423,24 @@ VOID NEAR DoneState (NPA npA)
     picp = (PPassThruATA)((PIORB_ADAPTER_PASSTHRU)pIORB)->pControllerCmd;
 
     if (HIUSHORT(picp)) {
-      IOMask = (picp->RegisterTransferMap & PTA_RTMRD_REGMASK) >> PTA_RTMRD_SHIFT;
+      IOMask = picp->RegisterMapR;
       preg = (PBYTE) &(picp->TaskFileOut);
 
-      for (i = FI_PFEAT; IOMask; i++) {
-	IOMask >>= 1;
-
-	if (IOMask & 0x0001) {
-	  preg[i-1] = InBd (npA->IOPorts[i], npA->IODelayCount);
-	}
+      if (IOMask & (RTM_LBA4 | RTM_LBA5)) {
+	OutB (DEVCTLREG, (UCHAR)(DEVCTL | FX_HOB));
+	if (IOMask & RTM_LBA5) picp->TaskFileOut.Lba5 = InB (LBA5REG);
+	if (IOMask & RTM_LBA4) picp->TaskFileOut.Lba4 = InB (LBA4REG);
+	if (IOMask & RTM_LBA3) picp->TaskFileOut.Lba3 = InB (LBA3REG);
+	OutB (DEVCTLREG, DEVCTL);
+	IOMask &= FM_LOW;
       }
+      if (IOMask & RTM_LBA3)   picp->TaskFileOut.Lba3 = InB (DRVHDREG) & 0x0F;
+      if (IOMask & RTM_LBA2)   picp->TaskFileOut.Lba2_CylHi  = InB (LBA2REG);
+      if (IOMask & RTM_LBA1)   picp->TaskFileOut.Lba1_CylLo  = InB (LBA1REG);
+      if (IOMask & RTM_LBA0)   picp->TaskFileOut.Lba0_SecNum = InB (LBA0REG);
+      if (IOMask & RTM_SECCNT) picp->TaskFileOut.SectorCount = InB (SECCNTREG);
+      if (IOMask & RTM_ERROR)  picp->TaskFileOut.Error	     = InB (ERRORREG);
+      if (IOMask & RTM_STATUS) picp->TaskFileOut.Status      = InB (STATUSREG);
     }
   }
 
@@ -1917,10 +1922,6 @@ USHORT NEAR GetDiagResults (NPA npA, PUCHAR Status)
 
 /*---------------------------------------------*/
 /* SendCmdPacket			       */
-/* -------------			       */
-/*					       */
-/*					       */
-/*					       */
 /*---------------------------------------------*/
 
 USHORT NEAR SendCmdPacket (NPA npA)
