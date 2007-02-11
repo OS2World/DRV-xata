@@ -101,6 +101,7 @@ UCHAR NEAR TryCommand (NPA npA, UCHAR Command)
 {
   UCHAR Data;
 
+  OutBdms (FEATREG, 0);
   OutBdms (COMMANDREG, Command);
   Data = TestStatus50us (npA);
   if (!(Data & (FX_BUSY | FX_DRQ | FX_ERROR))) return (1);
@@ -153,7 +154,11 @@ TS("%02X",Data0);
       OutBdms (COMMANDREG, FX_ATAPI_RESET);
       if (WaitNotBusy (npA)) goto Fault;
     } else {
+      USHORT j;
+
   Fault:
+      for (j = ATA_BACKOFF/2; j > 0; j--) IODly (2*IODelayCount);
+
       Controller = CtNone;
       goto MakeDecision;
     }
@@ -202,7 +207,7 @@ T('a')
 
     if (BMSTATUSREG) OutB (BMSTATUSREG, InB (BMSTATUSREG));
 
-    for (j = ATA_BACKOFF/2; i > 0; i--) IODly (2*IODelayCount);
+    for (j = ATA_BACKOFF/2; j > 0; j--) IODly (2*IODelayCount);
 
     if (WaitNotBusyDRQ (npA)) goto Fault;
   } else {
@@ -229,29 +234,22 @@ USHORT NEAR CheckController (NPA npA)
 
 T('R') T('(')
 
-  if (npA->UnitCB[0].FlagsT & UTBF_DISABLED)
-    npA->Controller[0] = CtNone;
-  else
-    TestChannel (npA, 0);
+  npA->Controller[0] = CtNone;
+  npA->Controller[1] = CtNone;
 
+  if (!(npA->UnitCB[0].FlagsT & UTBF_DISABLED)) TestChannel (npA, 0);
   rc = !(npA->Controller[0]);
 
   if (npA->FlagsT & (ATBF_PCMCIA | ATBF_BAY)) {
 //    npA->Controller[1] = CtATA;
   } else {
-    if (npA->maxUnits < 2) {
-      npA->Controller[1] = CtNone;
-    } else {
-      if (npA->UnitCB[1].FlagsT & UTBF_DISABLED)
-	npA->Controller[1] = CtNone;
-      else
-	TestChannel (npA, 1);
-
+    if (npA->maxUnits >= 2) {
+      if (!(npA->UnitCB[1].FlagsT & UTBF_DISABLED)) TestChannel (npA, 1);
       rc &= !(npA->Controller[1]);
     }
   }
 
-  OutBdms (DRVHDREG, (UCHAR)(((npA->maxUnits > 1) && (npA->Controller[0] == CtNone)) ? 0xB0 : 0xA0));
+  OutBdms (DRVHDREG, (UCHAR)(((npA->Controller[0] == CtNone) && (npA->Controller[1] != CtNone)) ? 0xB0 : 0xA0));
 
 T(')')
 

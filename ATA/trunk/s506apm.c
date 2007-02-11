@@ -188,7 +188,7 @@ DevHelp_Beep (200, 30);
 
       // de-bunk some ATAPI devices...
       { USHORT i;
-	for (i = ATA_BACKOFF; i > 0; i--) IODly (IODelayCount);
+	for (i = ATA_BACKOFF /2 ; i > 0; i--) IODly (2 * IODelayCount);
       }
       // static adapter: wake up units
 

@@ -196,6 +196,7 @@ BOOL NEAR AcceptPIIX (NPA npA)
     SATACommon:
       npA->Cap |= CHIPCAP_SATA;
       npA->Cap &= ~CHIPCAP_ATAPIDMA;
+      npA->FlagsI.b.native = 1;  // required (at least) for ICH8
       goto ICHCommon;
       break;
   }

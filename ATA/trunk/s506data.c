@@ -31,9 +31,9 @@
  #include "s506pro.h"
 
 #define YEAR  2007
-#define MONTH 1
-#define DAY   30
-#define PCMCIAVERSION 0x178
+#define MONTH 2
+#define DAY   11
+#define PCMCIAVERSION 0x179
 
 /*-------------------------------------------------------------------*/
 /*								     */

@@ -282,7 +282,7 @@ VOID NEAR SIIStartOp (NPA npA)
     OutB (DRVHDREG, (UCHAR)(DRVHD & ~0x0F));
     OutB (FEATREG, FEAT);
     OutD (DATAREG | 0x10, *(ULONG *)(npA->IORegs));
-    OutD (DATAREG | 0x18, *(ULONG *)&LBA2 & 0xFFFFFF00);
+    OutD (DATAREG | 0x18, *(ULONG *)(&LBA3 - 1) & 0xFFFFFF00);
     OutW (DATAREG | 0x14, *(USHORT *)&LBA1);
     OutB (DATAREG | 0x17, COMMAND);
   } else {

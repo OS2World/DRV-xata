@@ -80,19 +80,6 @@ USHORT NEAR GetPCIBuses (void) {
   else
     if (SetupOEMHlp()) PCInumBuses = 0;
 
-#if 0
-  { ULONG x;
-    x = GetRegD (0x500, 0x40);
-//    x |= 0x400000;  // swap
-    x |= 0x000200;  // fnc1=AHCI
-    x &=~0x800000;  // combined
-    SetRegD (0x500, 0x40, x);
-  }
-  SetRegB (0x500, PCIREG_HEADER_TYPE, 0x80);
-  SetRegW (0x501, PCIREG_COMMAND, PCI_CMD_BME_MEM);
-  SetRegW (0x501, PCIREG_INT_LINE, GetRegW (0x500, PCIREG_INT_LINE));
-#endif
-
   return (PCInumBuses);
 }
 
@@ -175,7 +162,7 @@ VOID NEAR GetBAR (NPBAR npB, USHORT PCIAddr, UCHAR Index) {
 }
 
 UCHAR NEAR ProbeChannel (NPA npA) {
-  UCHAR Dev, Dev0, Dev1;
+  UCHAR Dev;
 
   Dev = InB (DRVHDREG);
 
@@ -186,18 +173,18 @@ UCHAR NEAR ProbeChannel (NPA npA) {
   if ((Dev == FX_BUSY) || (Dev == (FX_BUSY | 0x50))) return (1);
   if ((Dev & 0x6F) == 0x6F) {
     OutBdms (DRVHDREG, 0xE0);
-    Dev0 = InB (DRVHDREG);
+    Dev = InB (DRVHDREG);
 
 #if TRACES
-   if (Debug & 8) TS(":%02X",Dev0)
+   if (Debug & 8) TS(":%02X",Dev)
 #endif
 
-    if ((Dev0 & 0x6F) == 0x6F) {
+    if ((Dev & 0x6F) == 0x6F) {
       OutBdms (DRVHDREG, 0xF0);
-      Dev1 = InB (DRVHDREG);
+      Dev = InB (DRVHDREG);
 
   #if TRACES
-      if (Debug & 8) TS(":%02X",Dev1)
+      if (Debug & 8) TS(":%02X",Dev)
   #endif
     }
 
