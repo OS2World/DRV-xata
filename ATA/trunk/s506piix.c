@@ -195,7 +195,7 @@ BOOL NEAR AcceptPIIX (NPA npA)
       if (map & (1 << npA->IDEChannel)) goto ICHCommon;  // combined, PATA port
     SATACommon:
       npA->Cap |= CHIPCAP_SATA;
-      npA->Cap &= ~CHIPCAP_ATAPIDMA;
+//	npA->Cap &= ~CHIPCAP_ATAPIDMA;
       npA->FlagsI.b.native = 1;  // required (at least) for ICH8
       goto ICHCommon;
       break;

@@ -378,6 +378,7 @@ USHORT NEAR GetPCIBuses (VOID);
 UCHAR  NEAR CollectSCRPorts (NPU npU);
 UCHAR  NEAR CheckSATAPhy (NPU npU);
 VOID   NEAR SetupT13StandardController (NPA npA);
+UCHAR  NEAR nextController (NPPCI_INFO Enum);
 USHORT FAR  EnumPCIDevices (VOID);
 VOID   FAR  FixAddr (NPA npA);
 UCHAR  NEAR ProbeChannel (NPA npA);
@@ -392,6 +393,7 @@ UCHAR  NEAR HandleFoundAdapter (NPA npA, NPPCI_DEVICE npDev);
 #pragma alloc_text (FCode, CollectSCRPorts)
 #pragma alloc_text (FCode, CheckSATAPhy)
 #pragma alloc_text (FCode, SetupT13StandardController)
+#pragma alloc_text (FCode, nextController)
 #pragma alloc_text (FCode, EnumPCIDevices)
 #pragma alloc_text (FCode, HandleFoundAdapter)
 #pragma alloc_text (FCode, SetLatency)

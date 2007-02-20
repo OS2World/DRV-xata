@@ -1003,7 +1003,6 @@ T('U') T('(')
     npU->Status = UTS_OK;
   }
 
-//  if (!(npU->Flags & UCBF_ATAPIDEVICE)) DetermineUnitGeometry (npU);
   if ((npU->Flags & (UCBF_ATAPIDEVICE | UCBF_FORCE)) != UCBF_ATAPIDEVICE)
     DetermineUnitGeometry (npU);
 

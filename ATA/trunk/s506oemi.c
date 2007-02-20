@@ -279,204 +279,233 @@ UCHAR NEAR CollectSCRPorts (NPU npU)
   }
 }
 
+UCHAR NEAR nextController (NPPCI_INFO Enum) {
+  UCHAR rc = FALSE;
+  static UCHAR maxFnc = MAX_PCI_FUNCTIONS;
+  static struct {
+    UCHAR Rev, ProgIF, Subclass, Class;
+  } ClassCode;
+  UCHAR HeaderType;
+
+#define PciAddr (Enum->PCIAddr)
+#define Bus ((UCHAR *)&PciAddr)[1]
+#define DevFnc ((UCHAR *)&PciAddr)[0]
+#define Fnc (DevFnc & 0x07)
+
+  while (++PciAddr != -1) {
+    if (Fnc >= maxFnc)
+      PciAddr = (PciAddr + (MAX_PCI_FUNCTIONS - 1)) & ~(MAX_PCI_FUNCTIONS - 1);
+    if (Bus >= PCInumBuses) break;
+
+    *(ULONG *)&ClassCode = GetRegD (PciAddr, PCIREG_CLASS_CODE);
+    HeaderType = GetRegB (PciAddr, PCIREG_HEADER_TYPE);
+
+    if (Fnc == 0) {
+#if TRACES
+      if (!DevFnc && (Debug & 8)) TS("\nBus %d:",Bus)
+#endif
+      maxFnc = MAX_PCI_FUNCTIONS;     // default to full function enumeration
+
+      if (!(HeaderType & 0x80)) {  // this is a single function device
+	maxFnc = 1;		   // enumerate first function only
+
+	/* some old PCI-ISA-bridges have broken PCI config spaces ! */
+	if (*(USHORT*)&(ClassCode.Class) == 0x0106) maxFnc++;
+      }
+    }
+
+    HeaderType &= ~0x80;
+
+    if (HeaderType && (HeaderType <= 2)) {    // this is a bridge device
+      UCHAR SubBus = GetRegB (PciAddr, PCIREG_SUBORDINATE_BUS);
+#if TRACES
+      if (Debug & 8) TS("[->%d]",SubBus)
+#endif
+      if (!SubBus || (SubBus == 0xFF)) continue;
+      SubBus++;
+      if (PCInumBuses < SubBus) PCInumBuses = SubBus;
+    }
+
+    if (ClassCode.Class != PCI_MASS_STORAGE) continue;
+
+    rc = CheckWellknown (Enum);
+    if (!rc &&
+	(ClassCode.Subclass == PCI_IDE_CONTROLLER) &&
+       !(ClassCode.ProgIF & (PCI_IDE_NATIVE_IF1 | PCI_IDE_NATIVE_IF2))) {
+      Enum->Ident.Index = PCID_Generic;
+      rc = TRUE;
+    }
+    if (!rc) continue;
+
+#if TRACES
+    if (Debug & 8) {
+      TraceStr ("& %X/%X=%04X/%04X,%d/%d:", Bus, DevFnc,
+		 Enum->Ident.Vendor, Enum->Ident.Device, Enum->Ident.Index, Enum->Level);
+    }
+#endif
+    break;
+  }
+
+  return (rc);
+}
+
 #define CUT_OFF (4 * MAX_PCI_DEVICES)
 
 USHORT FAR EnumPCIDevices (void)
 {
-  UCHAR Bus, Dev, Fnc, maxFnc, Byte;
+  UCHAR rc;
+  UCHAR count = 0;
   NPC	npC;
   NPA	npA;
   NPU	npU;
-  UCHAR count = 0;
-  UCHAR rc;
   struct {
     UCHAR Rev, ProgIF, Subclass, Class;
   } ClassCode;
   static PCI_INFO Enum;
+  USHORT Cmd;
+  NPPCI_DEVICE npDev;
+  UCHAR Channel;
+  UCHAR Int;
+  UCHAR i;
 
   GetPCIBuses();
 
   npC = ChipTable;
 
-  for (Bus = 0; Bus < PCInumBuses; Bus++) {
-#if TRACES
-  if (Debug & 8) TS("\nBus %d:",Bus)
-#endif
-    for (Dev = 0; Dev < MAX_PCI_DEVICES; Dev++) {
-      maxFnc = MAX_PCI_FUNCTIONS;     // default to full function enumeration
-      for (Fnc = 0; Fnc < maxFnc; Fnc++) {
-	UCHAR HeaderType;
+  Enum.PCIAddr = -1;
+  while (nextController (&Enum)) {
+    *(PULONG)&ClassCode = GetRegD (Enum.PCIAddr, PCIREG_CLASS_CODE);
+    Enum.Ident.Revision = ClassCode.Rev;
 
-	Enum.PCIAddr = (Bus << 8) | (Dev << 3) | Fnc;
-	*(PULONG)&ClassCode = GetRegD (Enum.PCIAddr, PCIREG_CLASS_CODE);
-	HeaderType = GetRegB (Enum.PCIAddr, PCIREG_HEADER_TYPE);
+    Cmd = GetRegW (Enum.PCIAddr, PCIREG_COMMAND);
+    if (!(Cmd & (PCI_CMD_IO | PCI_CMD_MEM))) continue;
 
-	if ((Fnc == 0) && !(HeaderType & 0x80)) {  // this is a single function device
-	  maxFnc = 1;				   // enumerate first function only
+    Cmd &= ~PCI_COMMAND_INTX_DIS;
+    SetRegW (Enum.PCIAddr, PCIREG_COMMAND, Cmd | PCI_CMD_BME_MEM);
 
-	  /* some old PCI-ISA-bridges have broken PCI config spaces ! */
-	  if (*(PUSHORT)&(ClassCode.Class) == 0x0106) maxFnc++;
-	}
+    Int = GetRegB (Enum.PCIAddr, PCIREG_INT_LINE);
+    if (Int == 0xFF) Int = 0;  // invalid interrupt setup!
 
-	HeaderType &= ~0x80;
+    if (ClassCode.Subclass != PCI_IDE_CONTROLLER)
+      ClassCode.ProgIF = PCI_IDE_BUSMASTER | PCI_IDE_NATIVE_IF1 | PCI_IDE_NATIVE_IF2;
+    ClassCode.ProgIF &= PCI_IDE_BUSMASTER | PCI_IDE_NATIVE_IF1 | PCI_IDE_NATIVE_IF2;
 
-	if (HeaderType) {	// this is a bridge device
-	  if (HeaderType <= 2) {
-	    UCHAR Bus = GetRegB (Enum.PCIAddr, PCIREG_SUBORDINATE_BUS);
-#if TRACES
-  if (Debug & 8) TS("[->%d]",Bus)
-#endif
-	    if (!Bus || (Bus == 0xFF)) continue;
-	    Bus++;
-	    if (PCInumBuses < Bus) PCInumBuses = Bus;
-	  }
-	}
+    if (ClassCode.ProgIF & (PCI_IDE_NATIVE_IF1 | PCI_IDE_NATIVE_IF2)) {
+      switch (Int) {
+	case PRIMARY_I :
+	  if (AdapterTable[0].IOPorts[0] == PRIMARY_P) AdapterTable[0].IOPorts[0] = 0;
+	  break;
 
-	if (ClassCode.Class == PCI_MASS_STORAGE) {
-	  USHORT Cmd;
-
-	  Enum.Ident.Revision = ClassCode.Rev;
-
-	  Cmd = GetRegW (Enum.PCIAddr, PCIREG_COMMAND);
-	  rc = CheckWellknown (&Enum);
-	  if (!rc &&
-	      (ClassCode.Subclass == PCI_IDE_CONTROLLER) &&
-	     !(ClassCode.ProgIF & (PCI_IDE_NATIVE_IF1 | PCI_IDE_NATIVE_IF2))) {
-	    Enum.Ident.Index = PCID_Generic;
-	    rc = TRUE;
-	  }
-#if TRACES
-  if (rc) {
-    if (Debug & 8) {
-      TraceStr ("& %X/%X=%04X/%04X,%d/%d:", Bus, Enum.PCIAddr & 0xFF,
-		 Enum.Ident.Vendor, Enum.Ident.Device, Enum.Ident.Index, Enum.Level);
+	case SECNDRY_I :
+	  if (AdapterTable[1].IOPorts[0] == SECNDRY_P) AdapterTable[1].IOPorts[0] = 0;
+	  break;
+      }
     }
-  }
-#endif
-	  if (!(Cmd & (PCI_CMD_IO | PCI_CMD_MEM))) rc = FALSE;
 
-	  if (rc) {
-	    NPPCI_DEVICE npDev;
-	    UCHAR Channel;
-	    UCHAR Int;
-	    UCHAR i;
+    npDev = PCIDevice + Enum.Ident.Index;
+    xBridgePCIAddr = (Enum.PCIAddr & ((0xF8 & npDev->xBMask) | 0xFF00))
+		   | ((npDev->xBMask & 0x07) << 3);
+    xBridgeDevice   = GetRegW (xBridgePCIAddr, PCIREG_DEVICE_ID);
+    xBridgeRevision = GetRegB (xBridgePCIAddr, PCIREG_REVISION);
 
-	    npDev = PCIDevice + Enum.Ident.Index;
-	    xBridgePCIAddr = (Enum.PCIAddr & ((0xF8 & npDev->xBMask) | 0xFF00))
-			   | ((npDev->xBMask & 0x07) << 3);
-	    xBridgeDevice   = GetRegW (xBridgePCIAddr, PCIREG_DEVICE_ID);
-	    xBridgeRevision = GetRegB (xBridgePCIAddr, PCIREG_REVISION);
+    if (npC->populatedChannels) npC++;
+    fclrmem (npC, sizeof (*npC));
 
-	    if (ClassCode.Subclass != PCI_IDE_CONTROLLER)
-	      ClassCode.ProgIF = PCI_IDE_BUSMASTER | PCI_IDE_NATIVE_IF1 | PCI_IDE_NATIVE_IF2;
-	    ClassCode.ProgIF &= PCI_IDE_BUSMASTER | PCI_IDE_NATIVE_IF1 | PCI_IDE_NATIVE_IF2;
+    npC->numChannels = 2; // default setup
+    npC->populatedChannels = 0;
 
-	    Int = GetRegB (Enum.PCIAddr, PCIREG_INT_LINE);
-	    if (Int == 0xFF) Int = 0;  // invalid interrupt setup!
+    for (i = 0; i <= 5; i++)
+      GetBAR (npC->BAR + i, Enum.PCIAddr, i);
 
-	    Cmd &= ~PCI_COMMAND_INTX_DIS;
-	    SetRegW (Enum.PCIAddr, PCIREG_COMMAND, Cmd | PCI_CMD_BME_MEM);
+    npC->IrqPIC = Int;
 
-	    if (npC->populatedChannels) npC++;
-	    fclrmem (npC, sizeof (*npC));
+    for (Channel = 0; Channel < npC->numChannels; Channel++) {
+      USHORT savedAdapterFlags;
+      UCHAR  savedUnitFlags[2];
+      UCHAR EnableReg, EnableBit, Enable;
+      USHORT Base0 = -1;
 
-	    npC->numChannels = 2; // default setup
-	    npC->populatedChannels = 0;
+      if (!(npDev->Ident.Revision & NONSTANDARD_HOST) && (Channel < 2)) {
+	if (ClassCode.ProgIF & (PCI_IDE_NATIVE_IF1 | PCI_IDE_NATIVE_IF2))
+	  Base0 = npC->BAR[Channel ? 2 : 0].Addr;
+	else
+	  Base0 = Channel ? SECNDRY_P : PRIMARY_P;
+      }
+      npA = LocateATEntry (Base0, Enum.PCIAddr, Channel);
+      if (!npA) continue;
 
-	    for (i = 0; i <= 5; i++)
-	      GetBAR (npC->BAR + i, Enum.PCIAddr, i);
+      npU = npA->UnitCB;
+      npU[0].npA = npU[1].npA = npA;
 
-	    npC->IrqPIC = Int;
+      npA->IDEChannel	   = Channel;
+      npA->PCIInfo.PCIAddr = Enum.PCIAddr;
+      npA->PCIInfo.npC	   = npA->npC = npC;
+      npA->FlagsI.All	   = ClassCode.ProgIF;
+      npA->IRQLevel	   = Int;
+      npA->HardwareType    = npDev->Ident.Index;
+      npA->maxUnits	   = 0;
+      npA->PCIDeviceMsg[0] = '\0';
 
-	    for (Channel = 0; Channel < npC->numChannels; Channel++) {
-	      USHORT savedAdapterFlags;
-	      UCHAR  savedUnitFlags[2];
-	      UCHAR EnableReg, EnableBit, Enable;
-	      USHORT Base0 = -1;
+      npA->PCIInfo.CompatibleID   = Enum.CompatibleID;
+      npA->PCIInfo.Ident	  = npDev->Ident;
+      npA->PCIInfo.Ident.Vendor   = Enum.Ident.Vendor;
+      npA->PCIInfo.Ident.Device   = Enum.Ident.Device;
+      npA->PCIInfo.Ident.Revision = ClassCode.Rev;
+      npA->PCIInfo.Ident.Index	  = Enum.Ident.Index;
+      npA->PCIInfo.Level	  = Enum.Level;
 
-	      if (!(npDev->Ident.Revision & NONSTANDARD_HOST) && (Channel < 2)) {
-		if (ClassCode.ProgIF & (PCI_IDE_NATIVE_IF1 | PCI_IDE_NATIVE_IF2))
-		  Base0 = npC->BAR[Channel ? 2 : 0].Addr;
-		else
-		  Base0 = Channel ? SECNDRY_P : PRIMARY_P;
-	      }
-	      npA = LocateATEntry (Base0, Enum.PCIAddr, Channel);
-	      if (!npA) continue;
+      npA->Cap	       = CHIPCAP_DEFAULT;
+      npA->IRQDelay    = 0;
+      npA->SCR.Offsets = 0x210;
 
-	      npU = npA->UnitCB;
-	      npU[0].npA = npU[1].npA = npA;
+      SetupT13StandardController (npA);
 
-	      npA->IDEChannel	   = Channel;
-	      npA->PCIInfo.PCIAddr = Enum.PCIAddr;
-	      npA->PCIInfo.npC	   = npA->npC = npC;
-	      npA->FlagsI.All	   = ClassCode.ProgIF;
-	      npA->IRQLevel	   = Int;
-	      npA->HardwareType    = npDev->Ident.Index;
-	      npA->maxUnits	   = 0;
-	      npA->PCIDeviceMsg[0] = '\0';
+      if (0 == Channel) {
+	EnableReg = npDev->EnableReg0;
+	EnableBit = npDev->EnableBit & 0x0F;
+      } else {
+	EnableReg = npDev->EnableReg1;
+	EnableBit = npDev->EnableBit >> 4;
+      }
 
-	      npA->PCIInfo.CompatibleID   = Enum.CompatibleID;
-	      npA->PCIInfo.Ident	  = npDev->Ident;
-	      npA->PCIInfo.Ident.Vendor   = Enum.Ident.Vendor;
-	      npA->PCIInfo.Ident.Device   = Enum.Ident.Device;
-	      npA->PCIInfo.Ident.Revision = ClassCode.Rev;
-	      npA->PCIInfo.Ident.Index	  = Enum.Ident.Index;
-	      npA->PCIInfo.Level	  = Enum.Level;
+      // test for required resources
 
-	      npA->Cap	       = CHIPCAP_DEFAULT;
-	      npA->IRQDelay    = 0;
-	      npA->SCR.Offsets = 0x210;
+      if (npA->FlagsI.b.native) {
+	if (!(npDev->Ident.Revision & MODE_NATIVE_OK) || !Int) goto Recycle;
+	if (!(npDev->Ident.Revision & NONSTANDARD_HOST) && !npC->BAR[4].Addr) goto Recycle;
+      }
 
-	      SetupT13StandardController (npA);
+      Enable = GetRegB (Enum.PCIAddr, EnableReg);
+      if (EnableBit & 0x08) {
+	EnableBit ^= 0x0F;
+	Enable = ~Enable;
+      }
+      if ((Channel < 2) && !(Enable & (1 << EnableBit)) && !(npA->FlagsT & ATBF_BAY)) goto Recycle;
 
-	      if (0 == Channel) {
-		EnableReg = npDev->EnableReg0;
-		EnableBit = npDev->EnableBit & 0x0F;
-	      } else {
-		EnableReg = npDev->EnableReg1;
-		EnableBit = npDev->EnableBit >> 4;
-	      }
+      CollectPorts (npA);
+      npU[0].SStatus = npU[1].SStatus = 0;
 
-	      // test for required resources
+      savedAdapterFlags = npA->FlagsT;
+      savedUnitFlags[0] = npU[0].FlagsT;
+      savedUnitFlags[1] = npU[1].FlagsT;
 
-	      if (npA->FlagsI.b.native) {
-		if (!(npDev->Ident.Revision & MODE_NATIVE_OK) || !Int) continue;
-		if (!(npDev->Ident.Revision & NONSTANDARD_HOST) && !npC->BAR[4].Addr) continue;
-	      }
+      if (npDev->Ident.ChipAccept (npA) &&
+	  !HandleFoundAdapter (npA, npDev)) {
+	count++;
 
-	      Enable = GetRegB (Enum.PCIAddr, EnableReg);
-	      if (EnableBit & 0x08) {
-		EnableBit ^= 0x0F;
-		Enable = ~Enable;
-	      }
-	      if ((Channel < 2) && !(Enable & (1 << EnableBit)) && !(npA->FlagsT & ATBF_BAY)) continue;
-
-	      CollectPorts (npA);
-	      npU[0].SStatus = npU[1].SStatus = 0;
-
-	      savedAdapterFlags = npA->FlagsT;
-	      savedUnitFlags[0] = npU[0].FlagsT;
-	      savedUnitFlags[1] = npU[1].FlagsT;
-
-	      if (npDev->Ident.ChipAccept (npA) &&
-		  !HandleFoundAdapter (npA, npDev)) {
-		count++;
-
-		#if TRACES
-		  if (Debug & 8) TS("%d ",count)
-		#endif
-	      } else {
-		npA->FlagsT = savedAdapterFlags; // restore cmdline options
-		npU[0].FlagsT = savedUnitFlags[0];
-		npU[1].FlagsT = savedUnitFlags[1];
-		DATAREG = 0;  // return adapter slot for reuse
-	      }
-	    }
-	  }
-	}
+	#if TRACES
+	  if (Debug & 8) TS("%d ",count)
+	#endif
+      } else {
+	npA->FlagsT = savedAdapterFlags; // restore cmdline options
+	npU[0].FlagsT = savedUnitFlags[0];
+	npU[1].FlagsT = savedUnitFlags[1];
+      Recycle:
+	DATAREG = 0;  // return adapter slot for reuse
       }
     }
   }
+
   if (npC->populatedChannels) npC++;
   cChips = npC - ChipTable;
   return (count);
