@@ -206,7 +206,6 @@ VOID SetupCommonPost (NPA npA)
   /*************************/
 
   if (BMSTATUSREG > 0x100) {
-    Data |= InB (BMSTATUSREG) & BMISTA_SIMPLEX;
     OutB (BMSTATUSREG, Data);
     npA->BMStatus = Data | BMISTA_INTERRUPT;
   }

@@ -198,24 +198,11 @@ VOID CalculateGenericAdapterTiming (NPA npA)
 
 VOID NEAR GenericInitComplete (NPA npA)
 {
+#if 0
   if (InB (npA->BMISTA) & 0x80) {  /* busmaster supports simplex mode only */
 				   /* serialize access to IDE chip	   */
-    if (npA->IDEChannel) {
-      NPA mate;
-      NPHWRESOURCE npHWR;
-
-      mate = npA->npC->npA[1 - npA->IDEChannel];
-      if (!mate) return;
-      npHWR = mate->npHWR;
-
-      DISABLE
-      npA->npHWR->npFirstACBX = 0;
-      npHWR->npFirstACBX->npNextACBX = npA;
-      npA->npNextACBX = 0;
-      npA->npHWR = npHWR;
-      ENABLE
-    }
   }
+#endif
 }
 															/* vvv, @V151345 */
 /*----------------------------------------------------*/

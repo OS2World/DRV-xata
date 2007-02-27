@@ -270,8 +270,8 @@ VOID   FAR  DeactivateACB (NPA npA);
 PIORB  NEAR PreProcessIORBs (NPA npA, NPU npU, PPIORB ppFirstIORB);
 VOID   NEAR RemoveIORB (PIORB pIORB, PIORB pIORBPrev,
 			PPIORB pIORBFirst);
-USHORT NEAR AllocateHWResources (NPA npA);
-NPA    NEAR FreeHWResources (NPA npA);
+UCHAR  NEAR AllocateHWResources (NPA npA);
+VOID   NEAR FreeHWResources (NPA npA);
 
 /*----------------------------------------------------------------------------*
  *	S506APM.C Procedures						      *

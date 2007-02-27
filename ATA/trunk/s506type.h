@@ -274,35 +274,6 @@ typedef struct _U
 #define UCBS_ACOUSTIC	    0x02000000	/* acoustic mgmt active  */
 #define UCBS_HPROT	    0x00000400	/* Host protected area encountered */
 
-/*----------------------------------------------------------*/
-/*							    */
-/* HWRESOURCE - List of ACBs sharing a hardware resources,  */
-/*		one active per independent IDE Adapter.     */
-/*							    */
-/*----------------------------------------------------------*/
-
-typedef struct _HWRESOURCE
-{
-  USHORT	Flags;
-  /* The current owner of HW resources, 0=> no current owner	       */
-  NPA	npOwnerACB;
-  /* Head and tail of the ACB queue waiting to use this HWResource.    */
-  /* These fields are manipulated only by Allocate and FreeHWResource. */
-  /* The connecting pointer is the ACB field: npNextACB.	       */
-  NPA	npHeadACB;
-  NPA	npFootACB;
-  /* Pointer to the first ACB in a list of ACBs sharing this	       */
-  /* HWRESOURCE.  The connecting pointer is the ACB field: npNextACBX. */
-  /* The list of ACBs sharing this resource is determined  at	       */
-  /* initialization.						       */
-  NPA	npFirstACBX;
-} HWRESOURCE, NEAR *NPHWRESOURCE, FAR *PHWRESOURCE;
-
-/* HWRESOURCE->Flags definitions */
-
-#define HWRF_SUSPENDED	   0x0001    /* HWRESOURCE is suspended */
-
-
 typedef enum { CtNone = 0, CtATA = 1, CtATAPI = 2} eControllerType;
 
 /*-------------------------------*/
@@ -351,8 +322,6 @@ typedef struct _A
   /*---------------------------------------------------*/
   UCHAR 	IORegs[FI_MAX_REGS];				       //  *
   USHORT	IOPendingMask;					       // 17
-
-  NPHWRESOURCE	npHWR;						       // 11
 
   UCHAR 	IDEChannel;					       // 70
   UCHAR 	HWSpecial;					       // 11
@@ -449,9 +418,6 @@ typedef struct _A
   NPPRD 	pSGL;		    /* ptr to BM S/G list  */	       //  2
   UCHAR 	SGAlign;	    /* alignment test bit mask */      //  2
 
-  NPA		npNextACBX;	 /* Next ACB on the HWRESOURCE */      //  3
-  NPA		npNextACB;  /* Next ACB wanting the HWRESOURCE */      //  3
-
   ULONG 	DMAtim[2];		    /* DMA Timing */	       //  3
   USHORT	IOPendingMaskSave;				       //  3
   NPIHDRS	npIHdr; 					       //  3
@@ -518,6 +484,7 @@ typedef struct _A
 #define ACBF_WAITSTATE		0x4000
 #define ACBF_BMINT_SEEN 	0x1000
 #define ACBF_SM_ACTIVE		0x0800
+#define ACBF_SM_RESTART 	0x0400
 #define ACBF_MULTIPLEMODE	0x0200
 #define ACBF_DISABLERETRY	0x0040
 
@@ -532,6 +499,7 @@ typedef struct _A
 #define ATBF_INTSHARED		0x0040
 #define ATBF_BIOSDEFAULTS	0x0020
 #define ATBF_BM_DMA		0x0004
+#define ATBF_SUSPENDED		0x0002
 #define ATBF_80WIRE		0x0001
 
 /* ACB->ReqFlags values */

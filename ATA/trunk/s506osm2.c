@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2006
+ *	       COPYRIGHT Daniela Engert 1999-2007
  *
  * Purpose:  Functions are implemented this OSM Module:
  *
@@ -61,31 +61,31 @@ VOID NEAR SuspendIORBReq (NPA npA, PIORB pNewIORB)
 
   pNewIORB->pNxtIORB = 0;
 
-  /*------------------------------------------------------------------*/
-  /* If a suspend is on the suspendqueue, put imediatesuspends at the */
-  /* head of the queue and defered at the end.			      */
-  /*------------------------------------------------------------------*/
-
   DISABLE
   if (npA->pSuspendHead) {
+
+    /*------------------------------------------------------------------*/
+    /* If a suspend is on the suspendqueue, put imediatesuspends at the */
+    /* head of the queue and defered at the end.			*/
+    /*------------------------------------------------------------------*/
+
     if (DCFlags & DC_SUSPEND_IMMEDIATE) {
-      pNewIORB->pNxtIORB   = npA->pSuspendHead;
+      pNewIORB->pNxtIORB = npA->pSuspendHead;
       npA->pSuspendHead  = pNewIORB;
     } else {
       npA->pSuspendFoot->pNxtIORB = pNewIORB;
       npA->pSuspendFoot = pNewIORB;
     }
-  }
+  } else {
 
-  /*----------------------------------*/
-  /*  Put first suspend iorb on Queue */
-  /*----------------------------------*/
+    /*----------------------------------*/
+    /*	Put first suspend iorb on Queue */
+    /*----------------------------------*/
 
-  else {
     npA->pSuspendHead = pNewIORB;
     npA->pSuspendFoot = pNewIORB;
     npA->CountUntilSuspend = (DCFlags & DC_SUSPEND_IMMEDIATE) ? IMMEDIATE_COUNT
-								: DEFERRED_COUNT;
+							      : DEFERRED_COUNT;
   }
   ENABLE
 }
@@ -100,12 +100,7 @@ VOID NEAR SuspendIORBReq (NPA npA, PIORB pNewIORB)
 /*-----------------------------------------------------------*/
 VOID NEAR Suspend (NPA npA)
 {
-  if (npA->npHWR->npOwnerACB == npA) {
-    npA->SuspendIRQaddr = ((PIORB_DEVICE_CONTROL)(npA->pIORB))->IRQHandlerAddress;
-  } else {
-    npA->IORBStatus |= IORB_ERROR;
-    npA->IORBError   = IOERR_CMD_SYNTAX;
-  }
+  npA->SuspendIRQaddr = ((PIORB_DEVICE_CONTROL)(npA->pIORB))->IRQHandlerAddress;
 
   /*
   ** Goto sleep in the ACBS_SUSPEND state and wait for a resume
@@ -114,9 +109,9 @@ VOID NEAR Suspend (NPA npA)
   ** while suspended.  This is to prevent any new IORB requests
   ** from restarting the state machine.  New requests are queued.
   */
-  npA->Flags |= ACBF_WAITSTATE;
-  npA->npHWR->Flags |= HWRF_SUSPENDED;
-  npA->State	= ACBS_SUSPEND;
+  npA->Flags  |= ACBF_WAITSTATE;
+  npA->FlagsT |= ATBF_SUSPENDED;
+  npA->State   = ACBS_SUSPEND;
 
   IORBDone (npA);
 }
@@ -170,7 +165,7 @@ VOID NEAR SuspendState (NPA npA)
 /*--------------------------------------------------------------*/
 VOID NEAR ResumeIORBReq (NPA npA, PIORB pIORB)
 {
-  if (npA->npHWR->Flags & HWRF_SUSPENDED) {
+  if (npA->FlagsT & ATBF_SUSPENDED) {
     FreeHWResources (npA);
     npA->State	= ACBS_START;
     npA->Flags &= ~ACBF_SM_ACTIVE;
@@ -293,59 +288,12 @@ PIORB NEAR PreProcessIORBs (NPA npA, NPU npU, PPIORB ppFirstIORB)
 /* only if it not the current owner of the HWResource.	 */
 /*							 */
 /*-------------------------------------------------------*/
-USHORT NEAR AllocateHWResources (NPA npA)
+UCHAR NEAR AllocateHWResources (NPA npA)
 {
-  NPHWRESOURCE npHWR;
-  USHORT       rc = 0;
+  if (!(npA->FlagsT & ATBF_SUSPENDED)) return (0);
 
-  npA->npNextACB = 0;
-
-  DISABLE
-
-  npHWR = npA->npHWR;
-  /*------------------------------------------*/
-  /* If we are SUSPENDED, then indicate that  */
-  /* resources were not allocated to the      */
-  /* requestor. 			      */
-  /*------------------------------------------*/
-  if (npHWR->Flags & HWRF_SUSPENDED)
-    rc = 1;
-
-  /*------------------------------------------------*/
-  /* If there is no current owner for the resources */
-  /* make the requesting ACB the current owner	    */
-  /*------------------------------------------------*/
-  else if(!npHWR->npOwnerACB)
-    npHWR->npOwnerACB = npA;
-
-  /*-----------------------------------------------*/
-  /* If someone is requesting resources and they   */
-  /* do not match the current owner, then they get */
-  /* queued.					   */
-  /*-----------------------------------------------*/
-  else if (npHWR->npOwnerACB != npA)
-    rc = 1;
-
-  /*---------------------------------------------*/
-  /* If rc != 0 as determined by the logic above */
-  /* the requestor must be blocked.		 */
-  /*						 */
-  /* The requesting ACB is placed on a queue for */
-  /* the resource.				 */
-  /*---------------------------------------------*/
-  if (rc) {
-    if (npHWR->npFootACB)
-      npHWR->npFootACB->npNextACB = npA;
-    else
-      npHWR->npHeadACB = npA;
-    npHWR->npFootACB = npA;
-
-    npA->Flags |= ACBF_WAITSTATE;
-  }
-
-  ENABLE
-
-  return (rc);
+  npA->Flags |= ACBF_WAITSTATE | ACBF_SM_RESTART;
+  return (1);
 }
 
 
@@ -360,32 +308,19 @@ USHORT NEAR AllocateHWResources (NPA npA)
 /* of the queued requestor for the resources.	    */
 /*						    */
 /*--------------------------------------------------*/
-NPA NEAR FreeHWResources (NPA npA)
+VOID NEAR FreeHWResources (NPA npA)
 {
-  NPHWRESOURCE npHWR = npA->npHWR;
-
   DISABLE
 
   npA->SuspendIRQaddr = 0L;
-  npHWR->Flags &= ~HWRF_SUSPENDED;
+  npA->FlagsT &= ~ATBF_SUSPENDED;
 
-  if (npHWR->npOwnerACB = npHWR->npHeadACB) {
-    if (npHWR->npHeadACB = npHWR->npOwnerACB->npNextACB)
-      npHWR->npOwnerACB->npNextACB = 0;
-    else
-      npHWR->npFootACB = 0;
-
-    /*
-    ** Start the state machine for the next waiting ACB.  Set the
-    ** SM_ACTIVE flag because this may be starting an ACB that is
-    ** currently ACBF_WAITSTATEed.
-    */
-    npHWR->npOwnerACB->Flags |= ACBF_SM_ACTIVE;
+  if (npA->Flags & ACBF_SM_RESTART) {
+    npA->Flags &= ~ACBF_SM_RESTART;
+    npA->Flags |= ACBF_SM_ACTIVE;
     ENABLE
 
-    StartSM (npHWR->npOwnerACB);
+    StartSM (npA);
   }
   ENABLE
-
-  return (npHWR->npOwnerACB);
 }

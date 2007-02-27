@@ -66,8 +66,7 @@ UCHAR FAR SetupOEMHlp (void)
   if (CallOEMHlp (pRPH)) return (1);
   if (PCIDataPkt.bReturn != PCI_SUCCESSFUL) return (1);
 
-  PCIHWMechanism = PCIDataPkt.Data_Bios_Info.HWMech & 3;
-  PCInumBuses	 = PCIDataPkt.Data_Bios_Info.LastBus + 1;
+  PCInumBuses = PCIDataPkt.Data_Bios_Info.LastBus + 1;
 #if TRACES
   if (Debug & 8) TS("OEMBuses:%d,",PCInumBuses)
 #endif
@@ -75,11 +74,7 @@ UCHAR FAR SetupOEMHlp (void)
 }
 
 USHORT NEAR GetPCIBuses (void) {
-  if (!BIOSInt13)
-    PCInumBuses = 1;
-  else
-    if (SetupOEMHlp()) PCInumBuses = 0;
-
+  if (BIOSInt13 && SetupOEMHlp()) PCInumBuses = 0;
   return (PCInumBuses);
 }
 

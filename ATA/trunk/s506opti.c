@@ -140,9 +140,7 @@ VOID OPTITimingValue (NPU npU)
 
   if (npU->UltraDMAMode > 0) {
     npA->OPTI_Ultratim |= 1 << (Shift / 2);
-#if 1
     npA->OPTI_Ultratim |= (npU->UltraDMAMode - 1) << (4 + Shift);
-#endif
   }
 }
 

@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2006
+ *	       COPYRIGHT Daniela Engert 1999-2007
  *
  * DESCRIPTION : Adapter Driver initialization routines.
  *
@@ -133,7 +133,6 @@ USHORT NEAR TestChannel (NPA npA, UCHAR UnitId)
 
 TS("%02X:",Data1);
 TS("%02X",Data0);
-//  if (Data0 & FX_DRQ) goto Fault; // probably remains from write to non-existent unit
   if (Data0 & FX_DRQ) { // probably remains from write to non-existent unit
     for (Stop = 1; Stop <= 4096; Stop++) {
       InWdms (DATAREG);
@@ -397,16 +396,12 @@ VOID NEAR DriveInit (PRPINITIN pRPH)
   WritePtr = MsgBuffer;
   BusInfo = ((PMACHINE_CONFIG_INFO)MAKEP (SELECTOROF (pDDD_Parm_List),
 					  pDDD_Parm_List->machine_config_table))->BusInfo;
-  DriverBusType = BUS_UNKNOWN;
-  if (BusInfo & BUSINFO_EISA) {
-    DriverBusType = BUS_EISA;
-  } else if (BusInfo & BUSINFO_MCA) {
+  if (BusInfo & (BUSINFO_EISA | BUSINFO_MCA))
     goto S506_Deinstall;
-  }
+
   pCmdLine = MAKEP (SELECTOROF (pDDD_Parm_List), (USHORT)pDDD_Parm_List->cmd_line_args);
   IODelayCount = Delay500 * 2;
   DevHelp_AllocateCtxHook ((NPFN)&CSHookHandler, (PULONG)&CSCtxHook);
-  OSVersion = pGlobal->uchMajorVersion * 10 + pGlobal->uchMinorVersion;
   RMCreateDriver (&DriverStruct, &hDriver);
 
 //DevHelp_Beep (1000, 50);
@@ -428,7 +423,11 @@ TotalTime();
 
   {
     PSZ   p, pCmd;
+#if TRACES
     NPSZ  q = "R"VERSION;
+#else
+    NPSZ  q = "R"VERSION" (unsupported)";
+#endif
     UCHAR c;
 
     pCmd = p = pCmdLine;
@@ -452,12 +451,6 @@ TotalTime();
   /* for drives (units).		    */
   /*----------------------------------------*/
   DriveId = ScanForOtherADDs() + 0x80;
-
-  /* if Merlin or later get the PnP detected devices */
-  if (!(Debug & 0x800) && (OSVersion > 230)) {
-    FindDetected (SEARCH_ID_DEVICEID);
-    FindDetected (SEARCH_ID_COMPATIBLEID);
-  }
 
   if (!(Debug & 0x400)) {
     FindHotPCCard();
@@ -783,21 +776,6 @@ VOID NEAR ConfigureACB (NPA npA) {
     METHOD(npA).CalculateTiming = CalculateGenericAdapterTiming;
     METHOD(npA).ProgramChip	= NULL;
   }
-
-  /*---------------------------------------------*/
-  /* Setup the Hardware Resource structure	 */
-  /*						 */
-  /* All adapters are initially assumed to be	 */
-  /* independent and as such are assigned	 */
-  /* independent HWResource structures.  This is */
-  /* because during initialization all device	 */
-  /* access is single threaded. 		 */
-  /*---------------------------------------------*/
-
-  npA->npHWR		  = &HWResource[cAdapters];
-  npA->npHWR->npOwnerACB  = npA;
-  npA->npHWR->npFirstACBX = npA;
-  npA->npNextACBX	  = NULL;
 
   /*---------------------------------------------*/
   /* Initialize the ACB's state machine to       */
@@ -2056,8 +2034,6 @@ VOID FAR AssignAdapterResources (NPA npA)
     AdapterStruct.HostBusWidth= AS_BUSWIDTH_32BIT;
   } else if (npA->FlagsT & ATBF_PCMCIA)
     AdapterStruct.HostBusType = AS_HOSTBUS_PCMCIA;
-  else if (DriverBusType == BUS_EISA)
-    AdapterStruct.HostBusType = AS_HOSTBUS_EISA;
 
   RMCreateAdapter (hDriver, &hAdapter, &AdapterStruct, NULL, (PAHRESOURCE)(npA->ResourceBuf));
 
@@ -2180,80 +2156,6 @@ NPA FAR LocateATEntry (USHORT BasePort, USHORT PCIAddr, UCHAR Channel)
 
 //if (Debug & 8) TraceStr("=%04X]", npAfree);
   return (npAfree);
-}
-
-/*-------------------------------*/
-/*				 */
-/* UpdateATTable()		 */
-/*				 */
-/*-------------------------------*/
-VOID NEAR UpdateATTable (NPRESOURCELIST npResourceList)
-{
-  NPA	 npA;
-  USHORT BasePort = 0, CtrlPort = 0;
-  UCHAR  IRQLevel = 0;
-  UCHAR  j, numPorts;
-  NPRESOURCESTRUCT npRes = npResourceList->Resource;
-
-  for (j = 0; j < npResourceList->Count; j++, npRes++) {
-    // base port is 8 port usage
-    // control port is 1 port usage
-    switch (npRes->ResourceType) {
-      case RS_TYPE_IO:
-	numPorts = npRes->IOResource.NumIOPorts;
-	if (numPorts == 8) {
-	  if (!BasePort) BasePort = npRes->IOResource.BaseIOPort;
-	} else if (numPorts == 1) {
-	  if (!CtrlPort) CtrlPort = npRes->IOResource.BaseIOPort;
-	}
-	break;
-
-      case RS_TYPE_IRQ:
-	IRQLevel = npRes->IRQResource.IRQLevel;
-	break;
-
-      default:
-	// shouldn't be any other resources
-	break;
-    }
-  }
-
-  if (BasePort && CtrlPort && IRQLevel) {
-    if ((npA = LocateATEntry (BasePort, 0, 0)) && !MEMBER(npA).Vendor) {
-      npA->FlagsT  |= ATBF_BIOSDEFAULTS;
-      npA->CtrlPort = CtrlPort;
-      npA->IRQLevel = IRQLevel;
-    }
-  }
-}
-
-/*-------------------------------*/
-/*				 */
-/* FindDetected()		 */
-/*				 */
-/*-------------------------------*/
-VOID FAR FindDetected (UCHAR SearchType)
-{
-#define DeviceID 0x0006D041ul  /* PNP0600 converted */
-
-  UCHAR i;
-  NPHANDLELIST npHandleList = (NPHANDLELIST)ScratchBuf;
-  NPRM_GETNODE_DATA npNode = (NPRM_GETNODE_DATA)&PnPwork;
-
-  npHandleList->cHandles    = 0;
-  npHandleList->cMaxHandles = 1 + MAX_ADAPTERS;
-  // search for devices with this ID
-  RMDevIDToHandleList (RM_IDTYPE_EISA, DeviceID, NULL, DeviceID, NULL, NULL,
-		       SearchType, HANDLE_CURRENT_DETECTED, npHandleList);
-
-  for (i = 0; i < npHandleList->cHandles; i++) {
-    npNode->RMNodeSize = sizeof (PnPwork);
-    if (!RMGetNodeInfo (npHandleList->Handles[i], npNode, sizeof (PnPwork))) {
-      // update the Adapter Table with this node
-      if ((NPRESOURCELIST)npNode->RMNode.pResourceList)
-	UpdateATTable ((NPRESOURCELIST)npNode->RMNode.pResourceList);
-    }
-  }
 }
 
 /*-------------------------------*/

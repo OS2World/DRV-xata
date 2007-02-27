@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2006
+ *	       COPYRIGHT Daniela Engert 1999-2007
  *
  * DESCRIPTION : Data External References
  *
@@ -49,15 +49,12 @@ extern USHORT	    IODelayCount;
 extern USHORT	    ElapsedTimerHandle;
 extern USHORT	    IdleTickerHandle;
 extern ULONG	    ReqBlockID;
-extern UCHAR	    PCIHWMechanism;
 extern UCHAR	    PCInumBuses;
-extern UCHAR	    didReset;
 extern UCHAR	    PowerState;
 extern USHORT	    Fixes;
 extern NPPCI_INFO   CurPCIInfo;
 extern UCHAR	    CurLevel;
 extern UCHAR	    RegOffset;
-extern HWRESOURCE   HWResource[MAX_ADAPTERS];
 extern SEL	    DSSel, CSSel, FlatSel, SelSAS;
 extern NPU	    LastAccessedUnit;
 extern NPA	    LastAccessedPCCardUnit;
@@ -149,8 +146,6 @@ extern USHORT CfgNFC[];
 extern USHORT CfgSII[];
 extern USHORT CfgITE[];
 
-extern USHORT	    OSVersion;
-extern UCHAR	    DriverBusType;
 extern UCHAR	    PCIClock;
 extern UCHAR	    PCIClockIndex;
 extern USHORT	    Debug;
@@ -209,12 +204,9 @@ extern CHAR	      TraceBuffer[1000];
 extern NPCH	      npTrace;
 extern NPVOID	      MemTop;
 extern NPA	      npAPool;
-extern CHAR	      IDEPnPID[];
-extern UCHAR	      PnPwork[1024];
 extern CCB	      ChipTable[MAX_ADAPTERS];
 extern ACB	      AdapterTable[MAX_ADAPTERS];
 extern UCHAR	      Verbose;
-extern UCHAR	      ATAPISlaveChk;
 extern IORB_EXECUTEIO InitIORB;
 extern SCATGATENTRY   ScratchSGList;
 extern SCATGATENTRY   ScratchSGList1;

@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert, 1999-2006
+ *	       COPYRIGHT Daniela Engert, 1999-2007
  *
  *****************************************************************************/
 
@@ -32,8 +32,8 @@
 
 #define YEAR  2007
 #define MONTH 2
-#define DAY   20
-#define PCMCIAVERSION 0x17a
+#define DAY   25
+#define PCMCIAVERSION 0x180
 
 /*-------------------------------------------------------------------*/
 /*								     */
@@ -78,13 +78,7 @@ struct DevClassTableStruc _far *pDriverTable = NULL;
 USHORT	       IODelayCount	      = 0;
 USHORT	       ElapsedTimerHandle     = 0;
 USHORT	       IdleTickerHandle       = 0;
-ULONG	       ReqBlockID	      = 0;
-HWRESOURCE     HWResource[MAX_ADAPTERS] = { 0 };
-
-USHORT	       OSVersion;
-UCHAR	       DriverBusType;
-UCHAR	       PCIHWMechanism	      = 1;
-UCHAR	       PCInumBuses	      = 255;
+UCHAR	       PCInumBuses	      = 1;
 UCHAR	       PCIClock 	      = 33;
 UCHAR	       PCIClockIndex	      = 0;
 USHORT	       Debug		      = 0;
@@ -97,7 +91,6 @@ UCHAR	       LinesPrinted	      = 0;
 UCHAR	       TracerEnabled	      = 0;
 UCHAR	       TraceErrors	      = 0;
 UCHAR	       NotShutdown	      = 1;
-UCHAR	       didReset 	      = 0;
 UCHAR	       PowerState	      = 0;
 USHORT	       Fixes		      = 0;
 NPPCI_INFO     CurPCIInfo	      = 0;
@@ -967,7 +960,7 @@ struct CI_Info CIInfo = {
   offsetof (struct CI_Info, CI_Name), sizeof (CIInfo.CI_Name),
   offsetof (struct CI_Info, CI_Vendor), sizeof (CIInfo.CI_Vendor),
   "DaniS506 EIDE Driver",
-  "Copyright Daniela Engert 2006, all rights reserved"
+  "Copyright Daniela Engert 2007, all rights reserved"
 };
 
 CCB	       ChipTable[MAX_ADAPTERS] = { 0 };
@@ -977,8 +970,8 @@ ACB	       AdapterTable[MAX_ADAPTERS] =
  /* BasePort  IRQLevel	Flags  Status  Socket	       */
  /*						       */
  /*----------------------------------------------------*/
-  {0,0,0,0,-1, PRIMARY_I, PRIMARY_C, PRIMARY_P },
-  {0,0,0,0,-1, SECNDRY_I, SECNDRY_C, SECNDRY_P },
+  {0,0,0,0,-1, 0	, 0	   , 0	       },
+  {0,0,0,0,-1, 0	, 0	   , 0	       },
   {0,0,0,0,-1, 0	, 0	   , 0	       },
   {0,0,0,0,-1, 0	, 0	   , 0	       },
   {0,0,0,0,-1, 0	, 0	   , 0	       },
@@ -1006,7 +999,6 @@ CHAR	       DTMem[(MAX_ADAPTERS+1)*MR_1K_LIMIT-1] = { 0 };
 NPVOID	       MemTop;
 NPCH	       npTrace		    = NULL;
 CHAR	       TraceBuffer[1000]    = { 0 };
-UCHAR	       PnPwork[1024]	    = { 0 };
 UCHAR	       Verbose		    = 0;
 UCHAR	       ATAPISlaveChk	    = 0;
 PDDD_PARM_LIST pDDD_Parm_List	    = { 0 };
