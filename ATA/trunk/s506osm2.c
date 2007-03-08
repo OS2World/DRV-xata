@@ -15,8 +15,6 @@
  *				  - IOCM_SUSPEND
  *				  - IOCM_RESUME
  *			      ACB Activation/Deactivation
- *			      DMA Buffer Allocate/Deallocate
- *			      Motor Idle Watchdog routine
  ****************************************************************************/
 
 #define INCL_NOBASEAPI
@@ -166,7 +164,20 @@ VOID NEAR SuspendState (NPA npA)
 VOID NEAR ResumeIORBReq (NPA npA, PIORB pIORB)
 {
   if (npA->FlagsT & ATBF_SUSPENDED) {
-    FreeHWResources (npA);
+    DISABLE
+
+    npA->SuspendIRQaddr = 0L;
+    npA->FlagsT &= ~ATBF_SUSPENDED;
+
+    if (npA->Flags & ACBF_SM_RESTART) {
+      npA->Flags &= ~ACBF_SM_RESTART;
+      npA->Flags |= ACBF_SM_ACTIVE;
+      ENABLE
+
+      StartSM (npA);
+    }
+    ENABLE
+
     npA->State	= ACBS_START;
     npA->Flags &= ~ACBF_SM_ACTIVE;
   } else { /* the HW Resource was not suspended */
@@ -296,31 +307,3 @@ UCHAR NEAR AllocateHWResources (NPA npA)
   return (1);
 }
 
-
-/*--------------------------------------------------*/
-/* FreeHWResources				    */
-/*						    */
-/* This routine releases Hardware Resources owned   */
-/* by an ACB.					    */
-/*						    */
-/* If there are other ACBs waiting and an Immediate */
-/* Suspend is not pending, then restart processing  */
-/* of the queued requestor for the resources.	    */
-/*						    */
-/*--------------------------------------------------*/
-VOID NEAR FreeHWResources (NPA npA)
-{
-  DISABLE
-
-  npA->SuspendIRQaddr = 0L;
-  npA->FlagsT &= ~ATBF_SUSPENDED;
-
-  if (npA->Flags & ACBF_SM_RESTART) {
-    npA->Flags &= ~ACBF_SM_RESTART;
-    npA->Flags |= ACBF_SM_ACTIVE;
-    ENABLE
-
-    StartSM (npA);
-  }
-  ENABLE
-}

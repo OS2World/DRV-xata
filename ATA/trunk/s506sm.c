@@ -250,7 +250,6 @@ VOID NEAR StartState (NPA npA)
     /* No more IORBs so go to sleep, stay in ACBS_START, and  */
     /* mark the state machine as inactive.		      */
     /*--------------------------------------------------------*/
-    FreeHWResources (npA);
     npA->Flags |= ACBF_WAITSTATE;
     npA->Flags &= ~ACBF_SM_ACTIVE;
     ENABLE
@@ -1389,29 +1388,6 @@ VOID NEAR DoneState (NPA npA)
   NPU	npU   = npA->npU;
   PIORB pIORB = npA->pIORB;
 
-  /*------------------------------------------------------------*/
-  /* Reset the drive back to its original INT 13 parms if the	*/
-  /* BIOS is still active.					*/
-  /*								*/
-  /* Note:							*/
-  /* -----							*/
-  /* Normally the physical drive geometry would be set to	*/
-  /* the Int13 geometry. This reset is done for the benefit	*/
-  /* of some ESDI BIOSes which expect the drive geometry to be	*/
-  /* set to its logical (Int13 geometry) even though		*/
-  /* there is a different physical geometry.			*/
-  /*								*/
-  /* If the drive required translate support (>16 heads)	*/
-  /* we leave the drive set at the physical geometry we 	*/
-  /* determined.						*/
-  /*								*/
-  /* In the case of Ontrack, we may also have a different	*/
-  /* physical geometry than Int13 geometry, however, in 	*/
-  /* this case, we want to leave the drive at its physical	*/
-  /* (Identify) geometry for compatibility with Ontrack's       */
-  /* XBIOS extensions.						*/
-  /*------------------------------------------------------------*/
-
   if (npA->ReqFlags & ACBR_PASSTHRU) {
     USHORT	 i, IOMask;
     PBYTE	 preg;
@@ -1475,11 +1451,7 @@ VOID NEAR DoneState (NPA npA)
 
   if (METHOD(npA).StartStop) METHOD(npA).StartStop (npA, ACBS_DONE);
 
-  // All done with HW, so OK to free HW resources.
-  FreeHWResources (npA);
-
   IORBDone (npA);
-
   npA->State = ACBS_START;
 }
 
