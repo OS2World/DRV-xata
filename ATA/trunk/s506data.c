@@ -31,8 +31,8 @@
  #include "s506pro.h"
 
 #define YEAR  2007
-#define MONTH 2
-#define DAY   25
+#define MONTH 3
+#define DAY   5
 #define PCMCIAVERSION 0x180
 
 /*-------------------------------------------------------------------*/
@@ -665,7 +665,7 @@ USHORT CListMarvell[] = {
 		0x6101,     // Marvell 641x PATA
 		0x6145,     // Marvell 641x PATA & SATA
 		0 };
-#if 0
+#if 1
 USHORT CListCInitio[] = {
 	0x1623, 0x1622,     // 1623 -> 162x
 		0 };
@@ -909,7 +909,7 @@ PCI_DEVICE PCIDevice[] =
       CListCIXPA, CListFIXPA,
       0x04, 0x04, 0x00, 0x00, 0x10,
       IXPMsgtxt },
-#if 0
+#if 1
   { { 0, 0x1101, Initio, MODE_NATIVE_OK, 0, 2,
       AcceptInitio, CfgGeneric,
       NULL, InitioCheckIRQ,
@@ -1070,7 +1070,7 @@ UCHAR  NetCellMsgtxt[] = "NetCell SyncRAID";
 UCHAR  JMMsgtxt[]      = "JMicron JMB%x";
 UCHAR  PromiseMIOtxt[] = "Promise %dxx";
 UCHAR  MarvellMsgtxt[] = "Marvell";
-//UCHAR  InitioMsgtxt[]  = "Initio INIC-%x";
+UCHAR  InitioMsgtxt[]  = "Initio INIC-%x";
 UCHAR  GenericMsgtxt[] = "Generic";
 UCHAR ParmErrMsg[] = " Warning: DANIS506.ADD - Invalid CONFIG.SYS parameters near pos %d";
 UCHAR VersionMsg[] = "            Daniela's Bus Master IDE Driver for OS/2 Version "VERSION;
@@ -1318,7 +1318,7 @@ ULONG	   VDMInt13BlkID   = (ULONG)&VDMInt13;
 /*								     */
 /*-------------------------------------------------------------------*/
 
-UCHAR VPCIInfo[] = "  %s %cATA host (%04x:%04x rev:%02x) on PCI %d:%d.%d @%dMHz";
+UCHAR VPCIInfo[] = "  %s %cATA host (%04x:%04x rev:%02x) on PCI %d:%d.%d#%d";
 UCHAR VPCardInfo[] = "  %s PCCard PATA host";
 UCHAR VControllerInfo[] = "Controller:%1d  Port:%04lx IRQ:%02x  Status:%s%s";
 UCHAR VUnitInfo1[] = " Unit:%1d Status:%s%s%s%s%s";

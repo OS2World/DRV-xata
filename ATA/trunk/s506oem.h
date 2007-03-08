@@ -118,8 +118,8 @@ typedef enum {
 #define PCID_PromiseMIO    23  /* Promise MMIO */
 #define PCID_Marvell	   24  /* Marvell */
 #define PCID_ATIIXPAHCI    25  /* ATI IXP AHCI */
-//#define PCID_Initio	     26  /* Initio */
-#define PCID_Generic	   26  /* Generic IDE */
+#define PCID_Initio	   26  /* Initio */
+#define PCID_Generic	   27  /* Generic IDE */
 
 #define MAX_PCI_DEVICE_DESCRIPT  PCID_Generic+1
 

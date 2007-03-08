@@ -1600,7 +1600,7 @@ VOID NEAR PrintAdapterInfo (NPA npA) {
 	    (UCHAR)(npA->PCIInfo.PCIAddr >> 8),
 	    (UCHAR)((npA->PCIInfo.PCIAddr >> 3) & 0x1F),
 	    (UCHAR)(npA->PCIInfo.PCIAddr & 7),
-	    PCIClock);
+	    npA->IDEChannel);
     TTYWrite (3, TraceBuffer);
   } else if (Msg == ATS_PCCARD_INSERTED) {
     sprntf (TraceBuffer, VPCardInfo, npA->npPCIDeviceMsg);
