@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2006
+ *	       COPYRIGHT Daniela Engert 1999-2007
  *
  * DESCRIPTION : I/O State Machine for ATA Adapter Driver
  *
@@ -236,22 +236,13 @@ VOID NEAR StartState (NPA npA)
 #define CmdCode (Cmd >> 8)
 #define CmdModifier (Cmd & 0xFF)
 
-  /*
-  ** Allocate the IDE HW interface.  This is required as the HW
-  ** interface may be shared by more than 1 ACB.  HW resources are
-  ** freed in DoneState.
-  */
-  if (AllocateHWResources (npA))
-    return;
-
   DISABLE
   if (NextIORB (npA)) {
     /*--------------------------------------------------------*/
     /* No more IORBs so go to sleep, stay in ACBS_START, and  */
     /* mark the state machine as inactive.		      */
     /*--------------------------------------------------------*/
-    npA->Flags |= ACBF_WAITSTATE;
-    npA->Flags &= ~ACBF_SM_ACTIVE;
+    npA->Flags |= ACBF_WAITSTATE | ACBF_SM_SUSPENDED;
     ENABLE
     return;
   }

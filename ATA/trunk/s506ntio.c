@@ -62,9 +62,6 @@ BOOL NEAR AcceptInitio (NPA npA)
   }
 
   Adr = BAR5 + npA->IDEChannel * 0x40;
-//  for (i = FI_PDAT; i <= FI_PCMD; i++)
-//    npA->IOPorts[i] = Adr + (i << 2);
-//  DEVCTLREG = Adr + 0x38;
   BMCMDREG  = Adr + 0x0B;
   BMDTPREG  = Adr + 0x0C;
   BMSTATUSREG = 0;
@@ -91,6 +88,7 @@ BOOL NEAR AcceptInitio (NPA npA)
   npA->Cap &= ~CHIPCAP_ATADMA;
 
   sprntf (npA->PCIDeviceMsg, InitioMsgtxt, MEMBER(npA).Device);
+return (FALSE);
   return (TRUE);
 }
 

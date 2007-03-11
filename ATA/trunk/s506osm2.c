@@ -103,7 +103,7 @@ VOID NEAR Suspend (NPA npA)
   /*
   ** Goto sleep in the ACBS_SUSPEND state and wait for a resume
   ** IORB.  The HW Resource remains allocated during a suspend.
-  ** Note the ACBF_SM_ACTIVE flag is NOT being turned off
+  ** Note the ACBF_SM_SUSPENDED flag is NOT being turned on
   ** while suspended.  This is to prevent any new IORB requests
   ** from restarting the state machine.  New requests are queued.
   */
@@ -144,7 +144,7 @@ VOID NEAR SuspendState (NPA npA)
 /*  freed.  FreeHWResources() starts the next waiting ACB.  The */
 /*  next waiting ACB cannot be the current ACB because		*/
 /*  AllocateHWResources() does not get called until		*/
-/*  ACBF_SM_ACTIVE is reset and the state machine actually	*/
+/*  ACBF_SM_SUSPENDED is reset and the state machine actually	   */
 /*  starts the IORB.  While this ACB was suspended, requests	*/
 /*  were queued to the ACB's IORB queue but not to the          */
 /*  HWResource's ACB queue until the state machine is started   */
@@ -164,22 +164,13 @@ VOID NEAR SuspendState (NPA npA)
 VOID NEAR ResumeIORBReq (NPA npA, PIORB pIORB)
 {
   if (npA->FlagsT & ATBF_SUSPENDED) {
-    DISABLE
-
-    npA->SuspendIRQaddr = 0L;
     npA->FlagsT &= ~ATBF_SUSPENDED;
 
-    if (npA->Flags & ACBF_SM_RESTART) {
-      npA->Flags &= ~ACBF_SM_RESTART;
-      npA->Flags |= ACBF_SM_ACTIVE;
-      ENABLE
-
-      StartSM (npA);
-    }
-    ENABLE
+    ((NPUSHORT)&(npA->SuspendIRQaddr))[1] = 0;
 
     npA->State	= ACBS_START;
-    npA->Flags &= ~ACBF_SM_ACTIVE;
+    npA->Flags |= ACBF_SM_SUSPENDED;
+
   } else { /* the HW Resource was not suspended */
     pIORB->ErrorCode = IOERR_CMD_SYNTAX;
     pIORB->Status   |= IORB_ERROR;
@@ -282,28 +273,5 @@ PIORB NEAR PreProcessIORBs (NPA npA, NPU npU, PPIORB ppFirstIORB)
     pIORBPrev->pNxtIORB = 0;
 
   return (pIORBPrev);
-}
-
-
-/*-------------------------------------------------------*/
-/* AllocateHWResources					 */
-/*							 */
-/* This routine controls sharing of Hardware Resources,  */
-/* HWResource[], between two or more controllers which	 */
-/* may share these resources.				 */
-/*							 */
-/* If we are in a 'shared' scenario, this routine        */
-/* serializes the requestors of the shared resource.	 */
-/*							 */
-/* A requesting ACB is added to the HWResource wait	 */
-/* only if it not the current owner of the HWResource.	 */
-/*							 */
-/*-------------------------------------------------------*/
-UCHAR NEAR AllocateHWResources (NPA npA)
-{
-  if (!(npA->FlagsT & ATBF_SUSPENDED)) return (0);
-
-  npA->Flags |= ACBF_WAITSTATE | ACBF_SM_RESTART;
-  return (1);
 }
 

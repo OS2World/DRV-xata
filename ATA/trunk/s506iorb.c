@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2006
+ *	       COPYRIGHT Daniela Engert 1999-2007
  *
  * DESCRIPTION : IORB Routine/Processing
  ****************************************************************************/
@@ -157,8 +157,8 @@ goodACB:
     /*
     ** Restart the state machine.
     */
-    if (!(npA->Flags & ACBF_SM_ACTIVE)) {
-      npA->Flags |= ACBF_SM_ACTIVE;
+    if (npA->Flags & ACBF_SM_SUSPENDED) {
+      npA->Flags &= ~ACBF_SM_SUSPENDED;
       ENABLE
       StartSM (npA);
     }

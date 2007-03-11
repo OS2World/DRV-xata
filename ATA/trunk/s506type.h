@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2006
+ *	       COPYRIGHT Daniela Engert 1999-2007
  *
  * DESCRIPTION : Locally defined structures for this driver.
  *
@@ -483,8 +483,7 @@ typedef struct _A
 #define ACBF_INTERRUPT		0x8000
 #define ACBF_WAITSTATE		0x4000
 #define ACBF_BMINT_SEEN 	0x1000
-#define ACBF_SM_ACTIVE		0x0800
-#define ACBF_SM_RESTART 	0x0400
+#define ACBF_SM_SUSPENDED	0x0800
 #define ACBF_MULTIPLEMODE	0x0200
 #define ACBF_DISABLERETRY	0x0040
 

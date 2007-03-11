@@ -781,7 +781,8 @@ VOID NEAR ConfigureACB (NPA npA) {
   /* Initialize the ACB's state machine to       */
   /* process requests.				 */
   /*---------------------------------------------*/
-  npA->State = ACBS_START;
+  npA->State  = ACBS_START;
+  npA->Flags |= ACBF_SM_SUSPENDED;
 }
 
 VOID NEAR ConfigurePCCard (NPA npA)
