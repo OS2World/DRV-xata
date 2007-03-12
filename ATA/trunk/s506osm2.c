@@ -107,9 +107,8 @@ VOID NEAR Suspend (NPA npA)
   ** while suspended.  This is to prevent any new IORB requests
   ** from restarting the state machine.  New requests are queued.
   */
-  npA->Flags  |= ACBF_WAITSTATE;
   npA->FlagsT |= ATBF_SUSPENDED;
-  npA->State   = ACBS_SUSPEND;
+  npA->State   = ACBS_SUSPEND | ACBS_WAIT;
 
   IORBDone (npA);
 }
@@ -168,8 +167,7 @@ VOID NEAR ResumeIORBReq (NPA npA, PIORB pIORB)
 
     ((NPUSHORT)&(npA->SuspendIRQaddr))[1] = 0;
 
-    npA->State	= ACBS_START;
-    npA->Flags |= ACBF_SM_SUSPENDED;
+    npA->State	= ACBS_START | ACBS_SUSPENDED;
 
   } else { /* the HW Resource was not suspended */
     pIORB->ErrorCode = IOERR_CMD_SYNTAX;

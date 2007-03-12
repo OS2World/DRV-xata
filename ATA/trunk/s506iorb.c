@@ -157,8 +157,8 @@ goodACB:
     /*
     ** Restart the state machine.
     */
-    if (npA->Flags & ACBF_SM_SUSPENDED) {
-      npA->Flags &= ~ACBF_SM_SUSPENDED;
+    if (npA->State & ACBS_SUSPENDED) {
+      npA->State &= ~ACBS_SUSPENDED;
       ENABLE
       StartSM (npA);
     }

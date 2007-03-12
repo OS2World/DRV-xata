@@ -71,9 +71,9 @@ VOID NEAR StartSM (NPA npA)
   if (0 == saveINC (&(npA->UseCount))) {
     do {
       do {
-	npA->Flags &= ~ACBF_WAITSTATE;
+	npA->State &= ~ACBS_WAIT;
 
-	switch (npA->State) {
+	switch (npA->State & ACBS_STATEMASK) {
 	  case ACBS_START:
 	    StartState (npA);
 	    break;
@@ -99,7 +99,7 @@ VOID NEAR StartSM (NPA npA)
 	    ErrorState (npA);
 	    break;
 	}
-      } while (!(npA->Flags & ACBF_WAITSTATE));
+      } while (!(npA->State & ACBS_WAIT));
     } while (saveDEC (&(npA->UseCount)));
   }
 
@@ -242,7 +242,7 @@ VOID NEAR StartState (NPA npA)
     /* No more IORBs so go to sleep, stay in ACBS_START, and  */
     /* mark the state machine as inactive.		      */
     /*--------------------------------------------------------*/
-    npA->Flags |= ACBF_WAITSTATE | ACBF_SM_SUSPENDED;
+    npA->State |= ACBS_WAIT | ACBS_SUSPENDED;
     ENABLE
     return;
   }
@@ -810,9 +810,8 @@ USHORT NEAR StartOtherIO (NPA npA)
   /*--------------------------------------*/
   /* Set the Next State fields in the ACB */
   /*--------------------------------------*/
-  npA->Flags |= ACBF_WAITSTATE;
   npA->Flags &= ~ACBF_BMINT_SEEN;
-  npA->State  = ACBS_INTERRUPT;
+  npA->State  = ACBS_INTERRUPT | ACBS_WAIT;
 
   /*-----------------------------------------*/
   /* Start the IRQ timer and output the copy */
@@ -864,7 +863,7 @@ USHORT NEAR StartBlockIO (NPA npA)
 
   if ((!(npA->ReqFlags & ACBR_WRITE)) || (npA->ReqFlags & ACBR_DMAIO)) {
     UCHAR longWait;
-    npA->Flags |= ACBF_WAITSTATE;
+    npA->State |= ACBS_WAIT;
     npA->Flags &= ~ACBF_BMINT_SEEN;
 
     longWait = (npU->Flags & (UCBF_REMOVABLE | UCBF_READY | UCBF_BECOMING_READY)) == (UCBF_REMOVABLE | UCBF_BECOMING_READY);
@@ -1259,7 +1258,7 @@ USHORT NEAR DoBlockIO (NPA npA, USHORT cSec)
 			  (ULONG)((longWait || npU->LongTimeout) ? npA->IRQLongTimeOut
 								 : npA->IRQTimeOut),
 			  (PFN)IRQTimer, npA);
-	npA->Flags |= ACBF_WAITSTATE;
+	npA->State |= ACBS_WAIT;
 	npA->Flags &= ~ACBF_BMINT_SEEN;
       } else {
 	if (npU->Flags & UCBF_ATAPIDEVICE)
@@ -1654,7 +1653,7 @@ VOID NEAR SetRetryState(NPA npA)
 
     ADD_StartTimerMS (&npA->RetryTimerHandle, npA->DelayedRetryInterval,
 		      (PFN)DelayedRetry, npA);
-    npA->Flags |= ACBF_WAITSTATE;
+    npA->State |= ACBS_WAIT;
   }
 }
 
@@ -1782,7 +1781,7 @@ VOID NEAR ResetCheck (NPA npA)
     if (!ResetComplete && npA->DelayedResetCtr) {
       ADD_StartTimerMS (&npA->ResetTimerHandle, npA->DelayedResetInterval,
 			(PFN)DelayedReset, npA);
-      npA->Flags |= ACBF_WAITSTATE;
+      npA->State |= ACBS_WAIT;
     }
   } else {
     npA->TimerFlags |= ACBT_RESETFAIL;

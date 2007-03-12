@@ -481,9 +481,7 @@ typedef struct _A
 /* ACB->Flags values */
 
 #define ACBF_INTERRUPT		0x8000
-#define ACBF_WAITSTATE		0x4000
 #define ACBF_BMINT_SEEN 	0x1000
-#define ACBF_SM_SUSPENDED	0x0800
 #define ACBF_MULTIPLEMODE	0x0200
 #define ACBF_DISABLERETRY	0x0040
 
@@ -555,6 +553,10 @@ typedef struct _A
 #define ACBS_PATARESET	5	/*				      */
 #define ACBS_SATARESET	6	/*				      */
 #define ACBS_SUSPEND	7	/* Wait while another DD uses this HW */
+
+#define ACBS_WAIT	0x80
+#define ACBS_SUSPENDED	0x40
+#define ACBS_STATEMASK	0x0F
 
 /* ACB->InsertState values */
 

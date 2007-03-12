@@ -50,9 +50,9 @@ VOID FAR _cdecl IRQTimer (USHORT TimerHandle, PACB pA)
   npA->TimerFlags    |= ACBT_IRQ;
 
 #if PCITRACER
-  outpw (TRPORT, 0xAF00 | (npA->Flags & ACBF_WAITSTATE));
+  outpw (TRPORT, 0xAF00 | (npA->State & ACBS_WAIT));
 #endif
-  if (npA->Flags & ACBF_WAITSTATE) {
+  if (npA->State & ACBS_WAIT) {
     // The device may be ready to transfer data but failed to interrupt.  If so
     // just continue.
 
