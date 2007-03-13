@@ -292,7 +292,7 @@ VOID NEAR StartDetect (NPA npA) {
 
   *(NPUSHORT)(npA->Controller) = 0;
   npA->InsertState = ACBI_SATA_WAITPhy1;
-  npA->State  = ACBS_START;
+  npA->State  = ACBS_START | ACBS_SUSPENDED;
 
   ADD_StartTimerMS (&npA->RetryTimerHandle, 31UL, (PFN)InsertHandler, npA);
 }
@@ -336,7 +336,7 @@ VOID NEAR StartDetectSATA (NPU npU)
   DRVHD = 0xA0;
   *(NPUSHORT)(npA->Controller) = 0;
   npA->InsertState = ACBI_SATA_WAITPhy1;
-  npA->State  = ACBS_START;
+  npA->State  = ACBS_START | ACBS_SUSPENDED;
 
   ADD_StartTimerMS (&npA->RetryTimerHandle, 31UL, (PFN)InsertHandler, npA);
 }

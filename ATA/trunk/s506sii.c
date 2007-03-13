@@ -299,13 +299,11 @@ VOID NEAR SIIStartStop (NPA npA, UCHAR State)
   ULONG  Port = 0x50 | npC->BAR[5].Addr;
   USHORT Leds;
 
-  switch (State) {
-    case ACBS_START:
-      npC->HWSpecial |= 1 << npA->IDEChannel; break;
-    case ACBS_DONE:
-    default:
-      npC->HWSpecial &= ~(1 << npA->IDEChannel); break;
-  }
+  if (State)
+    npC->HWSpecial |=  (1 << npA->IDEChannel);
+  else
+    npC->HWSpecial &= ~(1 << npA->IDEChannel);
+
   Leds = (npC->HWSpecial & 0x0F) << 1;
   Leds |= Leds != 0;
   OutW (Port | 4, 0xFF & ~Leds);

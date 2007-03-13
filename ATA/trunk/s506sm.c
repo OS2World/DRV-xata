@@ -276,19 +276,18 @@ VOID NEAR StartState (NPA npA)
 
   switch (Cmd) {
     case REQ (IOCC_UNIT_CONTROL, IOCM_ALLOCATE_UNIT):	AllocateUnit (npA); return;
-    case REQ (IOCC_DEVICE_CONTROL, IOCM_SUSPEND):	Suspend (npA);      return;
+    case REQ (IOCC_DEVICE_CONTROL, IOCM_SUSPEND):	Suspend (npA);	    return;
+    case REQ (IOCC_ADAPTER_PASSTHRU, IOCM_EXECUTE_ATA): StartIO (npA);	    return;
   }
-  
+
   /*------------------------------------------------*/
   /* Check that unit is allocated for IORB commands */
   /* which require an allocated unit		    */
   /*------------------------------------------------*/
-  if (!(Cmd == REQ (IOCC_ADAPTER_PASSTHRU, IOCM_EXECUTE_ATA))) {
-    if (!(npU->Flags & UCBF_ALLOCATED) && !(InitActive || (pIORB->RequestControl & 0x8000))) {
-      /* Unit not allocated */
-      Error (npA, IOERR_UNIT_NOT_ALLOCATED);
-      return;
-    }
+  if (!(npU->Flags & UCBF_ALLOCATED) && !(InitActive || (pIORB->RequestControl & 0x8000))) {
+    /* Unit not allocated */
+    Error (npA, IOERR_UNIT_NOT_ALLOCATED);
+    return;
   }
 
 #if PCITRACER
@@ -312,7 +311,6 @@ VOID NEAR StartState (NPA npA)
     case REQ (IOCC_EXECUTE_IO, IOCM_WRITE):
     case REQ (IOCC_EXECUTE_IO, IOCM_WRITE_VERIFY):
 
-    case REQ (IOCC_ADAPTER_PASSTHRU, IOCM_EXECUTE_ATA):
 
     case REQ (IOCC_UNIT_STATUS, IOCM_GET_UNIT_STATUS):	    StartIO (npA);	 break;
     case REQ (IOCC_UNIT_STATUS, IOCM_GET_LOCK_STATUS):	    GetLockStatus (npA); break;
@@ -347,7 +345,7 @@ VOID NEAR StartIO (NPA npA)
     return;
   }
 
-  if (METHOD(npA).StartStop) METHOD(npA).StartStop (npA, ACBS_START);
+  if (METHOD(npA).StartStop) METHOD(npA).StartStop (npA, TRUE);
 
   if (!InitACBRequest (npA)) {
     if (npA->ReqFlags & ACBR_OTHERIO)
@@ -1433,7 +1431,7 @@ VOID NEAR DoneState (NPA npA)
     }
   }
 
-  if (METHOD(npA).StartStop) METHOD(npA).StartStop (npA, ACBS_DONE);
+  if (METHOD(npA).StartStop) METHOD(npA).StartStop (npA, FALSE);
 
   IORBDone (npA);
   npA->State = ACBS_START;
