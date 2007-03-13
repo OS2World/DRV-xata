@@ -242,7 +242,7 @@ VOID NEAR StartState (NPA npA)
     /* No more IORBs so go to sleep, stay in ACBS_START, and  */
     /* mark the state machine as inactive.		      */
     /*--------------------------------------------------------*/
-    npA->State |= ACBS_WAIT | ACBS_SUSPENDED;
+    npA->State = ACBS_START | ACBS_WAIT | ACBS_SUSPENDED;
     ENABLE
     return;
   }
@@ -274,13 +274,16 @@ VOID NEAR StartState (NPA npA)
   npU->Flags &= ~UCBF_DISABLERESET;
   npA->State = ACBS_DONE; // default to done
 
+  switch (Cmd) {
+    case REQ (IOCC_UNIT_CONTROL, IOCM_ALLOCATE_UNIT):	AllocateUnit (npA); return;
+    case REQ (IOCC_DEVICE_CONTROL, IOCM_SUSPEND):	Suspend (npA);      return;
+  }
+  
   /*------------------------------------------------*/
   /* Check that unit is allocated for IORB commands */
   /* which require an allocated unit		    */
   /*------------------------------------------------*/
-  if (!(Cmd == REQ (IOCC_UNIT_CONTROL, IOCM_ALLOCATE_UNIT)) &&
-      !(Cmd == REQ (IOCC_DEVICE_CONTROL, IOCM_SUSPEND)) &&
-      !(Cmd == REQ (IOCC_ADAPTER_PASSTHRU, IOCM_EXECUTE_ATA))) {
+  if (!(Cmd == REQ (IOCC_ADAPTER_PASSTHRU, IOCM_EXECUTE_ATA))) {
     if (!(npU->Flags & UCBF_ALLOCATED) && !(InitActive || (pIORB->RequestControl & 0x8000))) {
       /* Unit not allocated */
       Error (npA, IOERR_UNIT_NOT_ALLOCATED);
@@ -296,7 +299,6 @@ VOID NEAR StartState (NPA npA)
   /*-------------------------------------------*/
 
   switch (Cmd) {
-    case REQ (IOCC_UNIT_CONTROL, IOCM_ALLOCATE_UNIT):	AllocateUnit (npA);    break;
     case REQ (IOCC_UNIT_CONTROL, IOCM_DEALLOCATE_UNIT): DeallocateUnit (npA);  break;
     case REQ (IOCC_UNIT_CONTROL, IOCM_CHANGE_UNITINFO): ChangeUnitInfo (npA);  break;
 
@@ -315,8 +317,6 @@ VOID NEAR StartState (NPA npA)
     case REQ (IOCC_UNIT_STATUS, IOCM_GET_UNIT_STATUS):	    StartIO (npA);	 break;
     case REQ (IOCC_UNIT_STATUS, IOCM_GET_LOCK_STATUS):	    GetLockStatus (npA); break;
     case REQ (IOCC_UNIT_STATUS, IOCM_GET_CHANGELINE_STATE): GetChangeLine (npA); break;
-
-    case REQ (IOCC_DEVICE_CONTROL, IOCM_SUSPEND):	    Suspend (npA); break;
 
     default:						    Error (npA, IOERR_CMD_NOT_SUPPORTED); break;
   }
@@ -499,14 +499,9 @@ USHORT NEAR InitACBRequest (NPA npA)
     switch (CmdMod) {
       case IOCM_GET_MEDIA_GEOMETRY:
       case IOCM_GET_DEVICE_GEOMETRY:
-	if (npU->Flags & UCBF_REMOVABLE) {
-	  if (npU->Flags & UCBF_ATAPIDEVICE) {
-	    npA->State = ACBS_DONE;
-	    return (TRUE);
-	  } else {
-	    SetupIdentify (npA, npU);
-	    break;
-	  }
+	if ((npU->Flags & (UCBF_REMOVABLE | UCBF_ATAPIDEVICE)) == UCBF_REMOVABLE) {
+	  SetupIdentify (npA, npU);
+	  break;
 	} else {
 	  return (TRUE);
 	}
@@ -844,8 +839,7 @@ USHORT NEAR StartBlockIO (NPA npA)
   NPU npU = npA->npU;
 
   /*--------------------------------------*/
-  /* Set CHS/LBA address and Sector Count */
-  /* in ACB.				  */
+  /* Set address and Sector Count  in ACB.  */
   /*--------------------------------------*/
   if (!(npA->ReqFlags & ACBR_NONBLOCKIO))
     SetIOAddress (npA);
