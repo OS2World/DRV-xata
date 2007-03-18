@@ -53,11 +53,11 @@
 /*  the HWResources's suspend IORB queue.                  */
 /*---------------------------------------------------------*/
 
-VOID NEAR SuspendIORBReq (NPA npA, PIORB pNewIORB)
+VOID NEAR SuspendIORBReq (NPA npA, PIORB pIORB)
 {
-  USHORT DCFlags = ((PIORB_DEVICE_CONTROL)pNewIORB)->Flags;
+  USHORT DCFlags = ((PIORB_DEVICE_CONTROL)pIORB)->Flags;
 
-  pNewIORB->pNxtIORB = 0;
+  pIORB->pNxtIORB = 0;
 
   DISABLE
   if (npA->pSuspendHead) {
@@ -68,11 +68,11 @@ VOID NEAR SuspendIORBReq (NPA npA, PIORB pNewIORB)
     /*------------------------------------------------------------------*/
 
     if (DCFlags & DC_SUSPEND_IMMEDIATE) {
-      pNewIORB->pNxtIORB = npA->pSuspendHead;
-      npA->pSuspendHead  = pNewIORB;
+      pIORB->pNxtIORB	= npA->pSuspendHead;
+      npA->pSuspendHead = pIORB;
     } else {
-      npA->pSuspendFoot->pNxtIORB = pNewIORB;
-      npA->pSuspendFoot = pNewIORB;
+      npA->pSuspendFoot->pNxtIORB = pIORB;
+      npA->pSuspendFoot = pIORB;
     }
   } else {
 
@@ -80,8 +80,8 @@ VOID NEAR SuspendIORBReq (NPA npA, PIORB pNewIORB)
     /*	Put first suspend iorb on Queue */
     /*----------------------------------*/
 
-    npA->pSuspendHead = pNewIORB;
-    npA->pSuspendFoot = pNewIORB;
+    npA->pSuspendHead = pIORB;
+    npA->pSuspendFoot = pIORB;
     npA->CountUntilSuspend = (DCFlags & DC_SUSPEND_IMMEDIATE) ? IMMEDIATE_COUNT
 							      : DEFERRED_COUNT;
   }
@@ -191,85 +191,63 @@ VOID NEAR ResumeIORBReq (NPA npA, PIORB pIORB)
 /* queue.						 */
 /*							 */
 /*-------------------------------------------------------*/
-PIORB NEAR PreProcessIORBs (NPA npA, NPU npU, PPIORB ppFirstIORB)
+PIORB NEAR PreProcessIORBs (NPA npA, PPIORB ppIORBHead)
 {
-  PIORB  pIORB, pIORBPrev, pIORBNext;
+  PIORB  pIORB, pIORBTail, pIORBNext;
   USHORT Cmd;
 
-#define CmdCode (Cmd >> 8)
-#define CmdModifier (UCHAR)(Cmd & 0xFF)
+  pIORBTail = 0;
+  for (pIORB = *ppIORBHead; pIORB; pIORB = pIORBNext) {
 
-  pIORB     = *ppFirstIORB;
-  pIORBPrev = 0;
-
-  do {
+    UCHAR notify = TRUE;
     pIORBNext = (pIORB->RequestControl & IORB_CHAIN) ? pIORB->pNxtIORB : 0;
     Cmd = REQ (pIORB->CommandCode, pIORB->CommandModifier);
 
-    if ((Cmd == REQ (IOCC_ADAPTER_PASSTHRU, IOCM_EXECUTE_CDB)) ||
-	(CmdCode == IOCC_CONFIGURATION) ||
-	(CmdCode == IOCC_RESOURCE)	||
-	(CmdCode == IOCC_DEVICE_CONTROL)) {
+    switch (Cmd) {
+      case REQ (IOCC_CONFIGURATION, IOCM_GET_DEVICE_TABLE) :
+	GetDeviceTable (pIORB); goto done;
 
-      if (pIORBPrev) {
-	pIORBPrev->pNxtIORB = pIORBNext;
-      } else {
-	*ppFirstIORB = pIORBNext;
-      }
+      case REQ (IOCC_CONFIGURATION, IOCM_COMPLETE_INIT) :
+	CompleteInit (npA); goto done;
 
-      if (CmdCode == IOCC_RESOURCE) Cmd = 10 + CmdModifier;
-      if (CmdCode == IOCC_CONFIGURATION) Cmd = 8 + CmdModifier;
-      if (CmdCode == IOCC_ADAPTER_PASSTHRU) {
-	PCHAR SCSICmd = ((PIORB_ADAPTER_PASSTHRU)pIORB)->pControllerCmd;
+      case REQ (IOCC_RESOURCE, IOCM_REPORT_RESOURCES) :
+	GetUnitResources (npA, pIORB); goto done;
 
-	Cmd = 0;
-	if ((SCSICmd[0] == SCSI_START_STOP_UNIT) && (SCSICmd[4] == 2))
-	  Cmd = IOCM_EJECT_MEDIA;
-      }
+      case REQ (IOCC_DEVICE_CONTROL, IOCM_SUSPEND) :
+	SuspendIORBReq (npA, pIORB); notify = FALSE; goto done;
 
-      switch (CmdModifier) {
-	case 9 /* IOCM_GET_DEVICE_TABLE */ :
-	  GetDeviceTable (pIORB); break;
+      case REQ (IOCC_DEVICE_CONTROL, IOCM_RESUME) :
+	ResumeIORBReq (npA, pIORB); goto done;
 
-	case 10 /* IOCM_COMPLETE_INIT */ :
-	  CompleteInit (npA); break;
+      case REQ (IOCC_DEVICE_CONTROL, IOCM_GET_QUEUE_STATUS) :
+	GetQueueStatus (npA, pIORB);
 
-	case 11 /* IOCM_REPORT_RESOURCES */ :
-	  GetUnitResources (npA, pIORB); break;
+      done:
+	/* this IORB is done, remove it from chain of unprocessed IORBs */
+	if (pIORBTail) {
+	  pIORBTail->pNxtIORB = pIORBNext;
+	} else {
+	  *ppIORBHead = pIORBNext;
+	}
 
-	case IOCM_SUSPEND :
-	  SuspendIORBReq (npA, pIORB); break;
+	/* done processing, optionally notify */
+	if (notify) {
+	  pIORB->Status |= IORB_DONE;
 
-	case IOCM_RESUME :
-	  ResumeIORBReq (npA, pIORB); break;
+	  if (pIORB->RequestControl & IORB_ASYNC_POST)
+	    ((PIORBNotify)pIORB->NotifyAddress) (pIORB);
+	}
 
-	case IOCM_GET_QUEUE_STATUS :
-	  GetQueueStatus (npA, pIORB); break;
-
-	case IOCM_EJECT_MEDIA :
-	case IOCM_LOCK_MEDIA :
-	case IOCM_UNLOCK_MEDIA :
-	  ProcessLockUnlockEject (npU, pIORB, CmdModifier); break;
-
-	default:
-	  pIORB->Status   |= IORB_ERROR;
-	  pIORB->ErrorCode = IOERR_CMD_NOT_SUPPORTED;
-      }
-
-      if (CmdModifier != IOCM_SUSPEND) {
-	pIORB->Status |= IORB_DONE;
-
-	if (pIORB->RequestControl & IORB_ASYNC_POST)
-	  ((PIORBNotify)pIORB->NotifyAddress) (pIORB);
-      }
-      continue;
+	continue;
     }
-    pIORBPrev = pIORB;
-  } while (pIORB = pIORBNext);
 
-  if (pIORBPrev)
-    pIORBPrev->pNxtIORB = 0;
+    /* this IORB was not processed, keep it as running tail of unprocessed IORBs */
+    pIORBTail = pIORB;
+  }
 
-  return (pIORBPrev);
+  if (pIORBTail)
+    pIORBTail->pNxtIORB = 0;
+
+  return (pIORBTail);
 }
 

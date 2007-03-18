@@ -311,6 +311,9 @@ VOID NEAR StartState (NPA npA)
     case REQ (IOCC_EXECUTE_IO, IOCM_WRITE):
     case REQ (IOCC_EXECUTE_IO, IOCM_WRITE_VERIFY):
 
+    case REQ (IOCC_DEVICE_CONTROL, IOCM_LOCK_MEDIA):
+    case REQ (IOCC_DEVICE_CONTROL, IOCM_UNLOCK_MEDIA):
+    case REQ (IOCC_DEVICE_CONTROL, IOCM_EJECT_MEDIA):
 
     case REQ (IOCC_UNIT_STATUS, IOCM_GET_UNIT_STATUS):	    StartIO (npA);	 break;
     case REQ (IOCC_UNIT_STATUS, IOCM_GET_LOCK_STATUS):	    GetLockStatus (npA); break;
@@ -320,6 +323,68 @@ VOID NEAR StartState (NPA npA)
   }
 }
 
+#if 0
+      if (CmdCode == IOCC_ADAPTER_PASSTHRU) {
+	PCHAR SCSICmd = ((PIORB_ADAPTER_PASSTHRU)pIORB)->pControllerCmd;
+
+	Cmd = 0;
+	if ((SCSICmd[0] == SCSI_START_STOP_UNIT) && (SCSICmd[4] == 2))
+	  Cmd = IOCM_EJECT_MEDIA;
+      }
+
+/*---------------------------------------------------------------------------*
+ * ProcessLockUnlockEject						     *
+ * ------------------							     *
+ *									     *
+ *									     *
+ *---------------------------------------------------------------------------*/
+
+VOID NEAR ProcessLockUnlockEject (NPU npU, PIORB pIORB, UCHAR Function)
+{
+  npicp = &npA->icp;
+  switch (Function) {
+    case IOCM_EJECT_MEDIA:
+      npicp->TaskFileIn.Command = FX_EJECT_MEDIA;
+      if (npU->Flags & (UCBF_PCMCIA | UCBF_CFA)) {
+	IssueOneByte (npU, FX_STANDBYIMM);
+	DevHelp_Beep (2000, 100);
+      }
+      break;
+    case IOCM_LOCK_MEDIA:
+      npicp->TaskFileIn.Command = FX_LOCK_DOOR;
+      break;
+    case IOCM_UNLOCK_MEDIA:
+      npicp->TaskFileIn.Command = FX_UNLOCK_DOOR;
+      break;
+  }
+
+  if (npU->Flags & UCBF_PCMCIA) return;
+
+  npicp->RegisterMapW = RTM_COMMAND;
+  npicp->RegisterMapR = RTM_ERROR | RTM_STATUS;
+
+  rc = IssueCommand (npU);
+
+  if (rc) {
+    if (npicp->TaskFileOut.Error & FX_ABORT) {
+      pIORB->ErrorCode = IOERR_CMD_ABORTED;
+    } else {
+      // signal the status has changed
+      if (npicp->TaskFileOut.Error & FX_MCR) {
+	pIORB->ErrorCode = IOERR_MEDIA_CHANGED;
+      } else {
+	pIORB->ErrorCode = IOERR_DEVICE_NONSPECIFIC;
+      }
+      if (npicp->TaskFileOut.Error & FX_NM) {
+	npU->Flags &= ~UCBF_READY;
+	npU->Flags |=  UCBF_BECOMING_READY;
+      } else {
+	npU->Flags |=  UCBF_READY;
+      }
+    }
+  }
+}
+#endif
 
 /*-------------------------------------------------*/
 /*  StartIO()					   */
@@ -493,6 +558,12 @@ USHORT NEAR InitACBRequest (NPA npA)
 	SetupSeek (npA, npU);
 	break;
     }
+  } else if (CmdCod == IOCC_DEVICE_CONTROL) {
+    switch (CmdMod) {
+      case IOCM_LOCK_MEDIA:    SetupCommand (npA, npU, FX_LOCK_DOOR);	 break;
+      case IOCM_UNLOCK_MEDIA:  SetupCommand (npA, npU, FX_UNLOCK_DOOR);  break;
+      case IOCM_EJECT_MEDIA:   SetupCommand (npA, npU, FX_EJECT_MEDIA);  break;
+    }
   } else if (CmdCod == IOCC_GEOMETRY) {
     switch (CmdMod) {
       case IOCM_GET_MEDIA_GEOMETRY:
@@ -592,20 +663,24 @@ BOOL NEAR SetupFromATA (NPA npA, NPU npU)
 /*
 ** Setup to perform a seek to the first sector on the drive.
 */
-BOOL NEAR SetupSeek (NPA npA, NPU npU)
+VOID NEAR SetupSeek (NPA npA, NPU npU)
+{
+  SetupCommand (npA, npU, FX_SEEK);
+  npA->IOPendingMask = (FM_PSECCNT | FM_PCYLL | FM_PCYLH | FM_PDRHD | FM_PCMD);
+}
+
+///
+VOID NEAR SetupCommand (NPA npA, NPU npU, UCHAR Cmd)
 {
   npA->IOSGPtrs.cSGList = 0;
   npA->IOSGPtrs.pSGList = NULL;
 
-  SECTOR	     = 1;
-  COMMAND	     = FX_SEEK;
-  npA->IOPendingMask = (FM_PSECCNT | FM_PCYLL | FM_PCYLH | FM_PDRHD | FM_PCMD);
+  COMMAND	     = Cmd;
+  npA->IOPendingMask = FM_PCMD;
 
   npA->ReqFlags = ACBR_NONDATA;
   npA->Flags |= ACBF_DISABLERETRY;
   npU->Flags |= UCBF_DISABLERESET;
-
-  return (TRUE);
 }
 
 

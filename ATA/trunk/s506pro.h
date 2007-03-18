@@ -37,6 +37,11 @@ int  FAR  DoIOCtlPCMCIA (PVOID);
 /*----------------------------------------------------------------------------*
  * S506IORB.C - IORB Queueing Entry Point				      *
  *----------------------------------------------------------------------------*/
+VOID FAR  _loadds _cdecl ADDEntryPoint (PIORBH pNewIORB);
+UCHAR NEAR NextIORB (NPA npA);
+VOID NEAR IORBDone (NPA npA);
+VOID NEAR Error (NPA npA, USHORT ErrorCode);
+
 VOID NEAR GetDeviceTable (PIORB pIORB);
 VOID NEAR CompleteInit (NPA npA);
 VOID NEAR AllocateUnit (NPA npA);
@@ -48,11 +53,6 @@ VOID NEAR GetLockStatus (NPA npA);
 VOID NEAR GetQueueStatus (NPA npA, PIORB pIORB);
 VOID NEAR GetUnitResources (NPA npA, PIORB pIORB);
 VOID NEAR SetMediaGeometry (NPA npA);
-VOID NEAR Error (NPA npA, USHORT ErrorCode);
-USHORT NEAR NextIORB (NPA npA);
-VOID FAR  _loadds _cdecl ADDEntryPoint (PIORBH pNewIORB);
-VOID NEAR IORBDone(NPA npA);
-VOID NEAR PreProcessedIORBDone (PIORB pIORB);
 VOID NEAR GetChangeLine (NPA npA);
 VOID NEAR GetLockStatus (NPA npA);
 VOID NEAR LockMedia (NPA npA);
@@ -136,7 +136,8 @@ VOID   NEAR ErrorState(NPA npA);
 USHORT NEAR StartOtherIO(NPA npA);
 USHORT NEAR InitACBRequest(NPA npA);
 BOOL   NEAR SetupFromATA(NPA npA, NPU npU);
-BOOL   NEAR SetupSeek (NPA npA, NPU npU);
+VOID   NEAR SetupCommand (NPA npA, NPU npU, UCHAR Cmd);
+VOID   NEAR SetupSeek (NPA npA, NPU npU);
 BOOL   NEAR SetupIdentify (NPA npA, NPU npU);
 VOID   NEAR InitBlockIO(NPA npA);
 USHORT NEAR StartBlockIO(NPA npA);
@@ -267,7 +268,7 @@ VOID   FAR  UnhookIRQ (NPA npA);
 VOID   FAR  RehookIRQ (NPA npA);
 USHORT FAR  ActivateACB (NPA npA);
 VOID   FAR  DeactivateACB (NPA npA);
-PIORB  NEAR PreProcessIORBs (NPA npA, NPU npU, PPIORB ppFirstIORB);
+PIORB  NEAR PreProcessIORBs (NPA npA, PPIORB ppFirstIORB);
 VOID   NEAR RemoveIORB (PIORB pIORB, PIORB pIORBPrev,
 			PPIORB pIORBFirst);
 UCHAR  NEAR AllocateHWResources (NPA npA);

@@ -200,7 +200,6 @@ VOID FAR _cdecl S506Str1 (VOID)
 		IssueSetMax (npU, (PULONG)&(npU->FoundLBASize), TRUE);
 	      }
 	      if (NotShutdown)
-//		  IssueOneByte (npU, FX_IDLEIMM);
 		IssueSetIdle (npU, 0, 0);    // Marvell can't do IDLE_IMMEDIATE
 	      else
 		IssueSetIdle (npU, 1, 1);
@@ -614,65 +613,6 @@ int NEAR IssueGetMediaStatus (NPU npU)
     }
   }
   return (rc);
-}
-
-/*---------------------------------------------------------------------------*
- * ProcessLockUnlockEject						     *
- * ------------------							     *
- *									     *
- *									     *
- *---------------------------------------------------------------------------*/
-
-VOID NEAR ProcessLockUnlockEject (NPU npU, PIORB pIORB, UCHAR Function)
-{
-  NPPassThruATA npicp;
-  NPA	 npA = npU->npA;
-  USHORT rc;
-
-  ClearIORB (npA);
-
-  npicp = &npA->icp;
-  switch (Function) {
-    case IOCM_EJECT_MEDIA:
-      npicp->TaskFileIn.Command = FX_EJECT_MEDIA;
-      if (npU->Flags & (UCBF_PCMCIA | UCBF_CFA)) {
-	IssueOneByte (npU, FX_STANDBYIMM);
-	DevHelp_Beep (2000, 100);
-      }
-      break;
-    case IOCM_LOCK_MEDIA:
-      npicp->TaskFileIn.Command = FX_LOCK_DOOR;
-      break;
-    case IOCM_UNLOCK_MEDIA:
-      npicp->TaskFileIn.Command = FX_UNLOCK_DOOR;
-      break;
-  }
-
-  if (npU->Flags & UCBF_PCMCIA) return;
-
-  npicp->RegisterMapW = RTM_COMMAND;
-  npicp->RegisterMapR = RTM_ERROR | RTM_STATUS;
-
-  rc = IssueCommand (npU);
-
-  if (rc) {
-    if (npicp->TaskFileOut.Error & FX_ABORT) {
-      pIORB->ErrorCode = IOERR_CMD_ABORTED;
-    } else {
-      // signal the status has changed
-      if (npicp->TaskFileOut.Error & FX_MCR) {
-	pIORB->ErrorCode = IOERR_MEDIA_CHANGED;
-      } else {
-	pIORB->ErrorCode = IOERR_DEVICE_NONSPECIFIC;
-      }
-      if (npicp->TaskFileOut.Error & FX_NM) {
-	npU->Flags &= ~UCBF_READY;
-	npU->Flags |=  UCBF_BECOMING_READY;
-      } else {
-	npU->Flags |=  UCBF_READY;
-      }
-    }
-  }
 }
 
 #ifdef ENABLE_SET_TIMINGS

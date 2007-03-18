@@ -69,10 +69,10 @@ VOID FAR _loadds _cdecl ADDEntryPoint (PIORBH pIORB)
 
   pFirstIORB = pIORB;
 
-  /*------------------------------------------*/
-  /* Queue IORB commands which dont address a */
-  /* specific unit to ACB 0 Unit 0	      */
-  /*------------------------------------------*/
+  /*-------------------------------------------*/
+  /* Queue IORB commands which don't address a */
+  /* specific unit to ACB 0 Unit 0	       */
+  /*-------------------------------------------*/
   if (pFirstIORB->CommandCode == IOCC_CONFIGURATION) {
     pFirstIORB->UnitHandle = (USHORT)ACBPtrs[0]->UnitCB;
   }
@@ -128,7 +128,7 @@ goodACB:
 #endif
 
   if (npA->FlagsT & ATBF_PCMCIA) LastAccessedPCCardUnit = npA;
-  pLastIORB = PreProcessIORBs (npA, npU, &pFirstIORB);
+  pLastIORB = PreProcessIORBs (npA, &pFirstIORB);
 
   DISABLE
   if (pFirstIORB) {
@@ -181,7 +181,7 @@ goodACB:
 ** Return 0 if there is another IORB to process.
 ** Return 1 if the queue is empty.
 */
-USHORT NEAR NextIORB (NPA npA)
+UCHAR NEAR NextIORB (NPA npA)
 {
   /*---------------------------------------------------------------*/
   /* Get the next IORB from the HWResoure queue of suspended IORBs */
