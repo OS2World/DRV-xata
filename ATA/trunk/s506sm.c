@@ -24,6 +24,7 @@
  #include "reqpkt.h"
  #include "dhcalls.h"
  #include "addcalls.h"
+ #include "scsi.h"
 
  #include "s506cons.h"
  #include "s506type.h"
@@ -542,12 +543,24 @@ USHORT NEAR InitACBRequest (NPA npA)
 	break;
     }
   } else if (CmdCod == IOCC_ADAPTER_PASSTHRU) {
-    if (!SetupFromATA (npA, npU)) {
-      //
-      // unsupported passthru command
-      //
-      Error (npA, IOERR_CMD_NOT_SUPPORTED);
-      return (TRUE);
+    switch (CmdMod) {
+      case IOCM_EXECUTE_ATA :
+	if (!SetupFromATA (npA, npU)) goto unsupported;
+	break;
+
+      case IOCM_EXECUTE_CDB : {
+	PCHAR SCSICmd = ((PIORB_ADAPTER_PASSTHRU)pIORB)->pControllerCmd;
+
+	if ((SCSICmd[0] == SCSI_START_STOP_UNIT) && (SCSICmd[4] == 2)) {
+	  SetupCommand (npA, npU, FX_EJECT_MEDIA);
+	  break;
+	} // else fall-through to unsupported
+      }
+      default:
+      unsupported:
+	  // unsupported passthru command
+	  Error (npA, IOERR_CMD_NOT_SUPPORTED);
+	  return (TRUE);
     }
   } else if (CmdCod == IOCC_UNIT_STATUS) {
     switch (CmdMod) {
@@ -672,9 +685,6 @@ VOID NEAR SetupSeek (NPA npA, NPU npU)
 ///
 VOID NEAR SetupCommand (NPA npA, NPU npU, UCHAR Cmd)
 {
-  npA->IOSGPtrs.cSGList = 0;
-  npA->IOSGPtrs.pSGList = NULL;
-
   COMMAND	     = Cmd;
   npA->IOPendingMask = FM_PCMD;
 
@@ -741,7 +751,7 @@ VOID NEAR InitBlockIO (NPA npA)
     /* Calculate total bytes in transfer request */
 
     npA->BytesToTransfer = (ULONG) pIORB->BlockCount * (ULONG) pIORB->BlockSize;
-    pIORB->BlocksXferred   = 0;
+    pIORB->BlocksXferred = 0;
   }
 }
 
@@ -809,7 +819,7 @@ USHORT NEAR StartOtherIO (NPA npA)
     COMMAND		= FX_SETP;
     SECCNT		= npU->PhysGeom.SectorsPerTrack;
     DRVHD	       |= 0x0F & (npU->PhysGeom.NumHeads - 1);
-    npA->IOPendingMask |= FM_PSECCNT;
+    npA->IOPendingMask	= FM_PSECCNT | FM_PFEAT | FM_PDRHD | FM_PCMD;
     npA->ReqMask	= ACBR_SETPARAM;
 
   } else if (ReqFlags & ACBR_SETMULTIPLE) {
@@ -960,19 +970,6 @@ USHORT NEAR StartBlockIO (NPA npA)
 }
 
 /*---------------------------------------------*/
-/* SetupDMAdefault			       */
-/*---------------------------------------------*/
-
-VOID NEAR GenericSetupDMA (NPA npA)
-{
-  outpdelay (BMSTATUSREG, (UCHAR)(BMISTA_ERROR |  /* clear Error Bit	   */
-			      BMISTA_INTERRUPT |  /* clear INTR flag	   */
-			      npA->BMStatus));
-
-  OutD (npA->BMIDTP, npA->ppSGL);
-}
-
-/*---------------------------------------------*/
 /* SetIOAddress 			       */
 /* ------------ 			       */
 /*					       */
@@ -1098,7 +1095,8 @@ VOID NEAR InterruptState (NPA npA)
   register int loop;
   NPU	       npU = npA->npU;
 
-  if ((npA->ReqFlags & ACBR_DMAIO) && (npU->Flags & UCBF_BM_DMA)) {
+  if (npA->ReqFlags & ACBR_DMAIO) {
+#if 0
     /* Wait for BM DMA active to go away for a while. */
 
     if (BMSTATUSREG && ((BMSTATUS & (BMISTA_INTERRUPT | BMISTA_ACTIVE)) != BMISTA_INTERRUPT)) {
@@ -1136,6 +1134,8 @@ VOID NEAR InterruptState (NPA npA)
     }
 
     METHOD(npA).StopDMA (npA);
+#endif
+
     /* Fix so that Bus Master errors will definitely result in retries */
     if (BMSTATUS & BMISTA_ERROR) {
       USHORT PCIStatus;
@@ -1152,7 +1152,6 @@ VOID NEAR InterruptState (NPA npA)
   /*----------------------------------------*/
   /* Check the STATUS Reg for the ERROR bit */
   /*----------------------------------------*/
-  if (npA->FlagsT & ATBF_LATE_INT) STATUS = InB (STATUSREG);
   Status = STATUS;
   if (Status & FX_BUSY) {
     CheckBusy (npA);
@@ -1250,8 +1249,8 @@ VOID NEAR InterruptState (NPA npA)
       /*    for slave and Bus Master DMA */
 
       if (npA->ReqFlags & ACBR_DMAIO) {
-	npA->SecToGo = 0;
 	npA->ReqFlags &= ~ACBR_DMAIO; /* reset DMA XFER in progress */
+	npA->SecToGo = 0;
 	rc = 0;
       } else
 	rc = DoBlockIO (npA, npA->SecPerInt);
@@ -1345,19 +1344,6 @@ USHORT NEAR DoBlockIO (NPA npA, USHORT cSec)
 #endif
 
       npA->IOSGPtrs.iPortAddress = DATAREG;
-
-#if 0 //PCITRACER
-  outpw (TRPORT, npA->IOSGPtrs.Mode);
-  outpw (TRPORT, npA->IOSGPtrs.cSGList);
-  OutD	(TRPORT, (ULONG)(npA->IOSGPtrs.pSGList));
-  OutD	(TRPORT, npA->IOSGPtrs.iPortAddress);
-  OutD	(TRPORT, npA->IOSGPtrs.numTotalBytes);
-  outpw (TRPORT, npA->IOSGPtrs.iSGList);
-  OutD	(TRPORT, npA->IOSGPtrs.SGOffset);
-  outpw (TRPORT, npA->IOSGPtrs.iSGListStart);
-  OutD	(TRPORT, npA->IOSGPtrs.SGOffsetStart);
-#endif
-
       ADD_XferIO (&npA->IOSGPtrs);
 
 #if PCITRACER
@@ -1581,7 +1567,7 @@ VOID NEAR ErrorState (NPA npA)
   RemovableNotReady = (npU->Flags & UCBF_REMOVABLE)
 		   && (npA->IORBError == IOERR_UNIT_NOT_READY);
 
-  if ((npA->ReqFlags & ACBR_DMAIO) && (npU->Flags & UCBF_BM_DMA)) {
+  if (npA->ReqFlags & ACBR_DMAIO) {
     if ((npA->DataErrorCnt == 1) && (npA->IORBError == IOERR_DEVICE_ULTRA_CRC)) {
       /**********************************************/
       /* Retry the Ultra DMA operation one (1) time */
@@ -2375,6 +2361,7 @@ USHORT NEAR MapError (NPA npA)
 
 	IORBError = IOERR_UNIT_NOT_READY;
 	npU->Flags &= ~UCBF_READY;
+	npU->Flags |=  UCBF_BECOMING_READY;
       } else {
 	IORBError = IOERR_DEVICE_NONSPECIFIC;
 	++npU->DeviceCounters.TotalSeekErrors;
@@ -2404,6 +2391,7 @@ USHORT NEAR MapError (NPA npA)
 	  } else if (ErrCode & FX_NM) {
 	    IORBError = IOERR_MEDIA_NOT_PRESENT;
 	    npU->Flags &= ~UCBF_READY;
+	    npU->Flags |=  UCBF_BECOMING_READY;
 	  } else {
 	    IORBError = IOERR_DEVICE_NONSPECIFIC;
 	  }

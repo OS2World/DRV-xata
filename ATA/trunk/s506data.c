@@ -31,8 +31,8 @@
  #include "s506pro.h"
 
 #define YEAR  2007
-#define MONTH 3
-#define DAY   13
+#define MONTH 4
+#define DAY   1
 #define PCMCIAVERSION 0x180
 
 /*-------------------------------------------------------------------*/
@@ -665,14 +665,12 @@ USHORT CListMarvell[] = {
 		0x6101,     // Marvell 641x PATA
 		0x6145,     // Marvell 641x PATA & SATA
 		0 };
-#if 1
 USHORT CListCInitio[] = {
 	0x1623, 0x1622,     // 1623 -> 162x
 		0 };
 USHORT CListInitio[] = {
 		0x1622,     // Initio 162x
 		0 };
-#endif
 
 /*
 ** PCIDevice is an array of adapter specific information.  Each
@@ -854,7 +852,7 @@ PCI_DEVICE PCIDevice[] =
   { { 0, 0x169C, generic, MODE_NATIVE_OK | SIMPLEX_DIS, 0, 2,
       AcceptNetCell, CfgNull,
       NULL, BMCheckIRQ,
-      GetGenericPio, SetupCommon,
+      GetNetCellPio, SetupCommon,
       CalculateGenericAdapterTiming, NULL, NULL},
       CListNULL, CListNetCell,
       0x04, 0x04, 0x00, 0x00, 0x10,
@@ -909,16 +907,16 @@ PCI_DEVICE PCIDevice[] =
       CListCIXPA, CListFIXPA,
       0x04, 0x04, 0x00, 0x00, 0x10,
       IXPMsgtxt },
-#if 1
   { { 0, 0x1101, Initio, MODE_NATIVE_OK, 0, 2,
-      AcceptInitio, CfgGeneric,
+      AcceptInitio, CfgNull,
       NULL, InitioCheckIRQ,
       NULL, SetupCommon,
-      CalculateGenericAdapterTiming, NULL, NULL},
+      CalculateGenericAdapterTiming, NULL, NULL,
+      NULL, NULL,
+      InitioSetupDMA, InitioStartOp, InitioStopDMA, InitioErrorDMA},
       CListCInitio, CListInitio,
       0x04, 0x04, 0x00, 0x00, 0x10,
       NULL },
-#endif
   { { 0, 0, generic, MODE_NATIVE_OK, 0, 2,
       AcceptGeneric, CfgGeneric,
       GenericInitComplete, NonsharedCheckIRQ,

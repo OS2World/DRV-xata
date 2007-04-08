@@ -258,7 +258,7 @@ VOID FAR ConfigurePCI (NPC npC, USHORT InPhase)
     return;
 
   if (InPhase == PCIC_START) {
-    pData = (InPhase == PCIC_START) ? npC->CfgTblBIOS : npC->CfgTblDriver;
+    pData = npC->CfgTblBIOS;
     pCfg = (NPCH)(npPCIInfo->Ident.CfgTable);
     while (Port = *(pCfg++)) {
       Size = (s = *(pCfg++)) & 7;
@@ -275,8 +275,7 @@ VOID FAR ConfigurePCI (NPC npC, USHORT InPhase)
       pData += Size;
     }
 
-    if (InPhase == PCIC_START)
-      memcpy (npC->CfgTblDriver, npC->CfgTblBIOS, sizeof (npC->CfgTblBIOS));
+    memcpy (npC->CfgTblDriver, npC->CfgTblBIOS, sizeof (npC->CfgTblBIOS));
   }
 
   if ((InPhase == PCIC_INIT_COMPLETE)  ||

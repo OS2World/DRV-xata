@@ -92,7 +92,6 @@ VOID NEAR SiISATA (NPA npA)
 
   } else {				 // use MMIO
 
-    MEMBER(npA).CfgTable   = CfgNull;
     METHOD(npA).GetPIOMode = GetSIISATAPio;
     METHOD(npA).Setup	   = SetupCommon;
     METHOD(npA).ProgramChip= ProgramSIISATAChip;

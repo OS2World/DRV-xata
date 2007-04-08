@@ -4,7 +4,7 @@
  *
  * DESCRIPTIVE NAME = DANIS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- * Copyright : COPYRIGHT Daniela Engert 1999-2006
+ * Copyright : COPYRIGHT Daniela Engert 1999-2007
  *
  * DESCRIPTION : Adapter Driver generic busmaster routines.
  *
@@ -67,7 +67,7 @@ BOOL NEAR AcceptGeneric (NPA npA)
   }
 
   npA->Cap &= ~CHIPCAP_PIO32;
-  npA->IRQDelay = -1; // delayed interrupt
+  npA->IRQDelay = 12; // delayed interrupt
   npA->FlagsT |= ATBF_BIOSDEFAULTS;
   return (TRUE);
 }
@@ -76,11 +76,19 @@ BOOL NEAR AcceptGeneric (NPA npA)
 
 BOOL NEAR AcceptNetCell (NPA npA)
 {
-  npA->Cap &= ~(CHIPCAP_ATAPIPIO32 | CHIPCAP_ATAPIDMA);
-  npA->Cap |= CHANCAP_SPEED | CHANCAP_CABLE80 | CHIPCAP_SATA;
+  npA->Cap &= ~CHIPCAP_PIO32;
+  npA->Cap &= ~CHIPCAP_ATAPIDMA;
+  npA->Cap |= CHANCAP_SPEED | CHANCAP_CABLE80;
   npA->FlagsT |= ATBF_BIOSDEFAULTS;
   npA->maxUnits = 2;
   return (TRUE);
+}
+
+USHORT NEAR GetNetCellPio (NPA npA, UCHAR Unit) {
+  NPU npU = &(npA->UnitCB[Unit]);
+
+  if (npU->FoundUDMAMode >= 8) npA->Cap |= CHIPCAP_SATA;
+  return (GetGenericPio (npA, Unit));
 }
 
 // ---------------------------------------------------------------
@@ -198,11 +206,6 @@ VOID CalculateGenericAdapterTiming (NPA npA)
 
 VOID NEAR GenericInitComplete (NPA npA)
 {
-#if 0
-  if (InB (npA->BMISTA) & 0x80) {  /* busmaster supports simplex mode only */
-				   /* serialize access to IDE chip	   */
-  }
-#endif
 }
 															/* vvv, @V151345 */
 /*----------------------------------------------------*/
@@ -213,28 +216,33 @@ VOID NEAR GenericInitComplete (NPA npA)
 /*----------------------------------------------------*/
 
 int NEAR NonsharedCheckIRQ (NPA npA) {
-  UCHAR Loop;
+  IODly (npA->IRQDelayCount);
 
-  if (!(npA->FlagsT & ATBF_LATE_INT)) {
-    if (BMCMDREG && (InB (BMCMDREG) & BMICOM_START)) {
-      IODly (npA->IRQDelayCount);
-      for (Loop = 256; --Loop != 0;) {
-	if ((BMSTATUS = InB (BMSTATUSREG)) & BMISTA_INTERRUPT) {
-	  npA->Flags |= ACBF_BMINT_SEEN;
-//	    if (!(BMSTATUS & BMISTA_ACTIVE))
-	    OutB (BMCMDREG, npA->BM_CommandCode &= npA->BM_StopMask); /* turn OFF Start bit */
-//	    else
-//	      npA->npU->DeviceCounters.TotalBMStatus2++;
-	  OutB (BMSTATUSREG, (UCHAR)(BMSTATUS & BMISTA_MASK));
-	  break;
+  if (npA->BM_CommandCode) {
+    UCHAR Loop;
+
+    for (Loop = 256; --Loop != 0;) {
+      BMSTATUS = InB (BMSTATUSREG);
+      if (BMSTATUS & BMISTA_INTERRUPT) {
+	npA->Flags |= ACBF_BMINT_SEEN;
+	OutB (BMCMDREG, npA->BM_CommandCode &= npA->BM_StopMask); /* turn OFF Start bit */
+	OutB (BMSTATUSREG, (UCHAR)(BMSTATUS & BMISTA_MASK));
+	if (!(BMSTATUS & BMISTA_ACTIVE)) {
+	  npA->BM_CommandCode = 0;
+	  goto getStatus;
 	}
-	npA->npU->DeviceCounters.TotalChipStatus++;
-	P4_REP_NOP
       }
+      P4_REP_NOP
     }
-    STATUS = InB (STATUSREG);
-    ENABLE
+
+    OutB (BMCMDREG, npA->BM_CommandCode &= npA->BM_StopMask); /* turn OFF Start bit */
+    npA->npU->DeviceCounters.TotalChipStatus++;
   }
+
+getStatus:
+  STATUS = InB (STATUSREG);
+  ENABLE
+
   return (1);
 }
 
@@ -244,11 +252,10 @@ int NEAR BMCheckIRQ (NPA npA) {
   DISABLE
   BMSTATUS = InB (BMSTATUSREG);
   if (BMSTATUS & BMISTA_INTERRUPT) {	      // interrupt is signalled pending
-    if (InB (BMCMDREG) & BMICOM_START) {
-      OutB (BMCMDREG, npA->BM_CommandCode &= ~BMICOM_START); /* turn OFF Start bit */
-    }
-    STATUS = InB (STATUSREG);	// Artop: status available after stopping BM !
+    OutB (BMCMDREG, npA->BM_CommandCode &= ~BMICOM_START); /* turn OFF Start bit */
+    STATUS = InB (STATUSREG);	// status available after stopping BM !
     npA->Flags |= ACBF_BMINT_SEEN;
+    npA->BM_CommandCode = 0;
     OutB (BMSTATUSREG, (UCHAR)(BMSTATUS & BMISTA_MASK));
     ENABLE
     return (1);
@@ -296,6 +303,20 @@ VOID NEAR GenericStartOp (NPA npA)
   }
 }
 
+/*---------------------------------------------*/
+/* SetupDMAdefault			       */
+/*---------------------------------------------*/
+
+VOID NEAR GenericSetupDMA (NPA npA)
+{
+  OutB (BMSTATUSREG, (UCHAR)(BMISTA_ERROR |  /* clear Error Bit       */
+		      BMISTA_INTERRUPT |     /* clear INTR flag       */
+		      npA->BMStatus));
+
+  OutD (npA->BMIDTP, npA->ppSGL);
+}
+
+
 /*--------------------------------------------*/
 /* GenericStopDMA			      */
 /*--------------------------------------------*/
@@ -334,7 +355,7 @@ VOID NEAR GenericSATA (NPA npA)
   npA->Cap &= ~(CHIPCAP_ATAPIDMA);
   METHOD(npA).GetPIOMode = NULL;
   METHOD(npA).Setup	 = NULL;
-  MEMBER(npA).CfgTable	 = CfgGeneric;
+  MEMBER(npA).CfgTable	 = CfgNull;
 }
 
 /*--------------------------------------------*/

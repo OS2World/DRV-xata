@@ -39,7 +39,7 @@
 #pragma optimize(OPTIMIZE, on)
 
 #define PCITRACER 0
-#define TRPORT 0xC410
+#define TRPORT 0xA810
 
 /*------------------------------------*/
 /*				      */
@@ -753,15 +753,10 @@ VOID NEAR ConfigureACB (NPA npA) {
   */
   npA->IODelayCount = npA->IRQDelayCount = IODelayCount;
   if (MEMBER(npA).Vendor) {
-    if (npA->IRQDelay < 0) {
-      npA->IRQDelay = -npA->IRQDelay;
-      npA->FlagsT  |= ATBF_LATE_INT;
-    }
     npA->IRQDelayCount *= npA->IRQDelay;
 
   } else {
     memcpy (&npA->PCIInfo.Ident, &PCIDevice[PCID_Generic].Ident, sizeof (PCI_IDENT));
-    npA->FlagsT |= ATBF_LATE_INT;
     npA->HardwareType = generic;
     if (!npA->maxUnits) npA->maxUnits = 2;
   }

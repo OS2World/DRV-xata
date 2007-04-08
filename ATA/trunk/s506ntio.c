@@ -4,7 +4,7 @@
  *
  * DESCRIPTIVE NAME = DANIS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- * Copyright : COPYRIGHT Daniela Engert 2006
+ * Copyright : COPYRIGHT Daniela Engert 2007
  *
  * DESCRIPTION : Adapter Driver Initio routines.
  ****************************************************************************/
@@ -68,27 +68,29 @@ BOOL NEAR AcceptInitio (NPA npA)
   SSTATUS   = Adr + 0x20;
   ISRPORT   = Adr + 0x09;
 
-//  OutB (Adr | 0x0A, 0xFF); // mask off all interrupt sources
+  OutB (Adr | 0x0A, 0xFF); // mask off all interrupt sources
   Ctrl = InW (Adr | 0x14) & ~0x1A0;
   OutW (Adr | 0x14, Ctrl | 0x120);    // switch to ATA mode;
   IODlyFar (-1);
   OutW (Adr | 0x14, Ctrl | 0x100);
   OutB (ISRPORT, 0xFF);
   OutW (Adr | 0x14, Ctrl);
-//  OutB (Adr | 0x0A, 0); // unmask all interrupt sources
+  OutB (Adr | 0x0A, (UCHAR)(~0x10)); // unmask ATA interrupt
 
   if (1 == npA->IDEChannel) {
     OutW (BAR5 | 0x7C, (~0x0100 & InW (BAR5 | 0x7C)));
-//    OutW (BAR5 | 0xBE, (~0x03 & InW (BAR5 | 0xBE)));
+    OutW (BAR5 | 0xBE, (~0x03 & InW (BAR5 | 0xBE)));
   }
 
   GenericSATA (npA);
   npA->Cap |= CHIPCAP_ATA66 | CHIPCAP_ATA100 | CHIPCAP_ATA133;
   npA->Cap &= ~CHIPCAP_PIO32;
-  npA->Cap &= ~CHIPCAP_ATADMA;
+//  npA->Cap &= ~CHIPCAP_ATADMA;
+
+  npU[0].FlagsT |= UTBF_NOTUNLOCKHPA;
+  npU[1].FlagsT |= UTBF_NOTUNLOCKHPA;
 
   sprntf (npA->PCIDeviceMsg, InitioMsgtxt, MEMBER(npA).Device);
-return (FALSE);
   return (TRUE);
 }
 
@@ -110,7 +112,7 @@ VOID NEAR InitioStartOp (NPA npA)
 VOID NEAR InitioStopDMA (NPA npA)
 {
   if (npA->BM_CommandCode) {
-    OutB (BMCMDREG, (UCHAR)(npA->BM_CommandCode & ~0x80)); /* turn OFF Start bit */
+    OutB (BMCMDREG, 0); 	      /* turn OFF Start bit */
     npA->BM_CommandCode = 0;
   }
 }
@@ -125,10 +127,20 @@ int NEAR InitioCheckIRQ (NPA npA) {
   DISABLE
   Data = InB (ISRPORT);
   if (Data & 0x80) {
-    OutB (ISRPORT, Data);
-    npA->Flags |= ACBF_BMINT_SEEN;
-    BMSTATUS = 0;
+    OutB (BMCMDREG, 0); /* turn OFF Start bit */
     STATUS = InB (STATUSREG);
+//    OutB (ISRPORT, Data);
+    npA->Flags |= ACBF_BMINT_SEEN;
+    if (npA->BM_CommandCode) {
+      UCHAR Loop;
+
+      for (Loop = 256; --Loop != 0;) {
+	if (Data & 0x04) break;
+	Data = InB (ISRPORT);
+      }
+    }
+    npA->BM_CommandCode = 0;
+    BMSTATUS = 0;
     ENABLE
     return (1);
   }

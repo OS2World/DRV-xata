@@ -4,7 +4,7 @@
  *
  * DESCRIPTIVE NAME = DANIS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- * Copyright : COPYRIGHT Daniela Engert 2000-2006
+ * Copyright : COPYRIGHT Daniela Engert 2000-2007
  *
  * DESCRIPTION : Adapter Driver SIS routines.
  ****************************************************************************/
@@ -248,7 +248,7 @@ BOOL NEAR AcceptSIS (NPA npA)
       npA->Cap |= CHANCAP_CABLE80;
   }
 
-  if (PciInfo->Level <= SISB) npA->IRQDelay = -1; // delayed interrupt
+  if (PciInfo->Level <= SISB) npA->IRQDelay = 12; // delayed interrupt
   return (TRUE);
 }
 

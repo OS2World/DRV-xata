@@ -491,7 +491,6 @@ typedef struct _A
 #define ATBF_FORCE (ATBF_BAY | ATBF_PCMCIA)
 #define ATBF_BAY		0x0200
 #define ATBF_PCMCIA		0x0100
-#define ATBF_LATE_INT		0x0080
 #define ATBF_INTSHARED		0x0040
 #define ATBF_BIOSDEFAULTS	0x0020
 #define ATBF_BM_DMA		0x0004

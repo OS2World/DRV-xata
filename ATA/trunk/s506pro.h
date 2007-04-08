@@ -494,6 +494,7 @@ BOOL   NEAR AcceptAHCI (NPA npA);
 BOOL   NEAR AcceptNetCell (NPA npA);
 BOOL   NEAR AcceptMarvell (NPA npA);
 USHORT NEAR GetGenericPio (NPA npA, UCHAR Unit);
+USHORT NEAR GetNetCellPio (NPA npA, UCHAR Unit);
 VOID   NEAR SetupGeneric (NPA npA);
 VOID   NEAR GenericInitComplete (NPA npA);
 VOID   NEAR CalculateGenericAdapterTiming (NPA npA);
