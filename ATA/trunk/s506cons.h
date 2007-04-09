@@ -104,7 +104,7 @@
 /*---------------------------------------*/
 /* Maximum Transfer - MultiBlock Mode	 */
 /*---------------------------------------*/
-#define MAX_MULTMODE_BLK		16
+#define MAX_MULTMODE_BLK	       128
 
 /*---------------------------------------*/
 /* Maximum Transfer - Overall		 */
