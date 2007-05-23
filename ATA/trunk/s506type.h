@@ -407,7 +407,7 @@ typedef struct _A
   /* this queue in SuspendIORBReq().		     */
   PIORB 	pSuspendHead;					       //  9
   PIORB 	pSuspendFoot;					       //  4
-  USHORT	(FAR *SuspendIRQaddr)(VOID);			       //  5
+  USHORT	(FAR * _fastcall SuspendIRQaddr)(UCHAR);	       //  5
   /* Depending on the type suspend request, DC_SUSPEND_DEFERRED or     */
   /* DC_SUSPEND_IMMEDIATE, this field holds a count-down of IORBs to   */
   /* process in this driver before completing the suspend operation.   */

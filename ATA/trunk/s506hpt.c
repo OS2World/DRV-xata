@@ -4,7 +4,7 @@
  *
  * DESCRIPTIVE NAME = DANIS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- * Copyright : COPYRIGHT Daniela Engert 1999-2006
+ * Copyright : COPYRIGHT Daniela Engert 1999-2007
  *
  * DESCRIPTION : Adapter Driver HPT routines.
  ****************************************************************************/
@@ -361,6 +361,10 @@ int NEAR HPTCheckIRQ (NPA npA) {
     npA->Flags |= ACBF_BMINT_SEEN;
     outp (BMSTATUSREG, BMSTATUS & BMISTA_MASK);
     ENABLE
+
+    if (STATUS & FX_BUSY) CheckBusy (npA);
+    if (STATUS & FX_ERROR) ERROR = InB (ERRORREG);
+
     return (1);
   } else {
     ENABLE

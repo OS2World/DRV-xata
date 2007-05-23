@@ -142,6 +142,10 @@ int NEAR InitioCheckIRQ (NPA npA) {
     npA->BM_CommandCode = 0;
     BMSTATUS = 0;
     ENABLE
+
+    if (STATUS & FX_BUSY) CheckBusy (npA);
+    if (STATUS & FX_ERROR) ERROR = InB (ERRORREG);
+
     return (1);
   }
   ENABLE

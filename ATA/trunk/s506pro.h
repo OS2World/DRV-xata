@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2006
+ *	       COPYRIGHT Daniela Engert 1999-2007
  *
  * DESCRIPTION : C Function Prototype statements
  *
@@ -48,7 +48,7 @@ VOID NEAR AllocateUnit (NPA npA);
 VOID NEAR DeallocateUnit (NPA npA);
 VOID NEAR ChangeUnitInfo (NPA npA);
 VOID NEAR GetGeometry (NPA npA);
-VOID NEAR GetUnitStatus (NPA npA, USHORT Status);
+VOID NEAR GetUnitStatus (NPA npA);
 VOID NEAR GetLockStatus (NPA npA);
 VOID NEAR GetQueueStatus (NPA npA, PIORB pIORB);
 VOID NEAR GetUnitResources (NPA npA, PIORB pIORB);
@@ -147,11 +147,10 @@ VOID   NEAR SetIOAddress(NPA npA);
 VOID   NEAR SetRetryState(NPA npA);
 VOID   NEAR DoReset(NPA npA);
 VOID   NEAR ResetCheck (NPA npA);
-USHORT NEAR GetDiagResults (NPA npA, PUCHAR Status);
 
-USHORT NEAR CheckReady(NPA npA);
-USHORT NEAR CheckBusy(NPA npA);
-USHORT NEAR WaitDRQ(NPA npA);
+UCHAR  NEAR CheckReady(NPA npA);
+UCHAR  NEAR CheckBusy(NPA npA);
+UCHAR  NEAR WaitDRQ(NPA npA);
 VOID   NEAR UpdateBlockIOPtrs(NPA npA);
 USHORT NEAR SendCmdPacket(NPA npA);
 USHORT NEAR SendReset(NPA npA);
@@ -181,18 +180,13 @@ USHORT FAR _strlen (PSZ s);
 VOID   NEAR DriveInit(PRPINITIN pRPH);
 USHORT NEAR ConfigureController (NPA npA);
 USHORT NEAR CheckController (NPA npA);
-USHORT NEAR CheckReg (NPA npA, UCHAR UnitId);
 USHORT NEAR ConfigureUnit (NPU npU);
 USHORT NEAR GetReg (NPA npA, USHORT Reg);
-USHORT NEAR CheckForATAPISignature (NPU npU);
-USHORT NEAR DoATAPIPresenseCheck (NPU npU);
-USHORT NEAR ATAPIReset (NPA npA);
 USHORT NEAR ReadDrive (NPU npU, ULONG RBA, USHORT Retry, NPBYTE pBuf);
 USHORT NEAR NoOp (NPU npU);
 USHORT FAR  Execute (UCHAR ADDHandle, NPIORB npIORB);
 VOID   FAR _cdecl _loadds NotifyIORBDone (PIORB pIORB);
 USHORT FAR  ScanForOtherADDs(VOID);
-VOID   NEAR CheckACBViable (NPA npA);
 VOID   NEAR SetOption (NPU npU, NPA npA, USHORT Ofs, USHORT Value);
 USHORT FAR  ParseCmdLine1st (PSZ pCmdLine);
 USHORT FAR  ParseCmdLine (PSZ pCmdLine);
@@ -723,11 +717,13 @@ VOID FAR  _cdecl StubVDMInt13CallBack (VOID);
  *	ACPI.C Procedures					 *
  *---------------------------------------------------------------*/
 
-BOOL FAR ACPISetup (VOID);
+BOOL   FAR ACPISetup (VOID);
+USHORT FAR ACPIGetPCIIRQs (USHORT PCIAddr);
 USHORT FAR _fastcall CallAcpiCA (PRPH pRPH);
 LIN FAR AcpiPointer (PVOID p);
 
 #pragma alloc_text (ACPICode, ACPISetup)
+#pragma alloc_text (ACPICode, ACPIGetPCIIRQs)
 #pragma alloc_text (ACPICode, AcpiPointer)
 
 

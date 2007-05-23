@@ -5,7 +5,7 @@
  * DESCRIPTIVE NAME = DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
  *
- * Copyright : COPYRIGHT Daniela Engert 1999-2006
+ * Copyright : COPYRIGHT Daniela Engert 1999-2007
  *
  * DESCRIPTION : Adapter Driver PIIX and SMSC routines.
  ****************************************************************************/

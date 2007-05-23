@@ -176,6 +176,9 @@ extern CHAR	      ACPICA_DDName[];
 extern IDCTABLE       OemHlpIDC;
 extern IDCTABLE       CSIDC;
 extern IDCTABLE       ACPIIDC;
+#define isACPIPresent (SELECTOROF (ACPIIDC.ProtIDCEntry) != NULL)
+#define APICRewire    (ACPIIDC.Reserved[0])
+
 extern USHORT	      CSHandle;
 extern UCHAR	      CSRegistrationComplete;
 extern UCHAR	      NumSockets, FirstSocket, MaxNumSockets;

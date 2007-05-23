@@ -31,8 +31,8 @@
  #include "s506pro.h"
 
 #define YEAR  2007
-#define MONTH 4
-#define DAY   1
+#define MONTH 5
+#define DAY   20
 #define PCMCIAVERSION 0x180
 
 /*-------------------------------------------------------------------*/
@@ -367,20 +367,21 @@ USHORT CListCIntel[] = {
 	0x24CA, 0x24CB,     // ICH4M -> ICH4
 	0x24C1, 0x24CB,     // ICH4L -> ICH4
 	0x25A2, 0x24DB,     // ICH6300 -> ICH5
-	0x269E, 0x24DB,     // ESB -> ICH5
+	0x269E, 0x266F,     // ICH631x -> ICH6
 	0x24DF, 0x24D1,     // ICH5R SATA -> ICH5 SATA
 	0x25A3, 0x24D1,     // ICH5? SATA -> ICH5 SATA
 	0x25B0, 0x24D1,     // ICH5?R SATA -> ICH5 SATA
 	0x2652, 0x2651,     // ICH6R SATA -> ICH6 SATA
 	0x2653, 0x2651,     // ICH6M SATA -> ICH6 SATA
-	0x2680, 0x2651,     // ESB2  SATA -> ICH6 SATA
-	0x2681, 0x2651,     // ESB2  AHCI -> ICH6 SATA
-	0x2682, 0x2651,     // ESB2  RAID -> ICH6 SATA
-	0x2683, 0x2651,     // ESB2  RAID -> ICH6 SATA
+	0x2680, 0x2651,     // ICH631x SATA -> ICH6 SATA
+	0x2681, 0x2651,     // ICH631x AHCI -> ICH6 SATA
+	0x2682, 0x2651,     // ICH631x RAID -> ICH6 SATA
+	0x2683, 0x2651,     // ICH631x RAID -> ICH6 SATA
 	0x27C1, 0x27C0,     // ICH7  AHCI -> ICH7 SATA
 	0x27C3, 0x27C0,     // ICH7R SATA -> ICH7 SATA
 	0x27C4, 0x27C0,     // ICH7M SATA -> ICH7 SATA
 	0x27C5, 0x27C0,     // ICH7M AHCI -> ICH7 SATA
+	0x27C6, 0x27C0,     // ICH7MR AHCI -> ICH7 SATA
 	0x2821, 0x2820,     // ICH8  AHCI -> ICH8 SATA
 	0x2822, 0x2820,     // ICH8  RAID -> ICH8 SATA
 	0x2824, 0x2820,     // ICH8  AHCI -> ICH8 SATA
@@ -421,6 +422,7 @@ USHORT CListFIntel[] = {
 		0x27C0,     // ICH7 SATA  82801GB
 		0x2820,     // ICH8 SATA  82801HB 4 ports
 		0x2825,     // ICH8 SATA2 82801HB 2 ports
+		0x2850,     // ICH8M	  82801HBM
 		0x2920,     // ICH9 SATA
 		0 };
 USHORT CListCVia[] = {
@@ -625,6 +627,7 @@ USHORT CListCIXP[] = {
 	0x436E, 0x4369,     // IXP320 PATA -> IXP300 PATA
 	0x4376, 0x4369,     // IXP400 PATA -> IXP300 PATA
 	0x438C, 0x4369,     // IXP600 PATA -> IXP300 PATA
+	0x439C, 0x4369,     // IXP700 PATA -> IXP300 PATA
 		0 };
 USHORT CListFIXP[] = {
 		0x4349,     // ATI IXP200
@@ -639,6 +642,7 @@ USHORT CListFIXPS[] = {
 		0 };
 USHORT CListCIXPA[] = {
 	0x4381, 0x4380,     // IXP600 SATA -> IXP600 SATA
+	0x4390, 0x4380,     // IXP700 SATA -> IXP600 SATA
 		0 };
 USHORT CListFIXPA[] = {
 		0x4380,     // ATI IXP600 SATA
@@ -662,8 +666,8 @@ USHORT CListCMarvell[] = {
 	0x6141, 0x6145,     // Marvell 6141 -> Marvell 6145
 		0 };
 USHORT CListMarvell[] = {
-		0x6101,     // Marvell 641x PATA
-		0x6145,     // Marvell 641x PATA & SATA
+		0x6101,     // Marvell 614x PATA
+		0x6145,     // Marvell 614x PATA & SATA
 		0 };
 USHORT CListCInitio[] = {
 	0x1623, 0x1622,     // 1623 -> 162x
@@ -895,7 +899,7 @@ PCI_DEVICE PCIDevice[] =
       AcceptMarvell, CfgGeneric,
       NULL, BMCheckIRQ,
       NULL, SetupCommon,
-      CalculateGenericAdapterTiming, NULL, NULL},
+      CalculateAdapterTiming, NULL, NULL},
       CListCMarvell, CListMarvell,
       0x04, 0x04, 0x00, 0x00, 0x10,
       MarvellMsgtxt },
@@ -1316,7 +1320,7 @@ ULONG	   VDMInt13BlkID   = (ULONG)&VDMInt13;
 /*								     */
 /*-------------------------------------------------------------------*/
 
-UCHAR VPCIInfo[] = "  %s %cATA host (%04x:%04x rev:%02x) on PCI %d:%d.%d#%d";
+UCHAR VPCIInfo[] = "  %s %cATA host (%04x:%04x rev:%02x) on PCI %d:%d.%d#%d %04X";
 UCHAR VPCardInfo[] = "  %s PCCard PATA host";
 UCHAR VControllerInfo[] = "Controller:%1d  Port:%04lx IRQ:%02x  Status:%s%s";
 UCHAR VUnitInfo1[] = " Unit:%1d Status:%s%s%s%s%s";

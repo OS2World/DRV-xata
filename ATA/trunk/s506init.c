@@ -300,11 +300,10 @@ USHORT NEAR NoOp (NPU npU)
 
 
 NPIHDRS FAR HookIRQ (NPA npA) {
-  UCHAR i;
-  NPIHDRS p = IHdr;
-  USHORT rc;
+  NPIHDRS p;
+  USHORT  rc;
 
-  for (i = 0; i < MAX_IRQS; i++, p++) {
+  for (p = IHdr; p < (IHdr + MAX_IRQS); p++) {
     if (p->IRQLevel == 0) {
       p->IRQLevel  = npA->IRQLevel;
       p->IRQShared = (npA->FlagsT & ATBF_INTSHARED) ? 1 : 0;
@@ -319,10 +318,9 @@ NPIHDRS FAR HookIRQ (NPA npA) {
       }
     }
     if (p->IRQLevel == npA->IRQLevel) {
-      npA->npIHdr     = p;
-      npA->IntHandler = CatchInterrupt;
-      npA->npIntNext  = p->npA;
-      p->npA = npA;
+      npA->npIHdr    = p;
+      npA->npIntNext = p->npA;
+      p->npA	     = npA;
       return (p);
     }
   }
@@ -426,7 +424,7 @@ TotalTime();
 #if TRACES
     NPSZ  q = "R"VERSION;
 #else
-    NPSZ  q = "R"VERSION" (unsupported)";
+    NPSZ  q = "u"VERSION" (unsupp)";
 #endif
     UCHAR c;
 
@@ -734,9 +732,12 @@ VOID NEAR ConfigureACB (NPA npA) {
   npA->DelayedRetryInterval = DELAYED_RETRY_INTERVAL;
   npA->DelayedResetInterval = DELAYED_RESET_INTERVAL;
   npA->npIntNext	    = NULL;
+  npA->IntHandler	    = CatchInterrupt;
 
   DevHelp_AllocGDTSelector (&(npA->IOSGPtrs.Selector), 1);
-  if (npA->IRQLevel) HookIRQ (npA);
+  if (npA->IRQLevel) {
+    HookIRQ (npA);
+  }
 
   for (i = 0, npU = npA->UnitCB; npU < (npA->UnitCB + MAX_UNITS); i++, npU++) {
     npU->UnitIndex = i;
@@ -1595,7 +1596,9 @@ VOID NEAR PrintAdapterInfo (NPA npA) {
 	    (UCHAR)(npA->PCIInfo.PCIAddr >> 8),
 	    (UCHAR)((npA->PCIInfo.PCIAddr >> 3) & 0x1F),
 	    (UCHAR)(npA->PCIInfo.PCIAddr & 7),
-	    npA->IDEChannel);
+	    npA->IDEChannel,
+	    *(NPUSHORT)&(npA->npC->IrqPIC)
+	    );
     TTYWrite (3, TraceBuffer);
   } else if (Msg == ATS_PCCARD_INSERTED) {
     sprntf (TraceBuffer, VPCardInfo, npA->npPCIDeviceMsg);

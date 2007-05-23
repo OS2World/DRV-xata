@@ -342,6 +342,9 @@ int NEAR PromiseTX2CheckIRQ (NPA npA) {
 	P4_REP_NOP
       }
     }
+    if (STATUS & FX_BUSY) CheckBusy (npA);
+    if (STATUS & FX_ERROR) ERROR = InB (ERRORREG);
+
     return (1);
   }
   ENABLE
@@ -384,6 +387,9 @@ int NEAR PromiseCheckIRQ (NPA npA) {   // Ultra66, Ultra100
 	return (0);
       }
     }
+    if (STATUS & FX_BUSY) CheckBusy (npA);
+    if (STATUS & FX_ERROR) ERROR = InB (ERRORREG);
+
     return (1);
   }
   ENABLE
@@ -613,6 +619,10 @@ int NEAR PromiseMCheckIRQ (NPA npA) {
 
 //    OutD (BMCMDREG, (InD (BMCMDREG) & ~0x3F9F) | (npA->IDEChannel + 1));
     OutD (sr, 1);
+
+    if (STATUS & FX_BUSY) CheckBusy (npA);
+    if (STATUS & FX_ERROR) ERROR = InB (ERRORREG);
+
     return (1);
   }
   ENABLE

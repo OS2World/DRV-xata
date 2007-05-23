@@ -187,7 +187,7 @@ USHORT NEAR FixedInterrupt (NPA npA)
   }
 
   if (((NPUSHORT)&(npA->SuspendIRQaddr))[1]) {
-    Claimed = ~npA->SuspendIRQaddr();
+    npA->SuspendIRQaddr (npA->IRQLevel);
   } else {
     USHORT TimerHandle;
 
@@ -345,17 +345,14 @@ VOID NEAR ProcessLockUnlockEject (NPU npU, PIORB pIORB, UCHAR Function)
   npicp = &npA->icp;
   switch (Function) {
     case IOCM_EJECT_MEDIA:
-      npicp->TaskFileIn.Command = FX_EJECT_MEDIA;
       if (npU->Flags & (UCBF_PCMCIA | UCBF_CFA)) {
 	IssueOneByte (npU, FX_STANDBYIMM);
 	DevHelp_Beep (2000, 100);
       }
       break;
     case IOCM_LOCK_MEDIA:
-      npicp->TaskFileIn.Command = FX_LOCK_DOOR;
       break;
     case IOCM_UNLOCK_MEDIA:
-      npicp->TaskFileIn.Command = FX_UNLOCK_DOOR;
       break;
   }
 
@@ -1049,7 +1046,6 @@ VOID NEAR SetIOAddress (NPA npA)
       }
 
       BMSTATUS = 0;
-
       METHOD(npA).SetupDMA (npA);
 
       /*
@@ -1064,12 +1060,12 @@ VOID NEAR SetIOAddress (NPA npA)
   }
 
   if (npA->RBA & 0xF0000000) {	// LBA48 addressing required
-    *(ULONG *)&SECTOR = npA->RBA & 0x00FFFFFFUL;
+    *(ULONG *)&LBA0 = npA->RBA & 0x00FFFFFFUL;
     LBA3 = npA->RBA >> 24;
     CmdIdx += sizeof (CmdTable) / 2;
     npA->IOPendingMask |= FM_HIGH;
   } else {
-    *(ULONG *)&SECTOR = npA->RBA & 0x0FFFFFFFUL;
+    *(ULONG *)&LBA0 = npA->RBA & 0x0FFFFFFFUL;
   }
 
   DRVHD  |= npU->DriveHead;
@@ -1088,7 +1084,7 @@ VOID NEAR SetIOAddress (NPA npA)
 
 VOID NEAR InterruptState (NPA npA)
 {
-  UCHAR        Status, Error = 0;
+//  UCHAR	 Status, Error = 0;
   USHORT       rc = 0;		 // must initialize
   ULONG        Port;
   ULONG        XferPtr;
@@ -1152,22 +1148,15 @@ VOID NEAR InterruptState (NPA npA)
   /*----------------------------------------*/
   /* Check the STATUS Reg for the ERROR bit */
   /*----------------------------------------*/
-  Status = STATUS;
-  if (Status & FX_BUSY) {
-    CheckBusy (npA);
-    Status = STATUS;
-  }
-  if (Status & FX_ERROR) {
-    Error = ERROR = InB (ERRORREG);
+  if (STATUS & FX_ERROR) {
     rc = 1;
     if (npA->ReqMask & ACBR_OTHERIO) {
-      rc = !(Error & FX_ABORT);
+      rc = !(ERROR & FX_ABORT);
     }
     if (npU->Flags & (UCBF_REMOVABLE | UCBF_ATAPIDEVICE)) {
-      IODelay();
-      if (!Error || (Error == FX_MC)) {
+      if (!ERROR || (ERROR == FX_MC)) {
 	rc = 0;
-	Status &= ~FX_ERROR;
+	STATUS &= ~FX_ERROR;
       }
     }
   }
@@ -1216,10 +1205,10 @@ VOID NEAR InterruptState (NPA npA)
 	}
 	if (MediaChanged) {
 	  UCHAR MErr = GetMediaError (npU);
-	  if ((MErr | Error) & FX_MC) {
+	  if ((MErr | ERROR) & FX_MC) {
 	    SendAckMediaChange (npA);
 	  } else if (MErr & FX_NM) {
-	    Status	 |= FX_ERROR;
+	    STATUS     |= FX_ERROR;
 	    npU->Flags &= ~UCBF_READY;
 	    npU->Flags |= UCBF_BECOMING_READY;
 	  }
@@ -1236,7 +1225,7 @@ VOID NEAR InterruptState (NPA npA)
       DoOtherIO (npA);
 
       if (Cmd == REQ (IOCC_UNIT_STATUS, IOCM_GET_UNIT_STATUS))
-	GetUnitStatus (npA, Status);
+	GetUnitStatus (npA);
     }
 
     /*----------------------*/
@@ -1276,8 +1265,8 @@ VOID NEAR InterruptState (NPA npA)
 	  if (npA->ReqFlags & ACBR_WRITEV) {
 	    InitBlockIO (npA);
 	    npA->ReqFlags &= ~(ACBR_WRITE | ACBR_WRITEV);
-	    npA->ReqFlags |=	ACBR_VERIFY;
-	    npA->State	   =	ACBS_RETRY;
+	    npA->ReqFlags |=   ACBR_VERIFY;
+	    npA->State	   =   ACBS_RETRY;
 	  } else {
 	    if (!(npA->ReqFlags & ACBR_NONBLOCKIO))
 	      ((PIORB_EXECUTEIO)npA->pIORB)->BlocksXferred = ((PIORB_EXECUTEIO)npA->pIORB)->BlockCount;
@@ -1806,7 +1795,8 @@ VOID NEAR ResetCheck (NPA npA)
 	if (npU->Flags & UCBF_NOTPRESENT) continue;
 
 	SelectUnit (npU);
-	if ((GetStatusReg (npA) & ~FX_BUSY) == ~FX_BUSY) {
+	STATUS = InBd (STATUSREG, npA->IODelayCount);
+	if ((STATUS & ~FX_BUSY) == ~FX_BUSY) {
 	  // Controller is gone, more retries are not going to help.
 	  // So stop retrying and report the error.
 	  npA->DelayedResetCtr = 0;
@@ -1861,79 +1851,6 @@ VOID NEAR ResetCheck (NPA npA)
   }
 }
 
-#if 0
-/*----------------------------------------------------*/
-/*						      */
-/* GetDiagResults				      */
-/* --------------				      */
-/*						      */
-/* This routine is called after a controller	      */
-/* reset is started to collect diagnostic	      */
-/* results from the controller			      */
-/*						      */
-/* Return 0 if reset and diagnostics are complete.    */
-/* Return 1 if reset and diagnostics are incomplete.  */
-/*						      */
-/* Always return the contents of the status register. */
-/*						      */
-/*----------------------------------------------------*/
-
-USHORT NEAR GetDiagResults (NPA npA, PUCHAR Status)
-{
-  USHORT rc = 0;
-  USHORT DiagCode;
-  NPU	 npU;
-
-  /*------------------------------------*/
-  /* If the controller is ready to talk */
-  /* to us!				*/
-  /*------------------------------------*/
-  *Status = GetStatusReg (npA);
-
-  // Some controllers with no devices attached report all 1's in
-  // in status register.  If this is the case, the device is not
-  // going to come ready or report any meaningful status
-  if (!(*Status & FX_BUSY)) {
-    npU = &npA->UnitCB[0];
-    DiagCode = GetErrorReg (npU);
-
-    /*------------------------------------------------*/
-    /* Error code indicates one or both drives failed */
-    /*------------------------------------------------*/
-    if (DiagCode != FX_DIAG_PASSED) {
-      /*-------------------------------------*/
-      /* Error code indicates Drive 0 failed */
-      /*-------------------------------------*/
-      if ((DiagCode & 0x0f) != FX_DIAG_PASSED) {
-	npU->Flags |= UCBF_DIAG_FAILED;
-	npA->TimerFlags |= ACBT_RESETFAIL;
-      }
-
-      /*-------------------------------------*/
-      /* Error code indicates Drive 1 failed */
-      /*-------------------------------------*/
-      if (DiagCode & FX_DIAG_DRIVE1) {
-	npU = &npA->UnitCB[1];
-	DiagCode = GetErrorReg (npU);
-
-	if (DiagCode != FX_DIAG_PASSED) {
-	  npU->Flags |= UCBF_DIAG_FAILED;
-	  /*---------------------------------------*/
-	  /* Connor drives used in IBM L40SX mark  */
-	  /* non-installed Unit 1 as defective in  */
-	  /* diagnostic results.		   */
-	  /*---------------------------------------*/
-	  if (npA->cUnits > 1) npA->TimerFlags |= ACBT_RESETFAIL;
-	}
-      }
-    }
-  } else {
-    rc = 1;
-  }
-
-  return (rc);
-}
-#endif
 
 /*---------------------------------------------*/
 /* SendCmdPacket			       */
@@ -1987,20 +1904,19 @@ Send_Error:
 /*					       */
 /*---------------------------------------------*/
 
-USHORT NEAR WaitDRQ (NPA npA)
+UCHAR NEAR WaitDRQ (NPA npA)
 {
-  UCHAR   Status;
-  SHORT   Stop;
-  USHORT  Count = 0;
+  SHORT  Stop;
+  USHORT Count = 0;
 
   npA->TimerFlags &= ~(ACBT_DRQ | ACBT_BUSY);
   Stop = *msTimer + MAX_WAIT_READY;
 
   while ((--Count != 0) && ((*msTimer - Stop) < 0)) {
-    Status = GetStatusReg (npA);
-    if (!(Status & FX_BUSY))
-      if (Status & (FX_ERROR | FX_DF | FX_DRQ)) {
-	if (Status & (FX_ERROR | FX_DF)) {
+    STATUS = InBd (STATUSREG, npA->IODelayCount);
+    if (!(STATUS & FX_BUSY))
+      if (STATUS & (FX_ERROR | FX_DF | FX_DRQ)) {
+	if (STATUS & (FX_ERROR | FX_DF)) {
 	  npA->State = ACBS_ERROR;
 	  return (1);
 	} else {
@@ -2010,7 +1926,7 @@ USHORT NEAR WaitDRQ (NPA npA)
     IODly (2 * IODelayCount);
   }
 
-  npA->TimerFlags |= ((Status & FX_BUSY) ? ACBT_BUSY : ACBT_DRQ);
+  npA->TimerFlags |= ((STATUS & FX_BUSY) ? ACBT_BUSY : ACBT_DRQ);
   npA->State = ACBS_ERROR;
   return (1);
 }
@@ -2023,32 +1939,31 @@ USHORT NEAR WaitDRQ (NPA npA)
 /*					       */
 /*---------------------------------------------*/
 
-USHORT NEAR CheckWorker (NPA npA, UCHAR Mask, UCHAR Value)
+UCHAR NEAR CheckWorker (NPA npA, UCHAR Mask, UCHAR Value)
 {
-  UCHAR Status;
-  SHORT Stop;
+  SHORT  Stop;
   USHORT Count = 0;
 
   npA->TimerFlags &= ~ACBT_BUSY;
   Stop = *msTimer + MAX_WAIT_READY;
 
   while ((--Count != 0) && ((*msTimer - Stop) < 0)) {
-    Status = GetStatusReg (npA);
-    if ((Status & Mask) == Value) break;
+    STATUS = InBd (STATUSREG, npA->IODelayCount);
+    if ((STATUS & Mask) == Value) break;
     IODelay();
   }
 
-  if (Status & FX_BUSY) npA->TimerFlags |= ACBT_BUSY;
+  if (STATUS & FX_BUSY) npA->TimerFlags |= ACBT_BUSY;
 
-  return ((Status & Mask) != Value);
+  return ((STATUS & Mask) != Value);
 }
 
-USHORT NEAR CheckReady (NPA npA)
+UCHAR NEAR CheckReady (NPA npA)
 {
   return CheckWorker (npA, FX_BUSY | FX_DRDY, FX_DRDY);
 }
 
-USHORT NEAR CheckBusy (NPA npA)
+UCHAR NEAR CheckBusy (NPA npA)
 {
   return CheckWorker (npA, FX_BUSY, 0);
 }
@@ -2065,13 +1980,6 @@ VOID NEAR SelectUnit (NPU npU)
   NPA npA = npU->npA;
 
   OutBd (DRVHDREG, DRVHD = npU->DriveHead, npA->IODelayCount);
-}
-
-
-USHORT NEAR GetStatusReg (NPA npA)
-{
-  USHORT rc = STATUS = InBd (STATUSREG, npA->IODelayCount);
-  return (rc);
 }
 
 
@@ -2121,7 +2029,7 @@ VOID NEAR GetLockStatus (NPA npA)
 /*								*/
 /*--------------------------------------------------------------*/
 
-VOID NEAR GetUnitStatus (NPA npA, USHORT Status)
+VOID NEAR GetUnitStatus (NPA npA)
 {
   PIORB_UNIT_STATUS pIORB;
   NPU npU;
@@ -2137,7 +2045,7 @@ VOID NEAR GetUnitStatus (NPA npA, USHORT Status)
   ** Set the ready flag for removable media.
   */
   pIORB->UnitStatus = US_POWER;
-  if (Status & FX_ERROR) {
+  if (STATUS & FX_ERROR) {
     npU->Flags &= ~UCBF_READY;
     npU->Flags |= UCBF_BECOMING_READY;
   } else {
@@ -2148,7 +2056,7 @@ VOID NEAR GetUnitStatus (NPA npA, USHORT Status)
   // If this is being faked, it is not ready and not powered
   if (npU->Flags & UCBF_NOTPRESENT)
     pIORB->UnitStatus = 0;
-  else if (Status & FX_ERROR) {
+  else if (STATUS & FX_ERROR) {
     /*
     ** Interpret the device's current status register, if the
     ** preceding operation failed then interpret that to mean
@@ -2156,7 +2064,7 @@ VOID NEAR GetUnitStatus (NPA npA, USHORT Status)
     */
     pIORB->UnitStatus = US_MEDIA_UNKNOWN;
     npA->IORBStatus |= IORB_ERROR;
-    npA->IORBError = MapError (npA);
+    npA->IORBError   = MapError (npA);
     if ((npU->Flags & UCBF_REMOVABLE) && (npA->IORBError == IOERR_UNIT_NOT_READY)) {
       npA->IORBStatus = IORB_ERROR;
     } else {
@@ -2235,22 +2143,6 @@ USHORT NEAR GetMediaError (NPU npU)
 
 /*------------------------------------*/
 /*				      */
-/*				      */
-/*				      */
-/*------------------------------------*/
-
-USHORT NEAR GetErrorReg (NPU npU)
-{
-  NPA npA = npU->npA;
-
-  OutBd (DRVHDREG, npU->DriveHead, npA->IODelayCount);
-  ERROR = InBd (ERRORREG, npA->IODelayCount);
-  OutBd (DRVHDREG, DRVHD, npA->IODelayCount);
-  return (ERROR);
-}
-
-/*------------------------------------*/
-/*				      */
 /* MapError			      */
 /*				      */
 /*------------------------------------*/
@@ -2258,7 +2150,6 @@ USHORT NEAR GetErrorReg (NPU npU)
 USHORT NEAR MapError (NPA npA)
 {
   USHORT IORBError = IOERR_DEVICE_NONSPECIFIC;
-  UCHAR  ErrCode;
   NPU	 npU = npA->npU;
 
   if (npA->TimerFlags & (ACBT_DRQ | ACBT_READY)) {
@@ -2278,21 +2169,21 @@ USHORT NEAR MapError (NPA npA)
     IORBError = IOERR_UNIT_NOT_READY;
 
   } else if (STATUS & FX_ERROR) {
-    ErrCode = GetErrorReg (npU);
+//    ERROR = InBd (ERRORREG, npA->IODelayCount);
 
     npA->DataErrorCnt++;
 
-    if (ErrCode & FX_AMNF) {
+    if (ERROR & FX_AMNF) {
       ++npU->DeviceCounters.TotalReadErrors;
       ++npU->DeviceCounters.ReadErrors[0];
       IORBError = IOERR_RBA_ADDRESSING_ERROR;
 
-    } else if (ErrCode & FX_IDNF) {
+    } else if (ERROR & FX_IDNF) {
       ++npU->DeviceCounters.TotalSeekErrors;
       ++npU->DeviceCounters.SeekErrors[0];
       IORBError = IOERR_RBA_ADDRESSING_ERROR;
 
-    } else if (ErrCode & FX_ECCERROR) {
+    } else if (ERROR & FX_ECCERROR) {
       IORBError = IOERR_RBA_CRC_ERROR;
 
       npA->DataErrorCnt = -1;		     /* Terminate retries */
@@ -2301,16 +2192,16 @@ USHORT NEAR MapError (NPA npA)
 
       // if device is removable media
       if (npU->Flags & UCBF_REMOVABLE) {
-	if (ErrCode = GetMediaError (npU)) {
+	if (ERROR = GetMediaError (npU)) {
 	  // Media Status reported some error, so disable further retries.
 
 	  npA->Flags |= ACBF_DISABLERETRY;
 
-	  if (ErrCode & FX_WRT_PRT) {
+	  if (ERROR & FX_WRT_PRT) {
 	    IORBError = IOERR_MEDIA_WRITE_PROTECT;
-	  } else if (ErrCode & FX_MC) {
+	  } else if (ERROR & FX_MC) {
 	     /* Handled below */
-	  } else if (ErrCode & FX_NM) {
+	  } else if (ERROR & FX_NM) {
 	    IORBError = IOERR_MEDIA_NOT_PRESENT;
 	    npU->Flags &= ~UCBF_READY;
 	  } else {
@@ -2319,8 +2210,8 @@ USHORT NEAR MapError (NPA npA)
 	}
       }
 
-    } else if (ErrCode & FX_ICRC) {
-      if (ErrCode & FX_ABORT) {
+    } else if (ERROR & FX_ICRC) {
+      if (ERROR & FX_ABORT) {
 	/*************************************/
 	/*	  Ultra DMA CRC error	     */
 	/*************************************/
@@ -2340,7 +2231,7 @@ USHORT NEAR MapError (NPA npA)
 	}
       } else {
 	/***************************/
-	/*  (ErrCode & FX_BADBLK) */
+	/*  (ERROR & FX_BADBLK) */
 	/***************************/
 
 	npA->DataErrorCnt = -1; 	       /* Terminate retries */
@@ -2355,7 +2246,7 @@ USHORT NEAR MapError (NPA npA)
 	}
       }
 
-    } else if (ErrCode & FX_TRK0) {
+    } else if (ERROR & FX_TRK0) {
       if (npU->Flags & UCBF_REMOVABLE) {
 	/* Media is not present, map this to a not ready error. */
 
@@ -2368,7 +2259,7 @@ USHORT NEAR MapError (NPA npA)
 	++npU->DeviceCounters.SeekErrors[1];
       }
 
-    } else if (ErrCode & FX_ABORT) {
+    } else if (ERROR & FX_ABORT) {
       IORBError = IOERR_DEVICE_REQ_NOT_SUPPORTED;
 
       if (npU->ReqFlags & ACBR_WRITE) {
@@ -2380,15 +2271,15 @@ USHORT NEAR MapError (NPA npA)
 
       // if device is removable media
       if (npU->Flags & UCBF_REMOVABLE) {
-	if (ErrCode = GetMediaError (npU)) {
+	if (ERROR = GetMediaError (npU)) {
 	  // Media Status reported some error, so disable further retries.
 
 	  npA->Flags |= ACBF_DISABLERETRY;
-	  if (ErrCode & FX_WRT_PRT) {
+	  if (ERROR & FX_WRT_PRT) {
 	    IORBError = IOERR_MEDIA_WRITE_PROTECT;
-	  } else if (ErrCode & FX_MC) {
+	  } else if (ERROR & FX_MC) {
 	    /* Handled below */
-	  } else if (ErrCode & FX_NM) {
+	  } else if (ERROR & FX_NM) {
 	    IORBError = IOERR_MEDIA_NOT_PRESENT;
 	    npU->Flags &= ~UCBF_READY;
 	    npU->Flags |=  UCBF_BECOMING_READY;
@@ -2405,7 +2296,7 @@ USHORT NEAR MapError (NPA npA)
     ** the media change and just in case the bit can be set with
     ** other error bits, check it seperately.
     */
-    if (ErrCode & FX_MC) {
+    if (ERROR & FX_MC) {
       if (npU->Flags & UCBF_REMOVABLE) {
 	/* Media Changed */
 	SendAckMediaChange (npA);

@@ -93,42 +93,46 @@ USHORT NEAR GetNetCellPio (NPA npA, UCHAR Unit) {
 
 // ---------------------------------------------------------------
 
+#define AHCI_CAP     0
+#define AHCI_GHC     4
+#define AHCI_PI     12
+#define AHCI_SSTS 0x28
+
+#define AHCI_GHC_AHCIENABLED 1
+
+// ---------------------------------------------------------------
+
 BOOL NEAR AcceptMarvell (NPA npA)
 {
   NPC	npC  = npA->npC;
-//  ULONG BAR5 = npC->BAR[5].Addr;
+  ULONG BAR5 = npC->BAR[5].Addr;
 
-  npA->FlagsT |= ATBF_BIOSDEFAULTS;
-  npA->Cap    &= ~(CHIPCAP_ATAPIDMA | CHIPCAP_PIO32);
-  npA->maxUnits = 2;
+  // AHCI mode enabled?
+//  if (BAR5 && (InD (BAR5 | AHCI_GHC) & AHCI_GHC_AHCIENABLED))
+//    OutD (BAR5 | AHCI_GHC, 0);
 
-  switch (PciInfo->Level) {
-    case 0 :
-      npC->numChannels = 1; // 6101
-      break;
+  npA->Cap	  &= ~CHIPCAP_PIO32;
+  npA->maxUnits    = 2;
+  npC->numChannels = 1;
 
-    default:
-      npC->numChannels = 2;
-      if (0 == npA->IDEChannel) {  // PATA
-//	  if (BAR5 && !(InD (BAR5 | 0x0C) & 0x10))  // PATA enabled
-      } else {
-	GenericSATA (npA);
-      }
-      break;
+  if (BAR5) {
+    UCHAR  lastPort = InB (BAR5 | AHCI_CAP) & 0x1F;
+    USHORT PortOfs  = lastPort * 0x80 + 0x144;
+
+    if (!((InD (BAR5 | AHCI_PI) >> lastPort) & 1))
+      return (FALSE); // port not implemented
+
+    if (!(InD (BAR5 + PortOfs)))
+      return (FALSE); // not PATA port
   }
 
-  if (!(npA->Cap & CHIPCAP_SATA)) {
-    if (!(InB (BMCMDREG + 1) & 1))
-      npA->Cap |= CHANCAP_SPEED | CHANCAP_CABLE80;
-  }
+  if (!(InB (BMCMDREG + 1) & 1))
+    npA->Cap |= CHANCAP_SPEED | CHANCAP_CABLE80;
 
   return (TRUE);
 }
 
 // ---------------------------------------------------------------
-
-#define AHCI_GHC 4
-#define AHCI_GHC_AHCIENABLED 1
 
 BOOL NEAR AcceptAHCI (NPA npA)
 {
@@ -243,6 +247,9 @@ getStatus:
   STATUS = InB (STATUSREG);
   ENABLE
 
+  if (STATUS & FX_BUSY) CheckBusy (npA);
+  if (STATUS & FX_ERROR) ERROR = InB (ERRORREG);
+
   return (1);
 }
 
@@ -258,6 +265,10 @@ int NEAR BMCheckIRQ (NPA npA) {
     npA->BM_CommandCode = 0;
     OutB (BMSTATUSREG, (UCHAR)(BMSTATUS & BMISTA_MASK));
     ENABLE
+
+    if (STATUS & FX_BUSY) CheckBusy (npA);
+    if (STATUS & FX_ERROR) ERROR = InB (ERRORREG);
+
     return (1);
   } else {
     ENABLE
@@ -361,10 +372,6 @@ VOID NEAR GenericSATA (NPA npA)
 /*--------------------------------------------*/
 /* GetAHCISCR				      */
 /*--------------------------------------------*/
-
-#define AHCI_CAP     0
-#define AHCI_PI   0x0C
-#define AHCI_SSTS 0x28
 
 ULONG NEAR GetAHCISCR (NPA npA, USHORT Port)
 {

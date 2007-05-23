@@ -370,6 +370,10 @@ BM.filler1 |= 0x3F;
       npA->Flags |= ACBF_BMINT_SEEN;
     }
     ENABLE
+
+    if (STATUS & FX_BUSY) CheckBusy (npA);
+    if (STATUS & FX_ERROR) ERROR = InB (ERRORREG);
+
     return (1);
   } else {
     ENABLE

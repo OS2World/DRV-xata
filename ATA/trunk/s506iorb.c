@@ -45,6 +45,9 @@ VOID NEAR Trap3 (USHORT Code, void *value)
 }
 #endif
 
+#undef UIB_TYPE_ATAPI
+#define UIB_TYPE_ATAPI 0x20
+
 /*------------------------------*/
 /* ADDEntryPoint		*/
 /* -------------		*/

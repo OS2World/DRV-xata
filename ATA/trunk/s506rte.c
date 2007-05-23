@@ -145,6 +145,48 @@ VOID FAR _cdecl S506Str1 (VOID)
 		     0);
       }
 
+      if (APICRewire) {
+	NPIHDRS p;
+DevHelp_Beep (1000, 50);
+DevHelp_ProcBlock ((ULONG)(PVOID)&S506Str1, 100UL, 0);
+	DISABLE
+
+	for (p = IHdr; p < (IHdr + MAX_IRQS); p++) {
+	  if (p->npA) DevHelp_UnSetIRQ (p->IRQLevel);
+	  p->IRQLevel = 0;
+	  p->npA      = NULL;
+	}
+
+	for (npA = AdapterTable; npA < (AdapterTable + MAX_ADAPTERS); npA++) {
+	  if (npA->FlagsT & ATBF_ON) {
+	    npA->npIHdr    = NULL;
+	    npA->npIntNext = NULL;
+
+	    if (npA->npC->IrqAPIC) npA->IRQLevel = npA->npC->IrqAPIC;
+
+	    HookIRQ (npA);
+	  }
+	}
+
+	ENABLE
+DevHelp_Beep (2000, 50);
+DevHelp_ProcBlock ((ULONG)(PVOID)&S506Str1, 100UL, 0);
+
+	for (npA = AdapterTable; npA < (AdapterTable + MAX_ADAPTERS); npA++) {
+	  if (npA->FlagsT & ATBF_ON) {
+	    for (npU = npA->UnitCB; npU < (npA->UnitCB + MAX_UNITS); npU++) {
+	      if (!(npU->Flags & UCBF_NOTPRESENT)) {
+		NPIDENTIFYDATA npID = (NPIDENTIFYDATA) ScratchBuf;
+		IdentifyDevice (npU, npID);
+	      }
+	    }
+	  }
+	}
+DevHelp_Beep (1500, 50);
+DevHelp_ProcBlock ((ULONG)(PVOID)&S506Str1, 100UL, 0);
+      }
+
+#if 0
       for (Adapter = 0; Adapter < cAdapters; Adapter++) {
 	npA = ACBPtrs[Adapter];
 
@@ -161,6 +203,9 @@ VOID FAR _cdecl S506Str1 (VOID)
 	    NoOp (npU);
 	}
       }
+DevHelp_Beep (1500, 100);
+DevHelp_ProcBlock ((ULONG)(PVOID)&S506Str1, 200UL, 0);
+#endif
 
 #if AUTOMOUNT
       // search OS2LVM.DMD

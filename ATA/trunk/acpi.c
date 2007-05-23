@@ -4,7 +4,7 @@
  *
  * DESCRIPTIVE NAME =
  *
- * Copyright : COPYRIGHT Daniela Engert 2006
+ * Copyright : COPYRIGHT Daniela Engert 2006-2007
  *
  ****************************************************************************/
 
@@ -27,11 +27,12 @@
 #include "s506ext.h"
 #include "s506pro.h"
 
-#if 0
+#if 1
 #define __OS2_16__
 #include <acpi.h>
 #include <ipdc.h>
 #include <amlresrc.h>
+#include <acpiapi.h>
 #endif
 
 #pragma optimize(OPTIMIZE, on)
@@ -40,23 +41,39 @@ extern RP_GENIOCTL IOCtlACPI;
 
 BOOL FAR ACPISetup (VOID)
 {
-  if (SELECTOROF (ACPIIDC.ProtIDCEntry) != NULL)
-    return (FALSE);	/* already initialized */
+  if (isACPIPresent) return (FALSE);	 /* already initialized */
 
   if (DevHelp_AttachDD (ACPICA_DDName, (NPBYTE)&ACPIIDC))
     return (1);     /* couldn't find ACPICA IDC entry point
 
-  if ((SELECTOROF(ACPIIDC.ProtIDCEntry) == NULL) ||
-      (ACPIIDC.ProtIDC_DS == NULL))
+  if (!isACPIPresent) || (ACPIIDC.ProtIDC_DS == NULL))
     return (1);     /* Bad Entry Point or Data Segment */
+
+  APICRewire = 0;
 }
 
-#if 0
 #define CallAcpi(P,PS,F)	       \
   IOCtlACPI.Function   = (F),	       \
   IOCtlACPI.DataPacket = (PUCHAR)(P),  \
   IOCtlACPI.DataLen    = (PS),	       \
   CallAcpiCA ((PRPH)&IOCtlACPI)
+
+static KNOWNDEVICE Dev = { 0 };
+
+USHORT FAR ACPIGetPCIIRQs (USHORT PCIAddr)
+{
+  Dev.PciId.Segment  = 0;
+  Dev.PciId.Bus      = (PCIAddr >> 8);
+  Dev.PciId.Device   = (PCIAddr >> 3) & 31;
+  Dev.PciId.Function = (PCIAddr & 7);
+  Dev.PicIrq  = 0;
+  Dev.ApicIrq = 0;
+
+  CallAcpi (&Dev, sizeof (KNOWNDEVICE), FIND_PCI_DEVICE);
+  return ((Dev.ApicIrq << 8) | Dev.PicIrq);
+}
+
+#if 0
 
 ACPI_STATUS ACPIENTRY AcpiGetType (
   ACPI_HANDLE		Object,

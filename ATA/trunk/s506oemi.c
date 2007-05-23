@@ -211,8 +211,9 @@ UCHAR NEAR ProbeChannel (NPA npA) {
 
 VOID NEAR SetupT13StandardController (NPA npA)
 {
-  USHORT BMBase = npA->npC->BAR[4].Addr;
-  USHORT Base1	= npA->npC->BAR[npA->IDEChannel ? 3 : 1].Addr;
+  NPC	 npC	= npA->npC;
+  USHORT BMBase = npC->BAR[4].Addr;
+  USHORT Base1	= npC->BAR[npA->IDEChannel ? 3 : 1].Addr;
 
   if (npA->IDEChannel >= 2) return;
 
@@ -225,6 +226,7 @@ VOID NEAR SetupT13StandardController (NPA npA)
       if (!(npA->FlagsI.b.native & PCI_IDE_NATIVE_IF1)) {
 	npA->IRQLevel = PRIMARY_I;
 	DEVCTLREG     = PRIMARY_C;
+	npC->IrqPIC   = npC->IrqAPIC = 0;
       }
       if (BMBase) {
 	BMCMDREG    = BMBase;
@@ -236,6 +238,7 @@ VOID NEAR SetupT13StandardController (NPA npA)
       if (!(npA->FlagsI.b.native & PCI_IDE_NATIVE_IF2)) {
 	npA->IRQLevel = SECNDRY_I;
 	DEVCTLREG     = SECNDRY_C;
+	npC->IrqPIC   = npC->IrqAPIC = 0;
       }
       if (BMBase) {
 	BMCMDREG    = BMBase + 8;
@@ -412,12 +415,14 @@ USHORT FAR EnumPCIDevices (void)
     for (i = 0; i <= 5; i++)
       GetBAR (npC->BAR + i, Enum.PCIAddr, i);
 
-    npC->IrqPIC = Int;
+    *(NPUSHORT)(&npC->IrqPIC) = ACPIGetPCIIRQs (Enum.PCIAddr);
+    if (!npC->IrqPIC)  npC->IrqPIC  = Int;
+    if (!npC->IrqAPIC) npC->IrqAPIC = npC->IrqPIC;
 
     for (Channel = 0; Channel < npC->numChannels; Channel++) {
       USHORT savedAdapterFlags;
       UCHAR  savedUnitFlags[2];
-      UCHAR EnableReg, EnableBit, Enable;
+      UCHAR  EnableReg, EnableBit, Enable;
       USHORT Base0 = -1;
 
       if (!(npDev->Ident.Revision & NONSTANDARD_HOST) && (Channel < 2)) {
@@ -436,7 +441,6 @@ USHORT FAR EnumPCIDevices (void)
       npA->PCIInfo.PCIAddr = Enum.PCIAddr;
       npA->PCIInfo.npC	   = npA->npC = npC;
       npA->FlagsI.All	   = ClassCode.ProgIF;
-      npA->IRQLevel	   = Int;
       npA->HardwareType    = npDev->Ident.Index;
       npA->maxUnits	   = 0;
       npA->PCIDeviceMsg[0] = '\0';
@@ -454,6 +458,8 @@ USHORT FAR EnumPCIDevices (void)
       npA->SCR.Offsets = 0x210;
 
       SetupT13StandardController (npA);
+      // in case of legacy mode, IrqPIC and IrqAPIC are 0!
+      if (npC->IrqPIC) npA->IRQLevel = npC->IrqPIC;
 
       if (0 == Channel) {
 	EnableReg = npDev->EnableReg0;
@@ -466,7 +472,7 @@ USHORT FAR EnumPCIDevices (void)
       // test for required resources
 
       if (npA->FlagsI.b.native) {
-	if (!(npDev->Ident.Revision & MODE_NATIVE_OK) || !Int) goto Recycle;
+	if (!(npDev->Ident.Revision & MODE_NATIVE_OK) || !npA->IRQLevel) goto Recycle;
 	if (!(npDev->Ident.Revision & NONSTANDARD_HOST) && !npC->BAR[4].Addr) goto Recycle;
       }
 
@@ -487,6 +493,8 @@ USHORT FAR EnumPCIDevices (void)
       if (npDev->Ident.ChipAccept (npA) &&
 	  !HandleFoundAdapter (npA, npDev)) {
 	count++;
+	if (*(NPUSHORT)(&npC->IrqPIC) && (npC->IrqPIC != Int) && !(npA->FlagsT & ATBF_DISABLED))
+	  APICRewire |= 1 << (npA - AdapterTable);
 
 	#if TRACES
 	  if (Debug & 8) TS("%d ",count)
