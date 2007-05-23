@@ -5,7 +5,7 @@
  * DESCRIPTION : DaniATAPI driver initialization
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2006
+ *	       COPYRIGHT Daniela Engert 1999-2007
  *
  * DESCRIPTION : initialization routines
  ***************************************************************************/
@@ -44,6 +44,9 @@
 #else
 #define TR(x)
 #endif
+
+#undef UIB_TYPE_ATAPI
+#define UIB_TYPE_ATAPI 0x20
 
 VOID NEAR set_data_in_sg (NPA, NPCH, USHORT);
 
@@ -643,7 +646,7 @@ VOID NEAR PrintInfo (NPA npA)
 
   for (j = 0; j < MAX_ADAPTERS ; j++, npA++) {
     if (!(npA->FlagsT & ATBF_DISABLED)) {
-      sprntf (StringBuffer, VControllerInfo, j, npA->BasePort, npA->IRQLevel, MsgOk);
+      sprntf (StringBuffer, VControllerInfo, j, npA->BasePort, MsgOk);
       TTYWrite (StringBuffer);
 
       npU = npA->UnitCB;
@@ -822,7 +825,6 @@ VOID NEAR GetATAPIUnits()
 
 	    npA->BasePort = pRE->npPort_Entry->StartPort;
 	    Port_Flags	  = (pRE->npPort_Entry)[0].Port_Flags;
-	    npA->IRQLevel = pRE->npIRQ_Entry->IRQ_Value;
 
 	    npA->StatusPort   = (pRE->npPort_Entry)[1].StartPort;
 	    npA->HardwareType = (signed char)((pRE->npPort_Entry)[1].Port_Flags &0xFF);

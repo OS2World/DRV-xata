@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2006
+ *	       COPYRIGHT Daniela Engert 1999-2007
  *
  * DESCRIPTION :
  ***************************************************************************/
@@ -30,9 +30,9 @@
 #include "atapiext.h"
 #include "atapipro.h"
 
-#define YEAR  2006
-#define MONTH 4
-#define DAY   20
+#define YEAR  2007
+#define MONTH 5
+#define DAY   7
 
 ACBPTRS      ACBPtrs[MAX_ADAPTERS] = { { 0, &AdapterIRQ0 },
 				       { 0, &AdapterIRQ1 },
@@ -306,7 +306,7 @@ ULONG	     RMFlags		   = 0L;
 
 UCHAR  DrvrNameTxt[]	 = "DaniATAPI.FLT";
 USHORT DrvrNameSize	 = sizeof(DrvrNameTxt);
-UCHAR  DrvrDescriptTxt[] = "Filter Driver for IDE ATAPI devices";
+UCHAR  DrvrDescriptTxt[] = "Filter Driver for S/P-ATAPI devices";
 UCHAR  VendorNameTxt[]	 = "DANI";
 
 DRIVERSTRUCT DriverStruct =
@@ -335,7 +335,7 @@ DEVICESTRUCT DevStruct =
    DS_TYPE_CDROM	 /* DevFlags;	     */
 };
 
-UCHAR VControllerInfo[] = "Controller:%1d  Port:%04x IRQ:%02x  Status:%s";
+UCHAR VControllerInfo[] = "Controller:%1d  Port:%04x  Status:%s";
 UCHAR VUnitInfo[]	= " Unit:%1d Status:%s%s%s%s%s";
 UCHAR VModelInfo[]	= "  Model:%s";
 UCHAR MsgPio32[]	= " PIO32";

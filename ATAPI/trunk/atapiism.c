@@ -5,7 +5,7 @@
  * DESCRIPTIVE NAME =	  ATAPI Inner State Machine
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2006
+ *	       COPYRIGHT Daniela Engert 1999-2007
  *
  ****************************************************************************/
 
@@ -864,21 +864,21 @@ VOID FAR _cdecl IRQTimeOutHandler (USHORT TimerHandle, PA pA)
     StartISM (npA) ;
 }
 
-USHORT FAR _loadds AdapterIRQ0() { return (AdptInterrupt (ACBPtrs[0].npA)); }
+VOID FAR _loadds _fastcall AdapterIRQ0 (UCHAR IRQLevel) { AdptInterrupt (ACBPtrs[0].npA, IRQLevel); }
 
-USHORT FAR _loadds AdapterIRQ1() { return (AdptInterrupt (ACBPtrs[1].npA)); }
+VOID FAR _loadds _fastcall AdapterIRQ1 (UCHAR IRQLevel) { AdptInterrupt (ACBPtrs[1].npA, IRQLevel); }
 
-USHORT FAR _loadds AdapterIRQ2() { return (AdptInterrupt (ACBPtrs[2].npA)); }
+VOID FAR _loadds _fastcall AdapterIRQ2 (UCHAR IRQLevel) { AdptInterrupt (ACBPtrs[2].npA, IRQLevel); }
 
-USHORT FAR _loadds AdapterIRQ3() { return (AdptInterrupt (ACBPtrs[3].npA)); }
+VOID FAR _loadds _fastcall AdapterIRQ3 (UCHAR IRQLevel) { AdptInterrupt (ACBPtrs[3].npA, IRQLevel); }
 
-USHORT FAR _loadds AdapterIRQ4() { return (AdptInterrupt (ACBPtrs[4].npA)); }
+VOID FAR _loadds _fastcall AdapterIRQ4 (UCHAR IRQLevel) { AdptInterrupt (ACBPtrs[4].npA, IRQLevel); }
 
-USHORT FAR _loadds AdapterIRQ5() { return (AdptInterrupt (ACBPtrs[5].npA)); }
+VOID FAR _loadds _fastcall AdapterIRQ5 (UCHAR IRQLevel) { AdptInterrupt (ACBPtrs[5].npA, IRQLevel); }
 
-USHORT FAR _loadds AdapterIRQ6() { return (AdptInterrupt (ACBPtrs[6].npA)); }
+VOID FAR _loadds _fastcall AdapterIRQ6 (UCHAR IRQLevel) { AdptInterrupt (ACBPtrs[6].npA, IRQLevel); }
 
-USHORT FAR _loadds AdapterIRQ7() { return (AdptInterrupt (ACBPtrs[7].npA)); }
+VOID FAR _loadds _fastcall AdapterIRQ7 (UCHAR IRQLevel) { AdptInterrupt (ACBPtrs[7].npA, IRQLevel); }
 
 /*
 ษออออออออออออออออออออออออออออออออออออออป
@@ -889,18 +889,17 @@ USHORT FAR _loadds AdapterIRQ7() { return (AdptInterrupt (ACBPtrs[7].npA)); }
 บ  and sets state flags accordingly    บ
 บ				       บ
 ศออออออออออออออออออออออออออออออออออออออผ */
-USHORT NEAR AdptInterrupt (NPA npA)
+VOID NEAR AdptInterrupt (NPA npA, UCHAR IRQLevel)
 {
   USHORT TimerHandle;
 
   TimerHandle = saveXCHG (&(npA->IRQTimeOutHandle), 0);
-  DevHelp_EOI (npA->IRQLevel);
+  DevHelp_EOI (IRQLevel);
 
   if (TimerHandle) {
     ADD_CancelTimer (TimerHandle) ;
     StartISM (npA);
   }
-  return (0);
 }
 
 /*--------------------------------------------*/

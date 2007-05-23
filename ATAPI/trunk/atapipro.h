@@ -5,7 +5,7 @@
  * DESCRIPTIVE NAME = Proto-types for ATAPI driver
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2006
+ *	       COPYRIGHT Daniela Engert 1999-2007
  *
  ****************************************************************************/
 
@@ -53,7 +53,7 @@ IRQEntry AdapterIRQ4;
 IRQEntry AdapterIRQ5;
 IRQEntry AdapterIRQ6;
 IRQEntry AdapterIRQ7;
-USHORT NEAR AdptInterrupt	    (NPA npA);
+VOID   NEAR AdptInterrupt (NPA npA, UCHAR IRQLevel);
 USHORT NEAR GetRegister 	    (NPA npA, USHORT Register);
 
 BOOL   NEAR CreateBMSGList	    (NPA npA);

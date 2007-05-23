@@ -6,11 +6,11 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2006
+ *	       COPYRIGHT Daniela Engert 1999-2007
  *
  ****************************************************************************/
 
-typedef USHORT FAR _loadds IRQEntry(void);
+typedef VOID FAR _loadds _fastcall IRQEntry (UCHAR IRQLevel);
 typedef IRQEntry FAR *PIRQEntry;
 
 typedef struct _A  NEAR *NPA, FAR *PA;
@@ -290,7 +290,6 @@ typedef struct _A
 {
   USHORT	BasePort;
   USHORT	StatusPort;
-  UCHAR 	IRQLevel;
 
   UCHAR 	FlagsT;
 

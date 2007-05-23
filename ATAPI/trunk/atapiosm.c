@@ -5,7 +5,7 @@
  * DESCRIPTION : OUTER STATE MACHINE for ATAPI driver
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2006
+ *	       COPYRIGHT Daniela Engert 1999-2007
  *
  ***************************************************************************/
 
@@ -948,7 +948,6 @@ VOID NEAR ChangeUnitStatus (NPU npU, PIORB_CHANGE_UNITSTATUS pIORB)
     }
     DEVCTL = DEFAULT_ATAPI_DEVCON_REG;
 
-    npA->IRQLevel = pIORB->IRQLevel;
     npA->InternalCmd.IOSGPtrs.iPortAddress = npA->BasePort;
     npA->ExternalCmd.IOSGPtrs.iPortAddress = npA->BasePort;
   }
@@ -1312,17 +1311,23 @@ VOID NEAR SetupAndExecute (NPA npA, UCHAR command)
       npA->ISMFlags |= ACBIF_ATA_OPERATION;
       break;
     }
-    case SAE_EXECUTE_CDB:
-      pIORB_PT = (PIORB_ADAPTER_PASSTHRU) npA->pIORB;
 
-      if (pIORB_PT->ControllerCmdLen <= npU->CmdPacketLength) {
-	NPCH c = npCmdIO->ATAPIPkt;
+    case SAE_EXECUTE_CDB: {
+      USHORT CmdLen;
+
+      pIORB_PT = (PIORB_ADAPTER_PASSTHRU) npA->pIORB;
+      CmdLen = pIORB_PT->ControllerCmdLen;
+
+      if (CmdLen <= npU->CmdPacketLength) {
+	NPCH	    c = npCmdIO->ATAPIPkt;
 	NPU npUactive = npA->npUactive[npU->UnitId];
+	NPUSHORT    p = (NPUSHORT)(npCmdIO->ATAPIPkt);
 
 	/*ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
 	³ Fill in the atapi packet		³
 	ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ*/
-	memcpy (npCmdIO->ATAPIPkt, pIORB_PT->pControllerCmd, pIORB_PT->ControllerCmdLen);
+	p[0] = p[1] = p[2] = p[3] = p[4] = p[5] = p[6] = p[7] = 0; // clear CDB (16 byte)
+	memcpy (npCmdIO->ATAPIPkt, pIORB_PT->pControllerCmd, CmdLen);
 
 	if (InitComplete && npUactive && !(npU->MaxLUN))
 	  npU = npA->npU = npUactive;
@@ -1357,6 +1362,7 @@ VOID NEAR SetupAndExecute (NPA npA, UCHAR command)
 	return;
       }
       break;
+    }
 
     case SAE_FORMAT_TRACK:
       if (!(npU->DrvDefFlags & DDF_LS120)) {
