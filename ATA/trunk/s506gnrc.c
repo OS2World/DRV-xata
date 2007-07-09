@@ -125,11 +125,6 @@ BOOL NEAR AcceptMarvell (NPA npA)
 
     if (!(InD (BAR5 + PortOfs + 0x44)))
       return (FALSE); // not PATA port
-
-    IRQen = InD (BAR5 + PortOfs + 0x18) & 0x0c000000;
-    if (Fixes & 0x20) IRQen &= ~0x08000000;
-    if (Fixes & 0x10) IRQen &= ~0x04000000;
-    OutD (BAR5 + PortOfs + 0x18, IRQen);
   }
 
   if (!(InB (BMCMDREG + 1) & 1))
