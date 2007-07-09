@@ -5,7 +5,7 @@
  * DESCRIPTIVE NAME = DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
  *
- * Copyright : COPYRIGHT Daniela Engert 1999-2006
+ * Copyright : COPYRIGHT Daniela Engert 1999-2007
  *
  * DESCRIPTION : PCI detection code
  ****************************************************************************/
@@ -254,7 +254,7 @@ UCHAR NEAR CheckSATAPhy (NPU npU) {
 #if TRACES
     if (Debug & 8) TraceStr (" S(%X:%X)", Status, Diag);
 #endif
-    if ((Status & SSTAT_DET) == SSTAT_COM_OK) {
+    if ((Status & SSTAT_DET) & (SSTAT_DEV_OK | SSTAT_COM_OK)) {
       OutD (SERROR, Diag);
       npU->Flags |= UCBF_PHYREADY;
       return TRUE;
@@ -421,7 +421,7 @@ USHORT FAR EnumPCIDevices (void)
 
     for (Channel = 0; Channel < npC->numChannels; Channel++) {
       USHORT savedAdapterFlags;
-      UCHAR  savedUnitFlags[2];
+      USHORT savedUnitFlags[2];
       UCHAR  EnableReg, EnableBit, Enable;
       USHORT Base0 = -1;
 
@@ -500,7 +500,7 @@ USHORT FAR EnumPCIDevices (void)
 	  if (Debug & 8) TS("%d ",count)
 	#endif
       } else {
-	npA->FlagsT = savedAdapterFlags; // restore cmdline options
+	npA->FlagsT   = savedAdapterFlags; // restore cmdline options
 	npU[0].FlagsT = savedUnitFlags[0];
 	npU[1].FlagsT = savedUnitFlags[1];
       Recycle:

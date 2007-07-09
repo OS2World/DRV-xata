@@ -236,6 +236,7 @@
 #define TESTDRDY ((InB (STATUSREG) & (FX_BUSY | FX_DRDY)) != FX_DRDY)
 
 #define SSTAT_DET	    0x000F
+#define SSTAT_DEV_OK	    0x1
 #define SSTAT_COM_OK	    0x3
 #define SSTAT_SPD	    0x00F0
 #define SSTAT_SPD_1	    0x1

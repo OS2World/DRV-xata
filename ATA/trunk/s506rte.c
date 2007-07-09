@@ -145,7 +145,7 @@ VOID FAR _cdecl S506Str1 (VOID)
 		     0);
       }
 
-      if (APICRewire) {
+      if (APICRewire && !(Fixes & 8)) {
 	NPIHDRS p;
 DevHelp_Beep (1000, 50);
 DevHelp_ProcBlock ((ULONG)(PVOID)&S506Str1, 100UL, 0);

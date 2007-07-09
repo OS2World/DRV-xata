@@ -121,6 +121,7 @@ ULONG  FAR  _fastcall InD2 (USHORT Addr1, USHORT Addr2);
 // Addr2:
 #define IOPORT	0
 #define PCICONFIG(x) (0x1000 | (x))
+#define INDEXED(idx) (0x2000 | (idx))
 #define IS_MMIO(x) ((x) & 0xE0000000)
 
 /*----------------------------------------------------------------------------*
@@ -152,13 +153,11 @@ UCHAR  NEAR CheckReady(NPA npA);
 UCHAR  NEAR CheckBusy(NPA npA);
 UCHAR  NEAR WaitDRQ(NPA npA);
 VOID   NEAR UpdateBlockIOPtrs(NPA npA);
-USHORT NEAR SendCmdPacket(NPA npA);
-USHORT NEAR SendReset(NPA npA);
-USHORT NEAR GetErrorReg(NPU npU);
+UCHAR  NEAR SendCmdPacket(NPA npA);
+UCHAR  NEAR GetErrorReg(NPU npU);
 VOID   NEAR SelectUnit (NPU npU);
-USHORT NEAR GetStatusReg (NPA npA);
 VOID   NEAR SendAckMediaChange (NPA npA);
-USHORT NEAR GetMediaError (NPU npU);
+UCHAR  NEAR GetMediaError (NPU npU);
 USHORT NEAR MapError(NPA npA);
 VOID   NEAR StopBMDMA (NPA npA);
 BOOL   NEAR CreateBMSGList (NPA npA);
@@ -281,7 +280,7 @@ void   NEAR ReInitUnit (NPU npU);
 void   NEAR InitUnitSync (NPU npU);
 void   NEAR UnitFlush (NPU npU);
 VOID   NEAR CardInsertion (NPA npA);
-VOID   NEAR _fastcall CardInsertionDeferred (NPU npU);
+VOID   NEAR _fastcall CardInsertionDeferred (VOID);
 VOID   NEAR CardRemoval (NPA npA);
 VOID   NEAR StartDetect (NPA npA);
 VOID   NEAR StartDetectSATA (NPU npU);

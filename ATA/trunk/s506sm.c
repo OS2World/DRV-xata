@@ -174,12 +174,11 @@ USHORT NEAR HandleInterrupts (NPA npA) {
 USHORT NEAR FixedInterrupt (NPA npA)
 {
   USHORT Claimed = 0;
-  int	 rcCheck;
 
 #if PCITRACER
     outpw (TRPORT, 0xDEA0 | (npA->IDEChannel));
 #endif
-  if (!(rcCheck = METHOD(npA).CheckIRQ (npA))) {
+  if (!(Claimed = METHOD(npA).CheckIRQ (npA))) {
 #if PCITRACER
     outpw (TRPORT, 0xDEAA);
 #endif
@@ -192,7 +191,7 @@ USHORT NEAR FixedInterrupt (NPA npA)
     USHORT TimerHandle;
 
     TimerHandle = saveXCHG (&(npA->IRQTimerHandle), 0);
-    if (Claimed = rcCheck) DevHelp_EOI (npA->IRQLevel);
+    DevHelp_EOI (npA->IRQLevel);
 
     if (TimerHandle) {
       ADD_CancelTimer (TimerHandle);
@@ -1856,7 +1855,7 @@ VOID NEAR ResetCheck (NPA npA)
 /* SendCmdPacket			       */
 /*---------------------------------------------*/
 
-USHORT NEAR SendCmdPacket (NPA npA)
+UCHAR NEAR SendCmdPacket (NPA npA)
 {
   NPU npU = npA->npU;
 
@@ -2115,7 +2114,7 @@ VOID NEAR SendAckMediaChange (NPA npA)
 /*  removable media devices.				    */
 /*							    */
 /*----------------------------------------------------------*/
-USHORT NEAR GetMediaError (NPU npU)
+UCHAR NEAR GetMediaError (NPU npU)
 {
   UCHAR Data = 0;
   NPA npA = npU->npA;

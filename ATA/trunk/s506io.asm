@@ -4,7 +4,7 @@
 ;*
 ;* DESCRIPTIVE NAME = DANIS506.ADD - Adapter Driver for PATA/SATA DASD
 ;*
-;* Copyright : COPYRIGHT Daniela Engert 1999-2006
+;* Copyright : COPYRIGHT Daniela Engert 1999-2007
 ;*
 ;* DESCRIPTION : IO routines
 ;*
@@ -12,11 +12,14 @@
 ;* 'Location' which describes the actual port location:
 ;*
 ;*   1) IO space:   0x0000pppp	pppp = 16 bit IO port address
-;*   2) MEM space:  0xnmmmmmmm	(n >= 2) 32 bit flat kernel space address
+;*   2) MEM space:  0xnmmmmmmm	(n > 2) 32 bit flat kernel space address
 ;*   3) PCI config: 0x10ccbbdf	cc = 8 (possibly 12) bit register offset,
 ;*				bb = 8 bit PCI bus
 ;*				d  = 5 bit PCI device
 ;*				f  = 3 bit PCI function
+;*   4) indexed IO: 0x2iiipppp	pppp = 16 bit IO port address (index port)
+;*				 iii = 12 bit index value
+;*				       data port = idx port + 4
 ;*
 ;****************************************************************************/
 		JUMPS
@@ -154,7 +157,7 @@ OutBdLoop:	DEC	AX
 		MOVZX	ESP, SP
 		MOV	EBX, DWORD PTR [Argument]
 
-		TEST	DH, 0E0h	; any bit set means MEMORY
+		TEST	DH, 0C0h	; any bit set means MEMORY
 		XCHG	AX, DX		; AX = hi/arg2, DX = lo/arg1
 		JZ	@@IOorPCI
 		SHL	EDX, 16
@@ -163,12 +166,21 @@ OutBdLoop:	DEC	AX
 
 		RET	4
 @@IOorPCI:
-		TEST	AH, 10h 	; bit set means PCI
-		JNZ	@@PCI
+		TEST	AH, 30h 	; bit set means PCI or Indexed
+		JNZ	@@PCIorIdx
+@@IO:
 		MOV	EAX, EBX
 		OUT	DX, EAX
 
 		RET	4
+@@PCIorIdx:
+		TEST	AH, 10h 	; bit set means PCI
+		JNZ	@@PCI
+		AND	AX, 0FFFh
+		MOVZX	EAX, AX 	; AX = index, DX = Port
+		OUT	DX, EAX
+		ADD	DX, 4
+		JMP	@@IO
 @@PCI:					; AL = reg, DX = bus:8/dev:5/fnc:3
 		PreparePCICfg
 		OUT	DX, EAX
@@ -324,7 +336,7 @@ InBdLoop:	DEC	BX
 		PUBLIC	@InD2
 @InD		PROC FAR
 @InD2:
-		TEST	DH, 0E0h	; any bit set means MEMORY
+		TEST	DH, 0C0h	; any bit set means MEMORY
 		XCHG	AX, DX		; AX = hi/arg2, DX = lo/arg1
 		JZ	@@IOorPCI
 		SHL	EDX, 16
@@ -334,12 +346,21 @@ InBdLoop:	DEC	BX
 
 		RET
 @@IOorPCI:
-		TEST	AH, 10h 	; bit set means PCI
-		JNZ	@@PCI
+		TEST	AH, 30h 	; bit set means PCI or Indexed
+		JNZ	@@PCIorIdx
+@@IO:
 		IN	EAX, DX
 		SHLD	EDX, EAX, 16
 
 		RET
+@@PCIorIdx:
+		TEST	AH, 10h 	; bit set means PCI
+		JNZ	@@PCI
+		AND	AX, 0FFFh
+		MOVZX	EAX, AX 	; AX = index, DX = Port
+		OUT	DX, EAX
+		ADD	DX, 4
+		JMP	@@IO
 @@PCI:					; AL = reg, DX = bus:8/dev:5/fnc:3
 		PreparePCICfg
 		IN	EAX, DX

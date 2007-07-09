@@ -197,6 +197,47 @@ BOOL NEAR AcceptPIIX (NPA npA)
       npA->Cap |= CHIPCAP_SATA;
 //	npA->Cap &= ~CHIPCAP_ATAPIDMA;
       npA->FlagsI.b.native = 1;  // required (at least) for ICH8
+      if (val >= '6') {
+	NPC   npC  = npA->npC;
+	ULONG BAR5 = npC->BAR[5].Addr;
+	NPU   npU  = npA->UnitCB;
+
+	if (BAR5) {
+	  if (BAR5 < 0x10000) { // IO mapped index
+	    UCHAR Port = npA->IDEChannel * 2;
+	    SSTATUS = ((ULONG)INDEXED (Port << 8) << 16) | (BAR5 & 0xFFFF);
+	    SERROR   = SSTATUS | 0x20000;
+	    SCONTROL = SSTATUS | 0x10000;
+	    if (npA->maxUnits > 1) {
+	      npU++;
+	      SSTATUS = ((ULONG)INDEXED ((Port+1) << 8) << 16) | (BAR5 & 0xFFFF);
+	      SERROR   = SSTATUS | 0x20000;
+	      SCONTROL = SSTATUS | 0x10000;
+	    }
+	    npA->SCR.Offsets = 0;  // do *not* allocate SCR ports by default method
+
+	  } else { // Memory mapped AHCI registers
+	    UCHAR havePhy = 0;
+	    UCHAR Port = npA->IDEChannel;
+	    SSTATUS = GetAHCISCR (npA, Port);
+	    if (SSTATUS)
+	      havePhy = 1;
+	    else
+	      npU->FlagsT |= UTBF_DISABLED;
+
+	    if (npA->maxUnits > 1) {
+	      npU++;
+	      SSTATUS = GetAHCISCR (npA, Port + 2);
+	      if (SSTATUS)
+		havePhy |= 2;
+	      else
+		npA->maxUnits = 1;
+	    }
+	    if (!havePhy) return (FALSE);
+	    npA->SCR.Offsets = 0x3120;
+	  }
+	}
+      }
       goto ICHCommon;
       break;
   }

@@ -2415,8 +2415,10 @@ VOID NEAR IdentifyDevice (NPU npU, NPIDENTIFYDATA npID)
   if (npID->GeneralConfig.Bits.Incomplete) {
     if ((npID->SpecificConfig == 0x37C8) || (npID->SpecificConfig == 0x738C))
       IssueSetFeatures (npU, FX_DEVICE_SPIN_UP, 0);
-    goto Retry;
+    if (++npA->Retries < 2) goto Retry;
   }
+
+  npA->Retries = 0;
 
   if (npU->CmdSupported) return; // don't gather feature bits twice!!
 

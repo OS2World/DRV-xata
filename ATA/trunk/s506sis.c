@@ -90,7 +90,7 @@ ATA/133: 7.5 ns
 
 BOOL NEAR AcceptSIS (NPA npA)
 {
-  UCHAR save57, PCR, SATAmul = 1;
+  UCHAR save57, PCR, SATAmul = 1, SATAinc = 0x20;
 
   SetRegB (PCIAddr, PCI_SIS2_IDECTRL,			       // change DevId
 	   (UCHAR)(~0x80 & (save57 = GetRegB (PCIAddr, PCI_SIS2_IDECTRL))));
@@ -98,7 +98,10 @@ BOOL NEAR AcceptSIS (NPA npA)
   sprntf (npA->PCIDeviceMsg, SiS5513Msgtxt, MEMBER(npA).Device);
 
   switch (MEMBER(npA).Device) {
+    case 0x1185:
     case 0x1184:
+      return (AcceptAHCI (npA));
+
     case 0x1180:
       PCR = GetRegB (PCIAddr, 0x67);
       if (PCR & 0x10) {
@@ -113,12 +116,14 @@ BOOL NEAR AcceptSIS (NPA npA)
     case 0x0183:
     case 0x0182:
       npA->maxUnits = 2;
+      SATAinc = 0x10;
+      SATAmul = 2;
       goto SATAcommon;
-      break;
 
     case 0x0181:
     case 0x0180:
       PCR = GetRegB (PCIAddr, 0x90);
+      if (!PCR && !PciInfo->Level) goto SiS5518common; // 2ch PATA on SiS965
       if (PCR & 0x30) {
 	if (!npA->IDEChannel) goto SiS5518common; // combined PATA & SATA
 	npA->maxUnits = 2;
@@ -134,11 +139,12 @@ BOOL NEAR AcceptSIS (NPA npA)
       PciInfo->Level = SISH;
       GenericSATA (npA);
       Port = npA->IDEChannel * SATAmul;
-      if (SSTATUS) {
-	SSTATUS = npA->npC->BAR[5].Addr + Port * 0x20;
+
+      if (npA->npC->BAR[5].Addr) {
+	SSTATUS = npA->npC->BAR[5].Addr + Port * SATAinc;
 	npU++;
 	Port++;
-	SSTATUS = npA->npC->BAR[5].Addr + Port * 0x20;
+	SSTATUS = npA->npC->BAR[5].Addr + Port * SATAinc;
       } else {
 
 	SSTATUS = ((ULONG)PCICONFIG (0xC0 + Port * 0x10) << 16) | PCIAddr;

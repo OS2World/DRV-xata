@@ -319,10 +319,14 @@ BOOL NEAR AcceptAMD (NPA npA)
 BOOL NEAR AcceptNVidia (NPA npA)
 {
   USHORT Cable;
-  static char Name[2] = " ";
+  static char Name[4] = " 00";
 
   Name[0] = '0' + PciInfo->Level;
-  sprntf (npA->PCIDeviceMsg, NForceMsgtxt, PciInfo->Level ? Name : "");
+  if (PciInfo->Level < 1)
+    Name[0] = '\0';
+  else if (PciInfo->Level < 5)
+    Name[1] = '\0';
+  sprntf (npA->PCIDeviceMsg, NForceMsgtxt, Name);
 
   /*
    * Apply NForce2 C1 Halt Disconnect fix from NVidia as shown in

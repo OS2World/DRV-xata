@@ -117,18 +117,25 @@ BOOL NEAR AcceptMarvell (NPA npA)
 
   if (BAR5) {
     UCHAR  lastPort = InB (BAR5 | AHCI_CAP) & 0x1F;
-    USHORT PortOfs  = lastPort * 0x80 + 0x144;
+    USHORT PortOfs  = lastPort * 0x80 + 0x100;
+    ULONG  IRQen;
 
     if (!((InD (BAR5 | AHCI_PI) >> lastPort) & 1))
       return (FALSE); // port not implemented
 
-    if (!(InD (BAR5 + PortOfs)))
+    if (!(InD (BAR5 + PortOfs + 0x44)))
       return (FALSE); // not PATA port
+
+    IRQen = InD (BAR5 + PortOfs + 0x18) & 0x0c000000;
+    if (Fixes & 0x20) IRQen &= ~0x08000000;
+    if (Fixes & 0x10) IRQen &= ~0x04000000;
+    OutD (BAR5 + PortOfs + 0x18, IRQen);
   }
 
   if (!(InB (BMCMDREG + 1) & 1))
     npA->Cap |= CHANCAP_SPEED | CHANCAP_CABLE80;
 
+  sprntf (npA->PCIDeviceMsg, MarvellMsgtxt, MEMBER(npA).Device);
   return (TRUE);
 }
 
