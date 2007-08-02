@@ -39,7 +39,7 @@
 #pragma optimize(OPTIMIZE, on)
 
 #define PCITRACER 0
-#define TRPORT 0xD020
+#define TRPORT 0x940C
 
 #if 0
 void IBeep (USHORT freq) {
@@ -811,7 +811,6 @@ USHORT NEAR StartOtherIO (NPA npA)
     npA->ReqMask	= ACBR_SETMAXNATIVE;
 
   } else if (ReqFlags & ACBR_SETPARAM) {
-    outpdelay (DEVCTLREG, DEVCTL);
     COMMAND		= FX_SETP;
     SECCNT		= npU->PhysGeom.SectorsPerTrack;
     DRVHD	       |= 0x0F & (npU->PhysGeom.NumHeads - 1);
@@ -1083,54 +1082,10 @@ VOID NEAR SetIOAddress (NPA npA)
 
 VOID NEAR InterruptState (NPA npA)
 {
-//  UCHAR	 Status, Error = 0;
-  USHORT       rc = 0;		 // must initialize
-  ULONG        Port;
-  ULONG        XferPtr;
-  register int loop;
-  NPU	       npU = npA->npU;
+  USHORT rc = 0;	   // must initialize
+  NPU	 npU = npA->npU;
 
   if (npA->ReqFlags & ACBR_DMAIO) {
-#if 0
-    /* Wait for BM DMA active to go away for a while. */
-
-    if (BMSTATUSREG && ((BMSTATUS & (BMISTA_INTERRUPT | BMISTA_ACTIVE)) != BMISTA_INTERRUPT)) {
-      if ((npU->Flags & UCBF_IGNORE_BM_ACTV)) {
-	IODly (Delay500 * 8);
-	METHOD(npA).StopDMA (npA);
-	BMSTATUS = InB (BMSTATUSREG);
-      } else {
-	IODly (npA->IRQDelayCount);
-	Port = BMSTATUSREG;
-	for (loop = 1024 ; --loop != 0;) {
-	  BMSTATUS = InB (Port);
-	  if (!(BMSTATUS & BMISTA_ACTIVE)) break;
-	  _asm { rep nop };
-	}
-      }
-    }
-
-    /*********************************************************/
-    /* See page 80 of the 82371FB PCI ISA IDE Accelerator HW */
-    /* reference manual for a description of the error	     */
-    /* conditions detected below.			     */
-    /*********************************************************/
-
-    if (BMSTATUS & BMISTA_ACTIVE) {
-      ++npU->DeviceCounters.TotalBMStatus;
-      if (!(npU->Features & 4)) {
-	npA->DataErrorCnt++;
-	rc = 1;
-      }
-    } else if (!((BMSTATUS & BMISTA_INTERRUPT) || (npA->Flags & ACBF_BMINT_SEEN))) {
-      ++npU->DeviceCounters.TotalBMStatus2;
-      if (!(npU->Features & 8))
-	rc = 1;
-    }
-
-    METHOD(npA).StopDMA (npA);
-#endif
-
     /* Fix so that Bus Master errors will definitely result in retries */
     if (BMSTATUS & BMISTA_ERROR) {
       USHORT PCIStatus;
@@ -1391,18 +1346,12 @@ VOID NEAR DoOtherIO (NPA npA)
     if (METHOD(npA).PostInitUnit) METHOD(npA).PostInitUnit (npU);
 
   } else if (npA->ReqMask & ACBR_READMAX) {
-    if ((npU->CmdSupported >> 16) & FX_LBA48SUPPORTED) {
-      OutB (DEVCTLREG, (UCHAR)(DEVCTL | FX_HOB));
-      LBA5 = InB (LBA5REG);
-      LBA4 = InB (LBA4REG);
-      LBA3 = InB (LBA3REG);
-      OutB (DEVCTLREG, DEVCTL);
-    } else {
-      LBA3 = InB (DRVHDREG) & 0x0F;
-    }
-    LBA0   = InB (LBA0REG);
-    LBA1   = InB (LBA1REG);
-    LBA2   = InB (LBA2REG);
+    USHORT IOMask = FM_LBA0 | FM_LBA1 | FM_LBA2 | FM_LBA3;
+    if ((npU->CmdSupported >> 16) & FX_LBA48SUPPORTED)
+      IOMask |= FM_LBA4 | FM_LBA5;
+    else
+      *(USHORT *)&LBA4 = 0;
+    METHOD(npA).GetTF (npA, IOMask);
   }
 }
 
@@ -1420,8 +1369,6 @@ VOID NEAR DoneState (NPA npA)
   PIORB pIORB = npA->pIORB;
 
   if (npA->ReqFlags & ACBR_PASSTHRU) {
-    USHORT	 i, IOMask;
-    PBYTE	 preg;
     PPassThruATA picp;
 
     npA->ReqFlags = npU->ReqFlags = 0;		  /* don't run this code again */
@@ -1430,24 +1377,19 @@ VOID NEAR DoneState (NPA npA)
     picp = (PPassThruATA)((PIORB_ADAPTER_PASSTHRU)pIORB)->pControllerCmd;
 
     if (HIUSHORT(picp)) {
-      IOMask = picp->RegisterMapR;
-      preg = (PBYTE) &(picp->TaskFileOut);
+      USHORT IOMask = picp->RegisterMapR;
 
-      if (IOMask & (RTM_LBA4 | RTM_LBA5)) {
-	OutB (DEVCTLREG, (UCHAR)(DEVCTL | FX_HOB));
-	if (IOMask & RTM_LBA5) picp->TaskFileOut.Lba5 = InB (LBA5REG);
-	if (IOMask & RTM_LBA4) picp->TaskFileOut.Lba4 = InB (LBA4REG);
-	if (IOMask & RTM_LBA3) picp->TaskFileOut.Lba3 = InB (LBA3REG);
-	OutB (DEVCTLREG, DEVCTL);
-	IOMask &= FM_LOW;
-      }
-      if (IOMask & RTM_LBA3)   picp->TaskFileOut.Lba3 = InB (DRVHDREG) & 0x0F;
-      if (IOMask & RTM_LBA2)   picp->TaskFileOut.Lba2_CylHi  = InB (LBA2REG);
-      if (IOMask & RTM_LBA1)   picp->TaskFileOut.Lba1_CylLo  = InB (LBA1REG);
-      if (IOMask & RTM_LBA0)   picp->TaskFileOut.Lba0_SecNum = InB (LBA0REG);
-      if (IOMask & RTM_SECCNT) picp->TaskFileOut.SectorCount = InB (SECCNTREG);
-      if (IOMask & RTM_ERROR)  picp->TaskFileOut.Error	     = InB (ERRORREG);
-      if (IOMask & RTM_STATUS) picp->TaskFileOut.Status      = InB (STATUSREG);
+      METHOD(npA).GetTF (npA, IOMask);
+
+      if (IOMask & RTM_LBA5)   picp->TaskFileOut.Lba5	     = LBA5;
+      if (IOMask & RTM_LBA4)   picp->TaskFileOut.Lba4	     = LBA4;
+      if (IOMask & RTM_LBA3)   picp->TaskFileOut.Lba3	     = LBA3;
+      if (IOMask & RTM_LBA2)   picp->TaskFileOut.Lba2_CylHi  = LBA2;
+      if (IOMask & RTM_LBA1)   picp->TaskFileOut.Lba1_CylLo  = LBA1;
+      if (IOMask & RTM_LBA0)   picp->TaskFileOut.Lba0_SecNum = LBA0;
+      if (IOMask & RTM_SECCNT) picp->TaskFileOut.SectorCount = SECCNT;
+      if (IOMask & RTM_ERROR)  picp->TaskFileOut.Error	     = ERROR;
+      if (IOMask & RTM_STATUS) picp->TaskFileOut.Status      = STATUS;
     }
   }
 
@@ -1861,6 +1803,7 @@ UCHAR NEAR SendCmdPacket (NPA npA)
 
 #if PCITRACER
   outpw (TRPORT, 0xDEB6);
+  outpw (TRPORT+2, npA->IOPendingMask);
 #endif
   if (npA->IOPendingMask & FM_PDRHD) {
     if (npU->Flags & UCBF_PCMCIA) DRVHD &= ~0x10;
@@ -1886,7 +1829,7 @@ UCHAR NEAR SendCmdPacket (NPA npA)
   */
   if (npA->atInterrupt > 0) DISABLE;
 
-  METHOD(npA).SetupTF (npA);
+  METHOD(npA).SetTF (npA, npA->IOPendingMask);
   METHOD(npA).StartDMA (npA);
   return (0);
 

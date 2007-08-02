@@ -418,7 +418,6 @@ typedef struct _A
   UCHAR 	SGAlign;	    /* alignment test bit mask */      //  2
 
   ULONG 	DMAtim[2];		    /* DMA Timing */	       //  3
-  USHORT	IOPendingMaskSave;				       //  3
   NPIHDRS	npIHdr; 					       //  3
 
   PCI_INFO	PCIInfo;					       // 70

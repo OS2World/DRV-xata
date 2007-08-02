@@ -34,6 +34,9 @@
 
 #pragma optimize(OPTIMIZE, on)
 
+#define PCITRACER 0
+#define TRPORT 0x940C
+
 #define PCIDEV_SII680  0x0680
 #define PCIDEV_SII3112 0x3112
 #define PCIDEV_SII3114 0x3114
@@ -176,7 +179,7 @@ USHORT NEAR GetSIISATAPio (NPA npA, UCHAR Unit) {
     npU->SecPerBlk   = 8;  // SiI3112 bug
   }
 
-  METHOD(npA).SetupTF	= SIISetupTF;
+  METHOD(npA).SetTF	= SIISetTF;
   METHOD(npA).StartDMA	= SIIStartOp;
   return (GetGenericPio (npA, Unit));
 }
@@ -246,38 +249,27 @@ VOID ProgramSIISATAChip (NPA npA)
   UCHAR newVal = BYTE(SII_Mode)[0];
 
   if (newVal) {
-#if 0
-    UCHAR oldVal = InB (DATAREG | 0x34);
-    if ((newVal & ~oldVal) & 0x22)
-      OutB (DATAREG | 0x34, (UCHAR)((newVal & 0x22) | (oldVal & 0x11))); // set data transfer mode
-#else
       OutW (DATAREG | 0x34, newVal); // set data transfer mode
-#endif
   }
 }
 
-VOID SIISetupTF (NPA npA)
+VOID SIISetTF (NPA npA, USHORT IOMask)
 {
-  UCHAR IOMask;
-  NPCH	p;
-
-  IOMask = npA->IOPendingMaskSave = npA->IOPendingMask;
-  p = npA->IORegs;
-  for (IOMask = ~IOMask; IOMask; IOMask >>= 1) {
+  NPCH p = npA->IORegs;
+  for (IOMask = ~IOMask & ((1 << FI_MAX_REGS) - 1); IOMask; IOMask >>= 1) {
     if (IOMask & 1) *p = 0;
     p++;
   }
   DRVHD &= 0x4F;
-  npA->IOPendingMask = 0;
 }
 
 VOID NEAR SIIStartOp (NPA npA)
 {
-  if (COMMAND == FX_SETMAXEXT) {
-    OutB (COMMANDREG, COMMAND);
-    return;
-  }
-  if (npA->IOPendingMaskSave & FM_HIGH) {  // LBA48 addressing
+#if PCITRACER
+  outpw (TRPORT, 0xDEB6);
+  outpw (TRPORT+2, npA->IOPendingMask);
+#endif
+  if (npA->IOPendingMask & FM_HIGH) {  // LBA48 addressing
     OutB (DRVHDREG, (UCHAR)(DRVHD & ~0x0F));
     OutB (FEATREG, FEAT);
     OutD (DATAREG | 0x10, *(ULONG *)(npA->IORegs));

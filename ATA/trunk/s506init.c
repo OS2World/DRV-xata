@@ -762,7 +762,8 @@ VOID NEAR ConfigureACB (NPA npA) {
     if (!npA->maxUnits) npA->maxUnits = 2;
   }
   if (!METHOD(npA).GetPIOMode) METHOD(npA).GetPIOMode = GetGenericPio;
-  if (!METHOD(npA).SetupTF)    METHOD(npA).SetupTF    = GenericSetupTF;
+  if (!METHOD(npA).SetTF)      METHOD(npA).SetTF      = GenericSetTF;
+  if (!METHOD(npA).GetTF)      METHOD(npA).GetTF      = GenericGetTF;
   if (!METHOD(npA).SetupDMA)   METHOD(npA).SetupDMA   = GenericSetupDMA;
   if (!METHOD(npA).StartDMA)   METHOD(npA).StartDMA   = GenericStartOp;
   if (!METHOD(npA).StopDMA)    METHOD(npA).StopDMA    = GenericStopDMA;
@@ -1567,7 +1568,8 @@ VOID NEAR PrintAdapterInfo (NPA npA) {
   UCHAR IRQ;
 
   Port = PortToPhys (DATAREG, npA);
-  IRQ  = npA->IRQLevel;
+  IRQ  = APICRewire ? npA->npC->IrqAPIC : 0;
+  if (!IRQ) IRQ = npA->IRQLevel;
 
   if (npA->FlagsT & ATBF_PCMCIA) {
     if (npA->Socket != (UCHAR)-1) {
@@ -1596,9 +1598,7 @@ VOID NEAR PrintAdapterInfo (NPA npA) {
 	    (UCHAR)(npA->PCIInfo.PCIAddr >> 8),
 	    (UCHAR)((npA->PCIInfo.PCIAddr >> 3) & 0x1F),
 	    (UCHAR)(npA->PCIInfo.PCIAddr & 7),
-	    npA->IDEChannel,
-	    *(NPUSHORT)&(npA->npC->IrqPIC)
-	    );
+	    npA->IDEChannel);
     TTYWrite (3, TraceBuffer);
   } else if (Msg == ATS_PCCARD_INSERTED) {
     sprntf (TraceBuffer, VPCardInfo, npA->npPCIDeviceMsg);
@@ -1935,6 +1935,7 @@ VOID FAR AllocAdapterResources (NPA npA)
   USHORT	 rc = 0;
   RESOURCESTRUCT Resource;
   NPHRESOURCE	 nphRes;
+  UCHAR 	 IRQ;
 
 #define npResourceList ((NPAHRESOURCE)(npA->ResourceBuf))
 
@@ -1947,12 +1948,15 @@ VOID FAR AllocAdapterResources (NPA npA)
   /* AllocIRQResource	   */
   /*-----------------------*/
 
-  Resource.ResourceType 	     = RS_TYPE_IRQ;
-  Resource.IRQResource.IRQLevel      = npA->IRQLevel;
-  Resource.IRQResource.PCIIrqPin     = npA->FlagsT & ATBF_INTSHARED ?
-					 RS_PCI_INT_A : RS_PCI_INT_NONE;
-  Resource.IRQResource.IRQFlags      = npA->FlagsT & ATBF_INTSHARED ?
-					 RS_IRQ_SHARED : RS_IRQ_EXCLUSIVE;
+  IRQ  = APICRewire ? npA->npC->IrqAPIC : 0;
+  if (!IRQ) IRQ = npA->IRQLevel;
+
+  Resource.ResourceType 	 = RS_TYPE_IRQ;
+  Resource.IRQResource.IRQLevel  = IRQ;
+  Resource.IRQResource.PCIIrqPin = npA->FlagsT & ATBF_INTSHARED ?
+				     RS_PCI_INT_A : RS_PCI_INT_NONE;
+  Resource.IRQResource.IRQFlags  = npA->FlagsT & ATBF_INTSHARED ?
+				     RS_IRQ_SHARED : RS_IRQ_EXCLUSIVE;
 
   if (!RMAllocResource (hDriver, nphRes, &Resource)) nphRes++;
 

@@ -136,8 +136,6 @@ typedef enum {
 /*				 */
 /*-------------------------------*/
 
-//typedef struct _tChip tChip, NEAR *pChip;
-
 typedef struct _PCI_IDENT {
    USHORT     Device;
    USHORT     Vendor;
@@ -161,7 +159,8 @@ typedef struct _PCI_IDENT {
 #endif
    VOID       (NEAR *EnableInterrupts) (struct _A NEAR *);
 
-   VOID       (NEAR *SetupTF) (struct _A NEAR *);
+   VOID       (NEAR *SetTF) (struct _A NEAR *, USHORT);
+   VOID       (NEAR *GetTF) (struct _A NEAR *, USHORT);
    VOID       (NEAR *SetupDMA) (struct _A NEAR *);
    VOID       (NEAR *StartDMA) (struct _A NEAR *);
    VOID       (NEAR *StopDMA) (struct _A NEAR *);
@@ -235,7 +234,7 @@ typedef struct _PCI_DEVICE {
 #define PCIC_SUSPEND	    0x0001    /* Kernel suspend    */
 #define PCIC_RESUME	    0x0002    /* Kernel resume	   */
 #define PCIC_START	    0x0004    /* Before driver initializes the HW, bios initialized state */
-#define PCIC_START_COMPLETE 0x0008    /* After driver initializes the HW, berfore returning to bios */
+#define PCIC_START_COMPLETE 0x0008    /* After driver initializes the HW, before returning to bios */
 #define PCIC_INIT_COMPLETE  0x0010    /* All Driver's initialization is complete, BIOS is done with HW */
 
 typedef struct {

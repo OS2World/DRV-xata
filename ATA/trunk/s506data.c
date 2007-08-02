@@ -31,8 +31,8 @@
  #include "s506pro.h"
 
 #define YEAR  2007
-#define MONTH 6
-#define DAY   7
+#define MONTH 8
+#define DAY   1
 #define PCMCIAVERSION 0x180
 
 /*-------------------------------------------------------------------*/
@@ -594,6 +594,10 @@ USHORT CListCNvidia[] = {
 	0x03F6, 0x008E,     // nForce6 M61 SATA  -> nForce2 SATA
 	0x03F7, 0x008E,     // nForce6 M61 SATA1 -> nForce2 SATA
 	0x03E7, 0x008E,     // nForce6 M61 SATA2 -> nForce2 SATA
+	0x044C, 0x008E,     // nForce6 M65 AHCI  -> nForce2 SATA
+	0x044D, 0x008E,     // nForce6 M65 AHCI2 -> nForce2 SATA
+	0x044E, 0x008E,     // nForce6 M65 AHCI3 -> nForce2 SATA
+	0x044F, 0x008E,     // nForce6 M65 AHCI4 -> nForce2 SATA
 	0x045C, 0x008E,     // nForce6 M65 SATA  -> nForce2 SATA
 	0x045D, 0x008E,     // nForce6 M65 SATA2 -> nForce2 SATA
 	0x045E, 0x008E,     // nForce6 M65 SATA3 -> nForce2 SATA
@@ -649,6 +653,9 @@ USHORT CListFIXPS[] = {
 USHORT CListCIXPA[] = {
 	0x4381, 0x4380,     // IXP600 SATA -> IXP600 SATA
 	0x4390, 0x4380,     // IXP700 SATA -> IXP600 SATA
+	0x4391, 0x4380,     // IXP700 AHCI -> IXP600 SATA
+	0x4392, 0x4380,     // IXP700 RAID -> IXP600 SATA
+	0x4393, 0x4380,     // IXP700 RAID5-> IXP600 SATA
 		0 };
 USHORT CListFIXPA[] = {
 		0x4380,     // ATI IXP600 SATA
@@ -741,7 +748,7 @@ PCI_DEVICE PCIDevice[] =
       PromiseInitComplete, PromiseCheckIRQ,
       GetPDCPio, SetupCommon,
       CalculateAdapterTiming, PDCTimingValue, ProgramPDCChip,
-      NULL, NULL,
+      NULL, NULL, NULL,
       PDCSetupDMA, PDCStartOp, NULL, NULL,
       PDCPreReset, PDCPostReset, NULL,
     },
@@ -753,7 +760,7 @@ PCI_DEVICE PCIDevice[] =
       NULL, PromiseTX2CheckIRQ,
       GetGenericPio, SetupPDCTX2,
       NULL, PDCTimingValue, NULL,
-      NULL, NULL,
+      NULL, NULL, NULL,
       NULL, NULL, NULL, NULL,
       NULL, NULL, ProgramPDCIO,
       },
@@ -773,7 +780,7 @@ PCI_DEVICE PCIDevice[] =
       NULL, HPTCheckIRQ,
       GetHPTPio, SetupCommon,
       CalculateAdapterTiming, HPTTimingValue, ProgramHPTChip,
-      HPTEnableInt, NULL,
+      HPTEnableInt, NULL, NULL,
       HPT37xSetupDMA, NULL, NULL, HPT37xErrorDMA,
       HPT37xPreReset,
       },
@@ -897,7 +904,7 @@ PCI_DEVICE PCIDevice[] =
       NULL, PromiseMCheckIRQ,
       GetGenericPio, SetupCommon,
       CalculateGenericAdapterTiming, NULL, NULL,
-      NULL, NULL,
+      NULL, NULL, NULL,
       PromiseMSetupDMA, PromiseMStartOp, PromiseMStopDMA, PromiseMErrorDMA},
       CListCPromiseS, CListFPromiseS,
       0x04, 0x04, 0x00, 0x00, 0x10,
@@ -923,7 +930,7 @@ PCI_DEVICE PCIDevice[] =
       NULL, InitioCheckIRQ,
       NULL, SetupCommon,
       CalculateGenericAdapterTiming, NULL, NULL,
-      NULL, NULL,
+      NULL, NULL, NULL,
       InitioSetupDMA, InitioStartOp, InitioStopDMA, InitioErrorDMA},
       CListCInitio, CListInitio,
       0x04, 0x04, 0x00, 0x00, 0x10,
@@ -1327,7 +1334,7 @@ ULONG	   VDMInt13BlkID   = (ULONG)&VDMInt13;
 /*								     */
 /*-------------------------------------------------------------------*/
 
-UCHAR VPCIInfo[] = "  %s %cATA host (%04x:%04x rev:%02x) on PCI %d:%d.%d#%d %04X";
+UCHAR VPCIInfo[] = "  %s %cATA host (%04x:%04x rev:%02x) on PCI %d:%d.%d#%d";
 UCHAR VPCardInfo[] = "  %s PCCard PATA host";
 UCHAR VControllerInfo[] = "Controller:%1d  Port:%04lx IRQ:%02x  Status:%s%s";
 UCHAR VUnitInfo1[] = " Unit:%1d Status:%s%s%s%s%s";

@@ -145,10 +145,25 @@ VOID FAR _cdecl S506Str1 (VOID)
 		     0);
       }
 
+      for (Adapter = 0; Adapter < cAdapters; Adapter++) {
+	npA = ACBPtrs[Adapter];
+
+	for (npU = npA->UnitCB, Unit = npA->cUnits; --Unit >= 0; npU++) {
+	  if (noAPM) {
+	    if (npU->IdleCountInit != 0)
+	      npU->LongTimeout = -1;
+	    else {
+	      npU->IdleTime = ~0;
+	      npU->ReqFlags |= UCBR_SETIDLETIM;
+	    }
+	  }
+	  if (!(npU->Flags & (UCBF_NOTPRESENT | UCBF_ATAPIDEVICE | UCBF_CFA)))
+	    NoOp (npU);
+	}
+      }
+
       if (APICRewire && !(Fixes & 8)) {
 	NPIHDRS p;
-DevHelp_Beep (1000, 50);
-DevHelp_ProcBlock ((ULONG)(PVOID)&S506Str1, 100UL, 0);
 	DISABLE
 
 	for (p = IHdr; p < (IHdr + MAX_IRQS); p++) {
@@ -169,43 +184,7 @@ DevHelp_ProcBlock ((ULONG)(PVOID)&S506Str1, 100UL, 0);
 	}
 
 	ENABLE
-DevHelp_Beep (2000, 50);
-DevHelp_ProcBlock ((ULONG)(PVOID)&S506Str1, 100UL, 0);
-
-	for (npA = AdapterTable; npA < (AdapterTable + MAX_ADAPTERS); npA++) {
-	  if (npA->FlagsT & ATBF_ON) {
-	    for (npU = npA->UnitCB; npU < (npA->UnitCB + MAX_UNITS); npU++) {
-	      if (!(npU->Flags & UCBF_NOTPRESENT)) {
-		NPIDENTIFYDATA npID = (NPIDENTIFYDATA) ScratchBuf;
-		IdentifyDevice (npU, npID);
-	      }
-	    }
-	  }
-	}
-DevHelp_Beep (1500, 50);
-DevHelp_ProcBlock ((ULONG)(PVOID)&S506Str1, 100UL, 0);
       }
-
-#if 0
-      for (Adapter = 0; Adapter < cAdapters; Adapter++) {
-	npA = ACBPtrs[Adapter];
-
-	for (npU = npA->UnitCB, Unit = npA->cUnits; --Unit >= 0; npU++) {
-	  if (noAPM) {
-	    if (npU->IdleCountInit != 0)
-	      npU->LongTimeout = -1;
-	    else {
-	      npU->IdleTime = ~0;
-	      npU->ReqFlags |= UCBR_SETIDLETIM;
-	    }
-	  }
-	  if (!(npU->Flags & (UCBF_NOTPRESENT | UCBF_ATAPIDEVICE | UCBF_CFA)))
-	    NoOp (npU);
-	}
-      }
-DevHelp_Beep (1500, 100);
-DevHelp_ProcBlock ((ULONG)(PVOID)&S506Str1, 200UL, 0);
-#endif
 
 #if AUTOMOUNT
       // search OS2LVM.DMD

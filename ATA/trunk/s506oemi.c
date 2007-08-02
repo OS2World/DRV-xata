@@ -267,10 +267,12 @@ UCHAR NEAR CollectSCRPorts (NPU npU)
 {
   NPA npA = npU->npA;
 
-  if (npA->SCR.Offsets && SSTATUS) {
-    SERROR   = SSTATUS + 4 * npA->SCR.Ofs.SError;
-    SCONTROL = SSTATUS + 4 * npA->SCR.Ofs.SControl;
-    SSTATUS  = SSTATUS + 4 * npA->SCR.Ofs.SStatus;
+  if (SSTATUS) {
+    if (npA->SCR.Offsets) {
+      SERROR   = SSTATUS + 4 * npA->SCR.Ofs.SError;
+      SCONTROL = SSTATUS + 4 * npA->SCR.Ofs.SControl;
+      SSTATUS  = SSTATUS + 4 * npA->SCR.Ofs.SStatus;
+    }
     return (TRUE);
   } else {
     return (FALSE);

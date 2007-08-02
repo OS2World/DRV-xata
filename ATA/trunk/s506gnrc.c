@@ -213,7 +213,7 @@ VOID CalculateGenericAdapterTiming (NPA npA)
 VOID NEAR GenericInitComplete (NPA npA)
 {
 }
-															/* vvv, @V151345 */
+
 /*----------------------------------------------------*/
 /* CheckIRQ					      */
 /*						      */
@@ -284,9 +284,8 @@ int NEAR BMCheckIRQ (NPA npA) {
 
 #define outpdelay(Port,Data) OutBd (Port,Data,npA->IODelayCount)
 
-VOID NEAR GenericSetupTF (NPA npA)
+VOID NEAR GenericSetTF (NPA npA, USHORT IOMask)
 {
-  USHORT IOMask = npA->IOPendingMaskSave = npA->IOPendingMask;
   if (IOMask & FM_HIGH) {  // LBA48 addressing
     if (IOMask & FM_HFEAT  ) { outpdelay (FEATREG  , 0);    } // FEAT	H
     if (IOMask & FM_HSECCNT) { outpdelay (SECCNTREG, 0);    } // SECCNT H
@@ -299,6 +298,24 @@ VOID NEAR GenericSetupTF (NPA npA)
     if (IOMask & FM_LBA0   ) { outpdelay (LBA0REG,   LBA0); } // LBA0
     if (IOMask & FM_LBA1   ) { outpdelay (LBA1REG,   LBA1); } // LBA1
     if (IOMask & FM_LBA2   ) { outpdelay (LBA2REG,   LBA2); } // LBA2
+}
+
+VOID NEAR GenericGetTF (NPA npA, USHORT IOMask)
+{
+  if (IOMask & (FM_LBA4 | FM_LBA5)) {  // LBA48 addressing
+    OutB (DEVCTLREG, (UCHAR)(DEVCTL | FX_HOB));
+    if (IOMask & FM_LBA3   ) { LBA3 = InB (LBA3REG); } // LBA3
+    if (IOMask & FM_LBA4   ) { LBA4 = InB (LBA4REG); } // LBA4
+    if (IOMask & FM_LBA5   ) { LBA5 = InB (LBA5REG); } // LBA5
+    OutB (DEVCTLREG, DEVCTL);
+  } else {
+    if (IOMask & FM_LBA3   ) { LBA3 = InB (DRVHDREG) & 0x0F; } // LBA3
+  }
+  if (IOMask & FM_PFEAT  ) { FEAT   = InB (FEATREG); } // FEAT
+  if (IOMask & FM_PSECCNT) { SECCNT = InB (SECCNTREG);} // SECCNT
+  if (IOMask & FM_LBA0	 ) { LBA0   = InB (LBA0REG); } // LBA0
+  if (IOMask & FM_LBA1	 ) { LBA1   = InB (LBA1REG); } // LBA1
+  if (IOMask & FM_LBA2	 ) { LBA2   = InB (LBA2REG); } // LBA2
 }
 
 /*--------------------------------------------*/

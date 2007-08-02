@@ -460,7 +460,7 @@ VOID NEAR PDCStartOp (NPA npA)
     outp (BMCMDREG, npA->BM_CommandCode & ~BMICOM_START);
     outp (COMMANDREG, COMMAND);
 
-    if ((npA->IOPendingMaskSave & FM_HIGH) && (npA->HWSpecial)) {
+    if ((npA->IOPendingMask & FM_HIGH) && (npA->HWSpecial)) {
       UCHAR Mode = (npA->npU->UltraDMAMode ? 4 : 0)
 		 | (npA->ReqFlags & ACBR_WRITE ? 2 : 1);
 
