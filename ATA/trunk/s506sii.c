@@ -256,7 +256,7 @@ VOID ProgramSIISATAChip (NPA npA)
 VOID SIISetTF (NPA npA, USHORT IOMask)
 {
   NPCH p = npA->IORegs;
-  for (IOMask = ~IOMask & ((1 << FI_MAX_REGS) - 1); IOMask; IOMask >>= 1) {
+  for (IOMask = ~IOMask & ((2 << FI_PLBA5) - 1); IOMask; IOMask >>= 1) {
     if (IOMask & 1) *p = 0;
     p++;
   }
@@ -270,8 +270,6 @@ VOID NEAR SIIStartOp (NPA npA)
   outpw (TRPORT+2, npA->IOPendingMask);
 #endif
   if (npA->IOPendingMask & FM_HIGH) {  // LBA48 addressing
-    OutB (DRVHDREG, (UCHAR)(DRVHD & ~0x0F));
-    OutB (FEATREG, FEAT);
     OutD (DATAREG | 0x10, *(ULONG *)(npA->IORegs));
     OutD (DATAREG | 0x18, *(ULONG *)(&LBA3 - 1) & 0xFFFFFF00);
     OutW (DATAREG | 0x14, *(USHORT *)&LBA1);

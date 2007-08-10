@@ -675,7 +675,7 @@ BOOL NEAR SetupFromATA (NPA npA, NPU npU)
 VOID NEAR SetupSeek (NPA npA, NPU npU)
 {
   SetupCommand (npA, npU, FX_SEEK);
-  npA->IOPendingMask = (FM_PSECCNT | FM_PCYLL | FM_PCYLH | FM_PDRHD | FM_PCMD);
+  npA->IOPendingMask = (FM_PSCNT | FM_LBA0 | FM_LBA1 | FM_LBA2 | FM_PDRHD | FM_PCMD);
 }
 
 ///
@@ -807,20 +807,20 @@ USHORT NEAR StartOtherIO (NPA npA)
       DRVHD	       |= LBA3 & 0x0F;
       npA->IOPendingMask &= ~FM_LBA3;
     }
-    npA->IOPendingMask |= FM_PSECCNT | FM_LBA0 | FM_LBA1 | FM_LBA2;
+    npA->IOPendingMask |= FM_PSCNT | FM_LBA0 | FM_LBA1 | FM_LBA2;
     npA->ReqMask	= ACBR_SETMAXNATIVE;
 
   } else if (ReqFlags & ACBR_SETPARAM) {
     COMMAND		= FX_SETP;
     SECCNT		= npU->PhysGeom.SectorsPerTrack;
     DRVHD	       |= 0x0F & (npU->PhysGeom.NumHeads - 1);
-    npA->IOPendingMask	= FM_PSECCNT | FM_PFEAT | FM_PDRHD | FM_PCMD;
+    npA->IOPendingMask	= FM_PSCNT | FM_PFEAT | FM_PDRHD | FM_PCMD;
     npA->ReqMask	= ACBR_SETPARAM;
 
   } else if (ReqFlags & ACBR_SETMULTIPLE) {
     COMMAND		= FX_SETMUL;
     SECCNT		= (UCHAR) npU->SecPerBlk;
-    npA->IOPendingMask |= FM_PSECCNT;
+    npA->IOPendingMask |= FM_PSCNT;
     npA->ReqMask	= ACBR_SETMULTIPLE;
 
   } else if (ReqFlags & ACBR_SETPIOMODE) {
@@ -831,7 +831,7 @@ USHORT NEAR StartOtherIO (NPA npA)
     else
       Data = npU->Flags & UCBF_DISABLEIORDY ? FX_PIOMODE0 : FX_PIOMODE0IORDY;
     SECCNT		= Data;
-    npA->IOPendingMask |= FM_PFEAT | FM_PSECCNT;
+    npA->IOPendingMask |= FM_PFEAT | FM_PSCNT;
     npA->ReqMask	= ACBR_SETPIOMODE;
 
   } else if (ReqFlags & ACBR_SETDMAMODE) {
@@ -843,13 +843,13 @@ USHORT NEAR StartOtherIO (NPA npA)
     else
       Data |= FX_MWDMAMODEX;
     SECCNT		= Data;
-    npA->IOPendingMask |= FM_PFEAT | FM_PSECCNT;
+    npA->IOPendingMask |= FM_PFEAT | FM_PSCNT;
     npA->ReqMask	= ACBR_SETDMAMODE;
 
   } else if (ReqFlags & ACBR_SETIDLETIM) {
     COMMAND		= FX_SETIDLE;
     SECCNT		= (UCHAR)(~(npU->IdleTime));
-    npA->IOPendingMask |= FM_PSECCNT;
+    npA->IOPendingMask |= FM_PSCNT;
     npA->ReqMask	= ACBR_SETIDLETIM;
 
   } else if (ReqFlags & ACBR_ENABLEWCACHE) {
@@ -1057,6 +1057,7 @@ VOID NEAR SetIOAddress (NPA npA)
     }
   }
 
+  npA->IOPendingMask = FM_LOW | FM_PDRHD;
   if (npA->RBA & 0xF0000000) {	// LBA48 addressing required
     *(ULONG *)&LBA0 = npA->RBA & 0x00FFFFFFUL;
     LBA3 = npA->RBA >> 24;
@@ -1068,8 +1069,6 @@ VOID NEAR SetIOAddress (NPA npA)
 
   DRVHD  |= npU->DriveHead;
   COMMAND = CmdTable[CmdIdx];
-  npA->IOPendingMask |= (FM_PCMD | FM_PFEAT | FM_PSECNUM | FM_PSECCNT |
-			 FM_PCYLL | FM_PCYLH | FM_PDRHD);
 }
 
 /*---------------------------------------------*/

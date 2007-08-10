@@ -288,13 +288,13 @@ VOID NEAR GenericSetTF (NPA npA, USHORT IOMask)
 {
   if (IOMask & FM_HIGH) {  // LBA48 addressing
     if (IOMask & FM_HFEAT  ) { outpdelay (FEATREG  , 0);    } // FEAT	H
-    if (IOMask & FM_HSECCNT) { outpdelay (SECCNTREG, 0);    } // SECCNT H
+    if (IOMask & FM_HSCNT  ) { outpdelay (SECCNTREG, 0);    } // SECCNT H
     if (IOMask & FM_LBA3   ) { outpdelay (LBA3REG,   LBA3); } // LBA3
     if (IOMask & FM_LBA4   ) { outpdelay (LBA4REG,   LBA4); } // LBA4
     if (IOMask & FM_LBA5   ) { outpdelay (LBA5REG,   LBA5); } // LBA5
   }
     if (IOMask & FM_PFEAT  ) { outpdelay (FEATREG  , FEAT); } // FEAT
-    if (IOMask & FM_PSECCNT) { outpdelay (SECCNTREG, SECCNT);} // SECCNT
+    if (IOMask & FM_PSCNT  ) { outpdelay (SECCNTREG, SECCNT);} // SECCNT
     if (IOMask & FM_LBA0   ) { outpdelay (LBA0REG,   LBA0); } // LBA0
     if (IOMask & FM_LBA1   ) { outpdelay (LBA1REG,   LBA1); } // LBA1
     if (IOMask & FM_LBA2   ) { outpdelay (LBA2REG,   LBA2); } // LBA2
@@ -312,7 +312,7 @@ VOID NEAR GenericGetTF (NPA npA, USHORT IOMask)
     if (IOMask & FM_LBA3   ) { LBA3 = InB (DRVHDREG) & 0x0F; } // LBA3
   }
   if (IOMask & FM_PFEAT  ) { FEAT   = InB (FEATREG); } // FEAT
-  if (IOMask & FM_PSECCNT) { SECCNT = InB (SECCNTREG);} // SECCNT
+  if (IOMask & FM_PSCNT  ) { SECCNT = InB (SECCNTREG);} // SECCNT
   if (IOMask & FM_LBA0	 ) { LBA0   = InB (LBA0REG); } // LBA0
   if (IOMask & FM_LBA1	 ) { LBA1   = InB (LBA1REG); } // LBA1
   if (IOMask & FM_LBA2	 ) { LBA2   = InB (LBA2REG); } // LBA2

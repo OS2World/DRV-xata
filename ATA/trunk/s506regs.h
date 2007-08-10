@@ -151,11 +151,11 @@
 #define FI_PDAT      0		   /* read/write data			      */
 
 #define FI_PFEAT     1		   /* features register 		      */
-#define FI_PSECCNT   2		   /* sector count register		      */
+#define FI_PSCNT     2		   /* sector count register		      */
 #define FI_PINTRSN   2		   /* ATAPI interrupt reason		      */
-#define FI_PSECNUM   3		   /* sector number register		      */
-#define FI_PCYLL     4		   /* cylinder register (low)		      */
-#define FI_PCYLH     5		   /* cylinder register (high)		      */
+#define FI_PLBA0     3		   /* sector number register		      */
+#define FI_PLBA1     4		   /* cylinder register (low)		      */
+#define FI_PLBA2     5		   /* cylinder register (high)		      */
 #define FI_PDRHD     6		   /* drive/head register		      */
 #define FI_PCMD      7		   /* command register			      */
 #define FI_PLBA3     8		   /* LBA3 register			      */
@@ -166,24 +166,23 @@
 #define FI_PERR     12		   /* error register			      */
 #define FI_PSTAT    13		   /* status register			      */
 
-#define FM_PDAT    (  1 << FI_PDAT   ) /* read/write data		      */
-#define FM_PFEAT   (  1 << FI_PFEAT  ) /* features register		      */
-#define FM_PSECCNT (  1 << FI_PSECCNT) /* sector count register 	      */
-#define FM_PSECNUM (  1 << FI_PSECNUM) /* sector number register	      */
-#define FM_LBA0    (  1 << FI_PSECNUM) /* LBA0 register 		      */
-#define FM_PCYLL   (  1 << FI_PCYLL  ) /* cylinder register (low)	      */
-#define FM_LBA1    (  1 << FI_PCYLL  ) /* LBA1 register 		      */
-#define FM_PCYLH   (  1 << FI_PCYLH  ) /* cylinder register (high)	      */
-#define FM_LBA2    (  1 << FI_PCYLH  ) /* LBA2 register 		      */
-#define FM_PDRHD   (  1 << FI_PDRHD  ) /* drive/head register		      */
-#define FM_PCMD    (  1 << FI_PCMD   ) /* command register		      */
-#define FM_HFEAT   (128 << FI_PFEAT  ) /* features register		      */
-#define FM_HSECCNT (128 << FI_PSECCNT) /* sector count register 	      */
-#define FM_LBA3    (128 << FI_PSECNUM) /* LBA3 register 		      */
-#define FM_LBA4    (128 << FI_PCYLL  ) /* LBA4 register 		      */
-#define FM_LBA5    (128 << FI_PCYLH  ) /* LBA5 register 		      */
-#define FM_LOW	   (FM_PFEAT | FM_PSECCNT | FM_LBA0 | FM_LBA1 | FM_LBA2 | FM_PCMD)
-#define FM_HIGH    (FM_HFEAT | FM_HSECCNT | FM_LBA3 | FM_LBA4 | FM_LBA5)
+#define FM_PDAT    (1 << FI_PDAT ) /* read/write data		      */
+#define FM_PFEAT   (1 << FI_PFEAT) /* features register		      */
+#define FM_PSCNT   (1 << FI_PSCNT) /* sector count register 	      */
+#define FM_LBA0    (1 << FI_PLBA0) /* LBA0 register 		      */
+#define FM_PCYLL   (1 << FI_PLBA1) /* cylinder register (low)	      */
+#define FM_LBA1    (1 << FI_PLBA1) /* LBA1 register 		      */
+#define FM_PCYLH   (1 << FI_PLBA2) /* cylinder register (high)	      */
+#define FM_LBA2    (1 << FI_PLBA2) /* LBA2 register 		      */
+#define FM_PDRHD   (1 << FI_PDRHD) /* drive/head register		      */
+#define FM_PCMD    (1 << FI_PCMD ) /* command register		      */
+#define FM_LBA3    (1 << FI_PLBA3) /* LBA3 register 		      */
+#define FM_LBA4    (1 << FI_PLBA4) /* LBA4 register 		      */
+#define FM_LBA5    (1 << FI_PLBA5) /* LBA5 register 		      */
+#define FM_HFEAT   (1 << 11      )
+#define FM_HSCNT   (1 << 12      )
+#define FM_LOW	   (FM_PFEAT | FM_PSCNT | FM_LBA0 | FM_LBA1 | FM_LBA2 | FM_PCMD)
+#define FM_HIGH    (FM_HFEAT | FM_HSCNT | FM_LBA3 | FM_LBA4 | FM_LBA5)
 
 
 #define DATAREG     (npA->IOPorts[FI_PDAT])
@@ -191,27 +190,27 @@
 #define DEVCTLREG   (npA->CtrlPort)
 #define FEAT	    (npA->IORegs[FI_PFEAT])
 #define FEATREG     (npA->IOPorts[FI_PFEAT])
-#define SECCNT	    (npA->IORegs[FI_PSECCNT])
-#define SECCNTREG   (npA->IOPorts[FI_PSECCNT])
-#define INTRSNREG   (npA->IOPorts[FI_PSECCNT])
-#define SECTOR	    (npA->IORegs[FI_PSECNUM])
-#define LBA0	    (npA->IORegs[FI_PSECNUM])
-#define SECTORREG   (npA->IOPorts[FI_PSECNUM])
-#define LBA0REG     (npA->IOPorts[FI_PSECNUM])
-#define LBA1	    (npA->IORegs[FI_PCYLL])
-#define CYLL	    (npA->IORegs[FI_PCYLL])
-#define CYLLREG     (npA->IOPorts[FI_PCYLL])
-#define LBA1REG     (npA->IOPorts[FI_PCYLL])
-#define LBA2	    (npA->IORegs[FI_PCYLH])
-#define CYLH	    (npA->IORegs[FI_PCYLH])
-#define CYLHREG     (npA->IOPorts[FI_PCYLH])
-#define LBA2REG     (npA->IOPorts[FI_PCYLH])
+#define SECCNT	    (npA->IORegs[FI_PSCNT])
+#define SECCNTREG   (npA->IOPorts[FI_PSCNT])
+#define INTRSNREG   (npA->IOPorts[FI_PSCNT])
+#define SECTOR	    (npA->IORegs[FI_PLBA0])
+#define LBA0	    (npA->IORegs[FI_PLBA0])
+#define SECTORREG   (npA->IOPorts[FI_PLBA0])
+#define LBA0REG     (npA->IOPorts[FI_PLBA0])
+#define LBA1	    (npA->IORegs[FI_PLBA1])
+#define CYLL	    (npA->IORegs[FI_PLBA1])
+#define CYLLREG     (npA->IOPorts[FI_PLBA1])
+#define LBA1REG     (npA->IOPorts[FI_PLBA1])
+#define LBA2	    (npA->IORegs[FI_PLBA2])
+#define CYLH	    (npA->IORegs[FI_PLBA2])
+#define CYLHREG     (npA->IOPorts[FI_PLBA2])
+#define LBA2REG     (npA->IOPorts[FI_PLBA2])
 #define LBA3	    (npA->IORegs[FI_PLBA3])
-#define LBA3REG     (npA->IOPorts[FI_PSECNUM])
+#define LBA3REG     (npA->IOPorts[FI_PLBA0])
 #define LBA4	    (npA->IORegs[FI_PLBA4])
-#define LBA4REG     (npA->IOPorts[FI_PCYLL])
+#define LBA4REG     (npA->IOPorts[FI_PLBA1])
 #define LBA5	    (npA->IORegs[FI_PLBA5])
-#define LBA5REG     (npA->IOPorts[FI_PCYLH])
+#define LBA5REG     (npA->IOPorts[FI_PLBA2])
 #define DRVHD	    (npA->IORegs[FI_PDRHD])
 #define DRVHDREG    (npA->IOPorts[FI_PDRHD])
 #define COMMAND     (npA->IORegs[FI_PCMD])

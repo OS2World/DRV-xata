@@ -424,7 +424,7 @@ TotalTime();
 #if TRACES
     NPSZ  q = "R"VERSION;
 #else
-    NPSZ  q = "u"VERSION" (unsupp)";
+    NPSZ  q = "u"VERSION" (!!)";
 #endif
     UCHAR c;
 
