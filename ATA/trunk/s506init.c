@@ -441,6 +441,7 @@ TotalTime();
   }
 
   if (!(Debug & 0x200)) AssignPCIChips ();
+  if (!cChips) CheckLegacyPorts ();
 
   ADD_InitTimer (TimerPool, sizeof(TimerPool));
 
@@ -2141,7 +2142,7 @@ NPA FAR LocateATEntry (USHORT BasePort, USHORT PCIAddr, UCHAR Channel)
 //if (Debug & 8) TraceStr ("[%04X,%X#%d-", BasePort, PCIAddr, Channel);
 
   for (npA = AdapterTable; npA < (AdapterTable + MAX_ADAPTERS); npA++) {
-    if (npA->FlagsT & (ATBF_ON | ATBF_PCMCIA)) continue;
+    if (npA->FlagsT & (ATBF_ON | ATBF_PCMCIA | ATBF_POPULATED)) continue;
 //if (Debug & 8) TraceStr ("<%04X>(%04X,%X#%d)", npA,(USHORT)DATAREG, npA->LocatePCI, npA->LocateChannel);
     if (!DATAREG && !npA->LocatePCI && !npAfree) npAfree = npA;
     // if the ports match or slot is empty

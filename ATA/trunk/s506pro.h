@@ -377,6 +377,7 @@ USHORT FAR  EnumPCIDevices (VOID);
 VOID   FAR  FixAddr (NPA npA);
 UCHAR  NEAR ProbeChannel (NPA npA);
 UCHAR  NEAR HandleFoundAdapter (NPA npA, NPPCI_DEVICE npDev);
+VOID   FAR CheckLegacyPorts (VOID);
 
 #pragma alloc_text (FCode, SetupOEMHlp)
 #pragma alloc_text (FCode, CallOEMHlp)
@@ -384,6 +385,7 @@ UCHAR  NEAR HandleFoundAdapter (NPA npA, NPPCI_DEVICE npDev);
 #pragma alloc_text (FCode, WritePCIConfigSpace)
 #pragma alloc_text (FCode, ConfigurePCI)
 #pragma alloc_text (FCode, GetBAR)
+#pragma alloc_text (FCode, CheckLegacyPorts)
 #pragma alloc_text (FCode, CollectSCRPorts)
 #pragma alloc_text (FCode, CheckSATAPhy)
 #pragma alloc_text (FCode, SetupT13StandardController)

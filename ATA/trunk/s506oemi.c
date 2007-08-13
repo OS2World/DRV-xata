@@ -78,6 +78,29 @@ USHORT NEAR GetPCIBuses (void) {
   return (PCInumBuses);
 }
 
+VOID FAR CheckLegacyPorts (VOID) {
+  UCHAR Int;
+
+  for (Int = PRIMARY_I; Int <= SECNDRY_I; Int++) {
+    USHORT Port = (Int == PRIMARY_I) ? PRIMARY_P : SECNDRY_P;
+    NPA    npA	= LocateATEntry (Port, 0, 0);
+    if (!npA) continue;
+
+    DEVCTLREG	  = Port + (PRIMARY_C - PRIMARY_P);
+    npA->IRQLevel = Int;
+    STATUSREG	  = 0;
+    BMCMDREG	  = 0;
+    npA->Cap	  = 0;
+    MEMBER(npA).Vendor = 0;
+    CollectPorts (npA);
+    if (ProbeChannel (npA)) {
+      npA->maxUnits = 2;
+      npA->FlagsT  |= ATBF_POPULATED | ATBF_BIOSDEFAULTS;
+    } else {
+      DATAREG = 0;
+    }
+  }
+}
 
 VOID NEAR SetLatency (NPA npA, UCHAR Lat) {
   UCHAR Latency;
@@ -539,7 +562,8 @@ UCHAR NEAR HandleFoundAdapter (NPA npA, NPPCI_DEVICE npDev)
   if (!hasPhy)
     isPopulated = ProbeChannel (npA);
 
-  if (isPopulated || (npA->FlagsT & (ATBF_BAY | ATBF_POPULATED))) {
+  if (isPopulated || (npA->FlagsT & ATBF_BAY)) {
+    npA->FlagsT |= ATBF_POPULATED;
     if (BMCMDREG < 0x100) {
       npA->Cap &= ~(CHIPCAP_ULTRAATA | CHIPCAP_ATADMA | CHIPCAP_ATAPIDMA);
     } else {
