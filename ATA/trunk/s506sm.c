@@ -38,8 +38,9 @@
 
 #pragma optimize(OPTIMIZE, on)
 
+#define BEEB 0
 #define PCITRACER 0
-#define TRPORT 0x940C
+#define TRPORT 0xA800
 
 #if 0
 void IBeep (USHORT freq) {
@@ -1506,7 +1507,7 @@ VOID NEAR ErrorState (NPA npA)
 #endif
       if ((Beeps > 0) && (npA->HardwareType != ALi)) {
 	DevHelp_Beep (3000, 10);
-#if PCITRACER
+#if BEEB
   outpw (TRPORT+1, 0xBEEB);
 #endif
       }
@@ -1523,6 +1524,8 @@ VOID NEAR ErrorState (NPA npA)
 	  DevHelp_Beep (1000, 10);
   #if PCITRACER
     outpw (TRPORT, 0xDCCE);
+  #endif
+  #if BEEB
     outpw (TRPORT+1, 0xBEEB);
   #endif
 	}
@@ -1553,7 +1556,7 @@ VOID NEAR ErrorState (NPA npA)
       npA->State = ACBS_DONE;
       return;
     } else if (Beeps > 0) {
-#if PCITRACER
+#if BEEB
   outpw (TRPORT+1, 0xBEEB);
 #endif
       DevHelp_Beep (300, 10);

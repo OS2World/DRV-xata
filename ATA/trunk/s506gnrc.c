@@ -406,7 +406,7 @@ ULONG NEAR GetAHCISCR (NPA npA, USHORT Port)
     ULONG PI = InD (BAR5 | AHCI_PI);
 
     if (Port > numPorts) return 0;
-    if (!((PI >> Port) & 1)) return 0;
+    if (PI && !((PI >> Port) & 1)) return 0;
   }
 
   return (BAR5 + (0x100 + AHCI_SSTS + (Port * 0x80)));

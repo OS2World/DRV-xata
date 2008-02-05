@@ -92,13 +92,9 @@ VOID FAR CheckLegacyPorts (VOID) {
     BMCMDREG	  = 0;
     npA->Cap	  = 0;
     MEMBER(npA).Vendor = 0;
+    npA->maxUnits = 2;
+    npA->FlagsT  |= ATBF_BIOSDEFAULTS;
     CollectPorts (npA);
-    if (ProbeChannel (npA)) {
-      npA->maxUnits = 2;
-      npA->FlagsT  |= ATBF_POPULATED | ATBF_BIOSDEFAULTS;
-    } else {
-      DATAREG = 0;
-    }
   }
 }
 
@@ -304,6 +300,7 @@ UCHAR NEAR CollectSCRPorts (NPU npU)
 
 UCHAR NEAR nextController (NPPCI_INFO Enum) {
   UCHAR rc = FALSE;
+  static UCHAR BusInc = 1;
   static UCHAR maxFnc = MAX_PCI_FUNCTIONS;
   static struct {
     UCHAR Rev, ProgIF, Subclass, Class;
@@ -345,8 +342,12 @@ UCHAR NEAR nextController (NPPCI_INFO Enum) {
       if (Debug & 8) TS("[->%d]",SubBus)
 #endif
       if (!SubBus || (SubBus == 0xFF)) continue;
-      SubBus++;
+      SubBus += BusInc;
+      if (SubBus < BusInc) SubBus = 0xFF;
       if (PCInumBuses < SubBus) PCInumBuses = SubBus;
+    } else {
+      // count all HOST->PCI bridges
+      if (*(USHORT*)&(ClassCode.Class) == 0x0006) BusInc++;
     }
 
     if (ClassCode.Class != PCI_MASS_STORAGE) continue;

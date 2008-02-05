@@ -4,7 +4,7 @@
  *
  * DESCRIPTIVE NAME = DANIS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- * Copyright : COPYRIGHT Daniela Engert 1999-2006
+ * Copyright : COPYRIGHT Daniela Engert 1999-2007
  *
  * DESCRIPTION : Adapter Driver ServerWorks OSB routines.
  ****************************************************************************/
@@ -127,6 +127,28 @@ BOOL NEAR AcceptIXP (NPA npA)
   enable = GetRegB (PciInfo->PCIAddr, (UCHAR)(PCI_SW_UDMATIM + npA->IDEChannel));
   enable = (enable > 0x20) || ((enable & 0x0F) > 2);
   if (enable) npA->Cap |= CHANCAP_CABLE80;
+  return (TRUE);
+}
+
+BOOL NEAR AcceptBCM (NPA npA)
+{
+  NPU	 npU = npA->UnitCB;
+  NPC	 npC = npA->npC;
+  ULONG  BA5 = npC->BAR[5].Addr;
+
+  GenericSATA (npA);
+  SSTATUS = BA5 + ((npA->IDEChannel * 0x200) | 0x40);
+
+  npA->Cap &= ~CHIPCAP_ATAPIDMA;
+
+  npA->FlagsT |= ATBF_BIOSDEFAULTS;
+  if (npA->FlagsT & ATBF_BIOSDEFAULTS) {  // use generic PIO mode
+    npA->maxUnits = 2;
+    npU[1].SStatus = BA5 + ((npA->IDEChannel * 0x200) | 0x140);
+//    npU[0].FlagsT |= UTBF_NOTUNLOCKHPA;
+//    npU[1].FlagsT |= UTBF_NOTUNLOCKHPA;
+  }
+
   return (TRUE);
 }
 

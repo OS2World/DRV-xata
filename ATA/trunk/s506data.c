@@ -30,9 +30,9 @@
  #include "s506ext.h"
  #include "s506pro.h"
 
-#define YEAR  2007
-#define MONTH 8
-#define DAY   9
+#define YEAR  2008
+#define MONTH 2
+#define DAY   5
 #define PCMCIAVERSION 0x181
 
 /*-------------------------------------------------------------------*/
@@ -385,9 +385,9 @@ USHORT CListCIntel[] = {
 	0x2821, 0x2820,     // ICH8  AHCI -> ICH8 SATA
 	0x2822, 0x2820,     // ICH8  RAID -> ICH8 SATA
 	0x2824, 0x2820,     // ICH8  AHCI -> ICH8 SATA
-	0x2828, 0x2825,     // ICH8M SATA -> ICH8 SATA2
-	0x2829, 0x2825,     // ICH8M AHCI -> ICH8 SATA2
-	0x282A, 0x2825,     // ICH8M RAID -> ICH8 SATA2
+	0x2828, 0x2820,     // ICH8M SATA -> ICH8 SATA
+	0x2829, 0x2820,     // ICH8M AHCI -> ICH8 SATA
+	0x282A, 0x2820,     // ICH8M RAID -> ICH8 SATA
 	0x2921, 0x2920,     // ICH9 SATA2 2p -> ICH9 SATA
 	0x2922, 0x2920,     // ICH9 AHCI  -> ICH9 SATA
 	0x2923, 0x2920,     // ICH9 AHCI2 -> ICH9 SATA
@@ -404,6 +404,13 @@ USHORT CListCIntel[] = {
 	0x292F, 0x2920,     // ICH9MAHCI4 -> ICH9 SATA
 	0x294D, 0x2920,     // ICH9 AHCI6 -> ICH9 SATA
 	0x294E, 0x2920,     // ICH9MAHCI5 -> ICH9 SATA
+	0x5028, 0x2920,     // Tolapai SATA  -> ICH9 SATA
+	0x502A, 0x2920,     // Tolapai AHCI  -> ICH9 SATA
+	0x502B, 0x2920,     // Tolapai AHCI2 -> ICH9 SATA
+	0x3A20, 0x3A00,     // ICH10 SATA2 4p -> ICH10 SATA 4p
+	0x3A26, 0x3A06,     // ICH10 SATA2 2p -> ICH10 SATA 2p
+	0x3A05, 0x3A00,     // ICH10 AHCI  -> ICH10 SATA
+	0x3A25, 0x3A00,     // ICH10 AHCI2 -> ICH10 SATA
 		0 };
 USHORT CListFIntel[] = {
 		0x1230,     // PIIX	  82371FB
@@ -424,6 +431,8 @@ USHORT CListFIntel[] = {
 		0x2825,     // ICH8 SATA2 82801HB 2 ports
 		0x2850,     // ICH8M	  82801HBM
 		0x2920,     // ICH9 SATA	  4p
+		0x3A00,     // ICH10 SATA	  4p
+		0x3A06,     // ICH10 SATA	  2p
 		0 };
 USHORT CListCVia[] = {
 	0x4149, 0x3149,     // VT6420	-> VT8237 SATA
@@ -564,6 +573,12 @@ USHORT CListFServerWorks[] = {
 		0x0213,     // ServerWorks CSB6
 		0x0214,     // ServerWorks HT1000 aka BCM5785
 		0 };
+USHORT CListCBCMSata[] = {
+	0x024B, 0x024A,     // Broadcom BCM5785 -> BCM5785
+		0 };
+USHORT CListFBCMSata[] = {
+		0x024A,     // Broadcom BCM5785 aka ServerWorks HT1000
+		0 };
 USHORT CListCOpti[] = {
 	0xC558, 0xD568,     // Opti Viper
 	0xD721, 0xD768,     // Opti Vendetta
@@ -606,6 +621,18 @@ USHORT CListCNvidia[] = {
 	0x0551, 0x008E,     // nForce6 M67 SATA2 -> nForce2 SATA
 	0x0552, 0x008E,     // nForce6 M67 SATA3 -> nForce2 SATA
 	0x0553, 0x008E,     // nForce6 M67 SATA4 -> nForce2 SATA
+	0x07F0, 0x008E,     // nForce7 M73 SATA  -> nForce2 SATA
+	0x07F1, 0x008E,     // nForce7 M73 SATA2 -> nForce2 SATA
+	0x07F2, 0x008E,     // nForce7 M73 SATA3 -> nForce2 SATA
+	0x07F3, 0x008E,     // nForce7 M73 SATA4 -> nForce2 SATA
+	0x0AD0, 0x008E,     // nForce7 M77 SATA  -> nForce2 SATA
+	0x0AD1, 0x008E,     // nForce7 M77 SATA2 -> nForce2 SATA
+	0x0AD2, 0x008E,     // nForce7 M77 SATA3 -> nForce2 SATA
+	0x0AD3, 0x008E,     // nForce7 M77 SATA4 -> nForce2 SATA
+	0x0AB4, 0x008E,     // nForce7 M79 SATA  -> nForce2 SATA
+	0x0AB5, 0x008E,     // nForce7 M79 SATA2 -> nForce2 SATA
+	0x0AB6, 0x008E,     // nForce7 M79 SATA3 -> nForce2 SATA
+	0x0AB7, 0x008E,     // nForce7 M79 SATA4 -> nForce2 SATA
 		0 };
 USHORT CListFNvidia[] = {
 		0x008E,     // Nvidia nForce SATA
@@ -652,10 +679,12 @@ USHORT CListFIXPS[] = {
 		0 };
 USHORT CListCIXPA[] = {
 	0x4381, 0x4380,     // IXP600 SATA -> IXP600 SATA
-	0x4390, 0x4380,     // IXP700 SATA -> IXP600 SATA
-	0x4391, 0x4380,     // IXP700 AHCI -> IXP600 SATA
-	0x4392, 0x4380,     // IXP700 RAID -> IXP600 SATA
-	0x4393, 0x4380,     // IXP700 RAID5-> IXP600 SATA
+	0x4390, 0x4380,     // IXP700/800 SATA -> IXP600 SATA
+	0x4391, 0x4380,     // IXP700/800 AHCI -> IXP600 SATA
+	0x4392, 0x4380,     // IXP700/800 RAID -> IXP600 SATA
+	0x4393, 0x4380,     // IXP700/800 RAID5-> IXP600 SATA
+	0x4394, 0x4380,     // IXP700/800 SATA -> IXP600 SATA
+	0x4395, 0x4380,     // IXP700/800 SATA -> IXP600 SATA
 		0 };
 USHORT CListFIXPA[] = {
 		0x4380,     // ATI IXP600 SATA
@@ -676,6 +705,7 @@ USHORT CListCMarvell[] = {
 	0x6120, 0x6145,     // Marvell 6120 -> Marvell 6145
 	0x6121, 0x6145,     // Marvell 6121 -> Marvell 6145
 	0x6122, 0x6145,     // Marvell 6122 -> Marvell 6145
+	0x6123, 0x6145,     // Marvell 6123 -> Marvell 6145
 	0x6140, 0x6145,     // Marvell 6140 -> Marvell 6145
 	0x6141, 0x6145,     // Marvell 6141 -> Marvell 6145
 		0 };
@@ -935,6 +965,14 @@ PCI_DEVICE PCIDevice[] =
       CListCInitio, CListInitio,
       0x04, 0x04, 0x00, 0x00, 0x10,
       NULL },
+  { { 0, 0x1166, BcmSata, MODE_NATIVE_OK | NONSTANDARD_HOST, 0, 2,
+      AcceptBCM, CfgGeneric,
+      NULL, BMCheckIRQ,
+      GetGenericPio, SetupCommon,
+      CalculateAdapterTiming, NULL, NULL},
+      CListCBCMSata, CListFBCMSata,
+      0x04, 0x04, 0x00, 0x00, 0x10,
+      BroadcomMsgtxt },
   { { 0, 0, generic, MODE_NATIVE_OK, 0, 2,
       AcceptGeneric, CfgGeneric,
       GenericInitComplete, NonsharedCheckIRQ,
@@ -1070,7 +1108,7 @@ UCHAR  VIA571Msgtxt[]  = "VIA %s";
 UCHAR  SiS5513Msgtxt[] = "SiS %X";
 UCHAR  ALI5229Msgtxt[] = "ALi %X";
 UCHAR  PDCxMsgtxt[]    = "Promise Ultra%d";
-UCHAR  ICHxMsgtxt[]    = "Intel ICH%c";
+UCHAR  ICHxMsgtxt[]    = "Intel ICH%d";
 UCHAR  Cx5530Msgtxt[]  = "Cyrix 5530";
 UCHAR  HPT36xMsgtxt[]  = "HPT %d";
 UCHAR  AMDxMsgtxt[]    = "AMD %d";
@@ -1087,6 +1125,7 @@ UCHAR  JMMsgtxt[]      = "JMicron JMB%x";
 UCHAR  PromiseMIOtxt[] = "Promise %dxx";
 UCHAR  MarvellMsgtxt[] = "Marvell %X";
 UCHAR  InitioMsgtxt[]  = "Initio INIC-%x";
+UCHAR  BroadcomMsgtxt[]= "BCM ";
 UCHAR  GenericMsgtxt[] = "Generic";
 UCHAR ParmErrMsg[] = " Warning: DANIS506.ADD - Invalid CONFIG.SYS parameters near pos %d";
 UCHAR VersionMsg[] = "            Daniela's Bus Master IDE Driver for OS/2 Version "VERSION;

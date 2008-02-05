@@ -89,8 +89,7 @@ USHORT FAR _cdecl APMEventHandler (PAPMEVENT Event)
     PowerState = PwrState = (USHORT)(Event->ulParm2 >> 16);
     if (PwrState != APM_PWRSTATEREADY)
       return (APMSuspend (PwrState));
-  } else if ((Message == APM_NORMRESUMEEVENT) ||
-	     (Message == APM_CRITRESUMEEVENT) ||
+  } else if ((Message == APM_CRITRESUMEEVENT) ||
 	     (Message == APM_STBYRESUMEEVENT)) {
     PowerState = 0;
     return (APMResume());

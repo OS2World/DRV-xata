@@ -76,6 +76,7 @@
 #define PCI_IDE_BUSMASTER	0x80
 #define PCI_STATUS_MASTER_ABORT 0x2000
 #define PCI_COMMAND_INTX_DIS	0x0400
+#define PCI_CLASS_HOST_BRIDGE	0x0600
 #define PCI_CLASS_ISA_BRIDGE	0x0601
 #define PCI_BARTYPE_IO		0x01
 
@@ -84,7 +85,7 @@ typedef enum {
   Cmd640, RZ1000, Intel, Via, ALi, SiS, CMD64x, Promise, Cyrix,
   HPT36x, HPT37x, AEC, ServerWorks, Opti, AMD, NVidia, PromiseTX,
   SiI68x, ITE, NetCell, ATI, SiISata, JMicron, PromiseMIO, Marvell, Initio,
-  AHCI,
+  AHCI, BcmSata,
   generic = -1
 } tHardwareType;
 
@@ -119,7 +120,8 @@ typedef enum {
 #define PCID_Marvell	   24  /* Marvell */
 #define PCID_ATIIXPAHCI    25  /* ATI IXP AHCI */
 #define PCID_Initio	   26  /* Initio */
-#define PCID_Generic	   27  /* Generic IDE */
+#define PCID_Broadcom	   27  /* Broadcom */
+#define PCID_Generic	   28  /* Generic IDE */
 
 #define MAX_PCI_DEVICE_DESCRIPT  PCID_Generic+1
 

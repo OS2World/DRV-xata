@@ -80,6 +80,8 @@
 #define   ICH8SPCIIDE_DEV_ID  0x2820
 #define  ICH8S2PCIIDE_DEV_ID  0x2825
 #define   ICH9SPCIIDE_DEV_ID  0x2920
+#define  ICH10SPCIIDE_DEV_ID  0x3A00
+#define ICH10S2PCIIDE_DEV_ID  0x3A06
 
 #define  SLC66PCIIDE_DEV_ID  0x9130
 
@@ -147,57 +149,61 @@ BOOL NEAR AcceptPIIX (NPA npA)
     case ICH_PCIIDE_DEV_ID:
       PciInfo->Level = ICH;
       npA->Cap |= CHIPCAP_ATA66;
+      val = 1;
       str = ICHxMsgtxt;
       break;
     case ICH2PCIIDE_DEV_ID:
-      val = '2'; goto ICHCommon;
+      val = 2; goto ICHCommon;
     case ICH3PCIIDE_DEV_ID:
-      val = '3'; goto ICHCommon;
+      val = 3; goto ICHCommon;
     case ICH4PCIIDE_DEV_ID:
-      val = '4'; goto ICHCommon;
+      val = 4; goto ICHCommon;
     case ICH5PCIIDE_DEV_ID:
-      val = '5'; goto ICHCommon;
+      val = 5; goto ICHCommon;
     case ICH6PCIIDE_DEV_ID:
-      val = '6'; goto ICHCommon;
+      val = 6; goto ICHCommon;
     case ICH7PCIIDE_DEV_ID:
-      val = '7';
+      val = 7;
     ICHCommon:
       str = ICHxMsgtxt;
-    ICHCommon1:
 //	npA->Cap |= CHIPCAP_ATA66 | CHIPCAP_ATA100 | CHIPCAP_ATA133;
       npA->Cap |= CHIPCAP_ATA66 | CHIPCAP_ATA100;
       PciInfo->Level = ICH2;
       break;
     case ICH5SPCIIDE_DEV_ID:
-      val = '5';
+      val = 5;
       map >>= 1;
       if (map & 2) {
 	npA->maxUnits = 2;
 	if ((map & 1) != npA->IDEChannel) goto ICHCommon; // combined, PATA port
       }
       goto SATACommon;
+    case ICH10SPCIIDE_DEV_ID:
+      npA->maxUnits = 2;
+    case ICH10S2PCIIDE_DEV_ID: // master only!
+      val = 10;
+      goto SATACommon;
     case ICH9SPCIIDE_DEV_ID:
       npA->maxUnits = 2;
-      val = '9';
+      val = 9;
       goto SATACommon;
     case ICH8SPCIIDE_DEV_ID:
       npA->maxUnits = 2;
     case ICH8S2PCIIDE_DEV_ID: // master only!
-      val = '8';
+      val = 8;
       goto SATACommon;
     case ICH7SPCIIDE_DEV_ID:
-      val = '7';
+      val = 7;
       goto SATACommon1;
     case ICH6SPCIIDE_DEV_ID:
-      val = '6';
+      val = 6;
     SATACommon1:
       npA->maxUnits = 2;
       if (map & (1 << npA->IDEChannel)) goto ICHCommon;  // combined, PATA port
     SATACommon:
       npA->Cap |= CHIPCAP_SATA;
-//	npA->Cap &= ~CHIPCAP_ATAPIDMA;
       npA->FlagsI.b.native = 1;  // required (at least) for ICH8
-      if (val >= '6') {
+      if (val >= 6) {
 	NPC   npC  = npA->npC;
 	ULONG BAR5 = npC->BAR[5].Addr;
 	NPU   npU  = npA->UnitCB;
@@ -217,24 +223,26 @@ BOOL NEAR AcceptPIIX (NPA npA)
 	    npA->SCR.Offsets = 0;  // do *not* allocate SCR ports by default method
 
 	  } else { // Memory mapped AHCI registers
-	    UCHAR havePhy = 0;
-	    UCHAR Port = npA->IDEChannel;
-	    SSTATUS = GetAHCISCR (npA, Port);
-	    if (SSTATUS)
-	      havePhy = 1;
-	    else
-	      npU->FlagsT |= UTBF_DISABLED;
-
-	    if (npA->maxUnits > 1) {
-	      npU++;
-	      SSTATUS = GetAHCISCR (npA, Port + 2);
+	    if (InD (BAR5 | 0x0C)) { // is AHCI.PI != 0
+	      UCHAR Port = npA->IDEChannel;
+	      UCHAR havePhy = 0;
+	      SSTATUS = GetAHCISCR (npA, Port);
 	      if (SSTATUS)
-		havePhy |= 2;
+		havePhy = 1;
 	      else
-		npA->maxUnits = 1;
+		npU->FlagsT |= UTBF_DISABLED;
+
+	      if (npA->maxUnits > 1) {
+		npU++;
+		SSTATUS = GetAHCISCR (npA, Port + 2);
+		if (SSTATUS)
+		  havePhy |= 2;
+		else
+		  npA->maxUnits = 1;
+	      }
+	      if (!havePhy) return (FALSE);
+	      npA->SCR.Offsets = 0x3120;
 	    }
-	    if (!havePhy) return (FALSE);
-	    npA->SCR.Offsets = 0x3120;
 	  }
 	}
       }
@@ -334,6 +342,7 @@ VOID PIIXTimingValue (NPU npU)
   } else {				     // PIO0, no DMA
     if (CurLevel <= PIIX3) npA->Cap &= ~CHIPCAP_PIO32;
   }
+  IDEtim |= ACBX_IDETIM_MODE0;	// set enable decode bit
 }
 
 

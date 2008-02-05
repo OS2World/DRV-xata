@@ -274,6 +274,7 @@ extern UCHAR	      JMMsgtxt[];
 extern UCHAR	      PromiseMIOtxt[];
 extern UCHAR	      MarvellMsgtxt[];
 extern UCHAR	      InitioMsgtxt[];
+extern UCHAR	      BroadcomMsgtxt[];
 extern UCHAR	      GenericBMMsgtxt[];
 extern UCHAR	      GenericMsgtxt[];
 extern UCHAR	      ParmErrMsg[];

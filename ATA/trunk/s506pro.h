@@ -604,12 +604,14 @@ VOID   NEAR ProgramAEC2Chip (NPA npA);
 /*----------------------------------------------------------------*/
 BOOL   NEAR AcceptOSB (NPA npA);
 BOOL   NEAR AcceptIXP (NPA npA);
+BOOL   NEAR AcceptBCM (NPA npA);
 USHORT NEAR GetOSBPio (NPA npA, UCHAR Unit);
 VOID   NEAR OSBTimingValue (NPU npU);
 VOID   NEAR ProgramOSBChip (NPA npA);
 
 #pragma alloc_text (FCode, AcceptOSB)
 #pragma alloc_text (FCode, AcceptIXP)
+#pragma alloc_text (FCode, AcceptBCM)
 
 /*----------------------------------------------------------------*/
 /*	S506OPTI.C Procedures					  */
