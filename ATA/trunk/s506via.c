@@ -315,6 +315,7 @@ BOOL NEAR AcceptAMD (NPA npA)
 #define PCIDEV_NFORCE4 0x0035
 #define PCIDEV_NFORCE5 0x0265
 #define PCIDEV_NFORCESATA 0x008E
+#define PCIDEV_NFORCEAHCI 0x0400
 
 BOOL NEAR AcceptNVidia (NPA npA)
 {
@@ -351,9 +352,13 @@ BOOL NEAR AcceptNVidia (NPA npA)
       break;
 
     case PCIDEV_NFORCESATA:
-      GenericSATA (npA);
-      npA->Cap |= CHIPCAP_ATAPIDMA;  /// EXP ///
-      npA->UnitCB[0].SStatus = npA->npC->BAR[5].Addr + npA->IDEChannel * 0x40;
+      if (MEMBER(npA).Device < PCIDEV_NFORCEAHCI) {
+	GenericSATA (npA);
+	npA->Cap |= CHIPCAP_ATAPIDMA;
+	npA->UnitCB[0].SStatus = npA->npC->BAR[5].Addr + npA->IDEChannel * 0x40;
+      } else {
+	if (!AcceptAHCI (npA)) return (FALSE);
+      }
       break;
   }
 
