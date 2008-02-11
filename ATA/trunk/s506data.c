@@ -32,7 +32,7 @@
 
 #define YEAR  2008
 #define MONTH 2
-#define DAY   5
+#define DAY   10
 #define PCMCIAVERSION 0x181
 
 /*-------------------------------------------------------------------*/
@@ -598,41 +598,38 @@ USHORT CListCNvidia[] = {
 	0x0759, 0x056C,     // nForce7 M77 -> nForce7 M73
 	0x00E3, 0x008E,     // nForce3 CK8 SATA  -> nForce2 SATA
 	0x00EE, 0x008E,     // nForce3 CK8 SATA2 -> nForce2 SATA
-	0x0036, 0x008E,     // nForce4 M04 SATA  -> nForce2 SATA
-	0x003E, 0x008E,     // nForce4 M04 SATA2 -> nForce2 SATA
-	0x0054, 0x008E,     // nForce4 C04 SATA  -> nForce2 SATA
-	0x0055, 0x008E,     // nForce4 C04 SATA2 -> nForce2 SATA
-	0x0266, 0x008E,     // nForce5 M51 SATA  -> nForce2 SATA
-	0x0267, 0x008E,     // nForce5 M51 SATA2 -> nForce2 SATA
-	0x037E, 0x008E,     // nForce5 M55 SATA  -> nForce2 SATA
-	0x037F, 0x008E,     // nForce5 M55 SATA2 -> nForce2 SATA
-	0x03F6, 0x008E,     // nForce6 M61 SATA  -> nForce2 SATA
-	0x03F7, 0x008E,     // nForce6 M61 SATA1 -> nForce2 SATA
-	0x03E7, 0x008E,     // nForce6 M61 SATA2 -> nForce2 SATA
-	0x044C, 0x008E,     // nForce6 M65 AHCI  -> nForce2 SATA
-	0x044D, 0x008E,     // nForce6 M65 AHCI2 -> nForce2 SATA
-	0x044E, 0x008E,     // nForce6 M65 AHCI3 -> nForce2 SATA
-	0x044F, 0x008E,     // nForce6 M65 AHCI4 -> nForce2 SATA
-	0x045C, 0x008E,     // nForce6 M65 SATA  -> nForce2 SATA
-	0x045D, 0x008E,     // nForce6 M65 SATA2 -> nForce2 SATA
-	0x045E, 0x008E,     // nForce6 M65 SATA3 -> nForce2 SATA
-	0x045F, 0x008E,     // nForce6 M65 SATA4 -> nForce2 SATA
-	0x0550, 0x008E,     // nForce6 M67 SATA  -> nForce2 SATA
-	0x0551, 0x008E,     // nForce6 M67 SATA2 -> nForce2 SATA
-	0x0552, 0x008E,     // nForce6 M67 SATA3 -> nForce2 SATA
-	0x0553, 0x008E,     // nForce6 M67 SATA4 -> nForce2 SATA
-	0x07F0, 0x008E,     // nForce7 M73 SATA  -> nForce2 SATA
-	0x07F1, 0x008E,     // nForce7 M73 SATA2 -> nForce2 SATA
-	0x07F2, 0x008E,     // nForce7 M73 SATA3 -> nForce2 SATA
-	0x07F3, 0x008E,     // nForce7 M73 SATA4 -> nForce2 SATA
-	0x0AD0, 0x008E,     // nForce7 M77 SATA  -> nForce2 SATA
-	0x0AD1, 0x008E,     // nForce7 M77 SATA2 -> nForce2 SATA
-	0x0AD2, 0x008E,     // nForce7 M77 SATA3 -> nForce2 SATA
-	0x0AD3, 0x008E,     // nForce7 M77 SATA4 -> nForce2 SATA
-	0x0AB4, 0x008E,     // nForce7 M79 SATA  -> nForce2 SATA
-	0x0AB5, 0x008E,     // nForce7 M79 SATA2 -> nForce2 SATA
-	0x0AB6, 0x008E,     // nForce7 M79 SATA3 -> nForce2 SATA
-	0x0AB7, 0x008E,     // nForce7 M79 SATA4 -> nForce2 SATA
+	0x003E, 0x0036,     // nForce4 M04 SATA2 -> nForce4 M04 SATA
+	0x0054, 0x0036,     // nForce4 C04 SATA  -> nForce4 M04 SATA
+	0x0055, 0x0036,     // nForce4 C04 SATA2 -> nForce4 M04 SATA
+	0x0267, 0x0266,     // nForce5 M51 SATA2 -> nForce5 M51 SATA
+	0x037E, 0x0266,     // nForce5 M55 SATA  -> nForce5 M51 SATA
+	0x037F, 0x0266,     // nForce5 M55 SATA2 -> nForce5 M51 SATA
+	0x03F6, 0x0266,     // nForce6 M61 SATA  -> nForce5 M51 SATA
+	0x03F7, 0x0266,     // nForce6 M61 SATA1 -> nForce5 M51 SATA
+	0x03E7, 0x0266,     // nForce6 M61 SATA2 -> nForce5 M51 SATA
+	0x044D, 0x044C,     // nForce6 M65 AHCI2 -> nForce6 M65 SATA
+	0x044E, 0x044C,     // nForce6 M65 AHCI3 -> nForce6 M65 SATA
+	0x044F, 0x044C,     // nForce6 M65 AHCI4 -> nForce6 M65 SATA
+	0x045C, 0x044C,     // nForce6 M65 SATA  -> nForce6 M65 SATA
+	0x045D, 0x044C,     // nForce6 M65 SATA2 -> nForce6 M65 SATA
+	0x045E, 0x044C,     // nForce6 M65 SATA3 -> nForce6 M65 SATA
+	0x045F, 0x044C,     // nForce6 M65 SATA4 -> nForce6 M65 SATA
+	0x0550, 0x044C,     // nForce6 M67 SATA  -> nForce6 M65 SATA
+	0x0551, 0x044C,     // nForce6 M67 SATA2 -> nForce6 M65 SATA
+	0x0552, 0x044C,     // nForce6 M67 SATA3 -> nForce6 M65 SATA
+	0x0553, 0x044C,     // nForce6 M67 SATA4 -> nForce6 M65 SATA
+	0x07F0, 0x044C,     // nForce7 M73 SATA  -> nForce6 M65 SATA
+	0x07F1, 0x044C,     // nForce7 M73 SATA2 -> nForce6 M65 SATA
+	0x07F2, 0x044C,     // nForce7 M73 SATA3 -> nForce6 M65 SATA
+	0x07F3, 0x044C,     // nForce7 M73 SATA4 -> nForce6 M65 SATA
+	0x0AD0, 0x044C,     // nForce7 M77 SATA  -> nForce6 M65 SATA
+	0x0AD1, 0x044C,     // nForce7 M77 SATA2 -> nForce6 M65 SATA
+	0x0AD2, 0x044C,     // nForce7 M77 SATA3 -> nForce6 M65 SATA
+	0x0AD3, 0x044C,     // nForce7 M77 SATA4 -> nForce6 M65 SATA
+	0x0AB4, 0x044C,     // nForce7 M79 SATA  -> nForce6 M65 SATA
+	0x0AB5, 0x044C,     // nForce7 M79 SATA2 -> nForce6 M65 SATA
+	0x0AB6, 0x044C,     // nForce7 M79 SATA3 -> nForce6 M65 SATA
+	0x0AB7, 0x044C,     // nForce7 M79 SATA4 -> nForce6 M65 SATA
 		0 };
 USHORT CListFNvidia[] = {
 		0x008E,     // Nvidia nForce SATA
@@ -643,6 +640,9 @@ USHORT CListFNvidia[] = {
 		0x0265,     // Nvidia nForce5 M51
 		0x03EC,     // Nvidia nForce6 M61
 		0x056C,     // Nvidia nForce7 M73
+		0x0036,     // Nvidia nForce4 SATA
+		0x0266,     // Nvidia nForce5 SATA (ADMA)
+		0x044C,     // Nvidia nForce6 SATA (AHCI)
 		0 };
 USHORT CListFNatSemi[] = {
 		0x0502,     // NS Geode SCx200

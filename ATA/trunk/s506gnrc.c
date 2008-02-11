@@ -4,7 +4,7 @@
  *
  * DESCRIPTIVE NAME = DANIS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- * Copyright : COPYRIGHT Daniela Engert 1999-2007
+ * Copyright : COPYRIGHT Daniela Engert 1999-2008
  *
  * DESCRIPTION : Adapter Driver generic busmaster routines.
  *
@@ -138,8 +138,9 @@ BOOL NEAR AcceptMarvell (NPA npA)
 
 BOOL NEAR AcceptAHCI (NPA npA)
 {
-  NPC	npC  = npA->npC;
-  ULONG BAR5 = npC->BAR[5].Addr;
+  NPC	npC	= npA->npC;
+  ULONG BAR5	= npC->BAR[5].Addr;
+  UCHAR havePhy = 0;
 
   // AHCI mode enabled?
   if (BAR5 && (InD (BAR5 | AHCI_GHC) & AHCI_GHC_AHCIENABLED)) return (FALSE);
@@ -150,10 +151,18 @@ BOOL NEAR AcceptAHCI (NPA npA)
   npA->SCR.Offsets = 0x3120;
   GenericSATA (npA);
   npA->Cap |= CHIPCAP_ATAPIDMA;
-  npA->UnitCB[0].SStatus = GetAHCISCR (npA, npA->IDEChannel * 2 + 0);
-  npA->UnitCB[1].SStatus = GetAHCISCR (npA, npA->IDEChannel * 2 + 1);
 
-  return (TRUE);
+  if (npA->UnitCB[0].SStatus = GetAHCISCR (npA, npA->IDEChannel + 0))
+    havePhy = 1;
+  else
+    npA->UnitCB[0].FlagsT |= UTBF_DISABLED;
+
+  if (npA->UnitCB[1].SStatus = GetAHCISCR (npA, npA->IDEChannel + 2))
+    havePhy |= 2;
+  else
+    npA->maxUnits = 1;
+
+  return (havePhy);
 }
 
 // ---------------------------------------------------------------
