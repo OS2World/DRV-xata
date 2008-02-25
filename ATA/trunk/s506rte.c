@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2007
+ *	       COPYRIGHT Daniela Engert 1999-2008
  *
  * DESCRIPTION : Strategy 1 Entry Point
  *

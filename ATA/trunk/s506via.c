@@ -4,7 +4,7 @@
  *
  * DESCRIPTIVE NAME = DANIS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- * Copyright : COPYRIGHT Daniela Engert 1999-2007
+ * Copyright : COPYRIGHT Daniela Engert 1999-2008
  *
  * DESCRIPTION : Adapter Driver VIA routines.
  ****************************************************************************/
@@ -31,6 +31,9 @@
 #include "s506pro.h"
 
 #include "Trace.h"
+
+#define PCITRACER 0
+#define TRPORT 0xA800
 
 #pragma optimize(OPTIMIZE, on)
 
@@ -315,10 +318,13 @@ BOOL NEAR AcceptAMD (NPA npA)
 #define PCIDEV_NFORCE4 0x0035
 #define PCIDEV_NFORCE5 0x0265
 #define PCIDEV_NFORCESATA 0x008E
-#define PCIDEV_NFORCEAHCI 0x0400
+#define PCIDEV_NFORCECK8  0x0036
+#define PCIDEV_NFORCEADMA 0x0266
+#define PCIDEV_NFORCEAHCI 0x044C
 
 BOOL NEAR AcceptNVidia (NPA npA)
 {
+  ULONG  BAR5;
   USHORT Cable;
   static char Name[4] = " 00";
 
@@ -327,7 +333,6 @@ BOOL NEAR AcceptNVidia (NPA npA)
     Name[0] = '\0';
   else if (PciInfo->Level < 5)
     Name[1] = '\0';
-  sprntf (npA->PCIDeviceMsg, NForceMsgtxt, Name);
 
   /*
    * Apply NForce2 C1 Halt Disconnect fix from NVidia as shown in
@@ -352,15 +357,49 @@ BOOL NEAR AcceptNVidia (NPA npA)
       break;
 
     case PCIDEV_NFORCESATA:
-      if (MEMBER(npA).Device < PCIDEV_NFORCEAHCI) {
-	GenericSATA (npA);
-	npA->Cap |= CHIPCAP_ATAPIDMA;
-	npA->UnitCB[0].SStatus = npA->npC->BAR[5].Addr + npA->IDEChannel * 0x40;
-      } else {
-	if (!AcceptAHCI (npA)) return (FALSE);
-      }
+    case PCIDEV_NFORCECK8:
+    case PCIDEV_NFORCEADMA:
+    case PCIDEV_NFORCEAHCI:
+      GenericSATA (npA);
+      npA->Cap |= CHIPCAP_ATAPIDMA;
+      BAR5 = npA->npC->BAR[5].Addr;
+      npA->UnitCB[0].SStatus = BAR5 + npA->IDEChannel * 0x40;
+      SetRegB (PAdr, PCI_NFC_IDEENABLE,
+	       (UCHAR)(0x04 | GetRegB (PAdr, PCI_NFC_IDEENABLE)));
       break;
   }
+
+  switch (PciInfo->CompatibleID) {
+    case PCIDEV_NFORCECK8:
+      Name[0] = 'C';
+      Name[1] = 'K';
+      Name[2] = '8';
+      OutB (BAR5 + 0x440, 0xFF); // clear IRQ status
+      OutB (BAR5 + 0x441, 0x11); // mask IRQ enable
+//	ISRPORT = BAR5 + 0x440;
+//	npA->HWSpecial = npA->IDEChannel * 0x10;
+      break;
+
+    case PCIDEV_NFORCEADMA:
+      Name[0] = 'M';
+      Name[1] = '5';
+      Name[2] = '1';
+      OutD (BAR5 + 0x400, InD (BAR5 + 0x400) & ~0x6ul); // clear NCQ
+      OutD (BAR5 + 0x440, 0x00FF00FF); // clear IRQ status
+      OutD (BAR5 + 0x444, 0x00010001); // mask IRQ enable
+//	ISRPORT = BAR5 + 0x440 + npA->IDEChannel * 2;
+//	npA->HWSpecial = 0x01;
+      break;
+
+    case PCIDEV_NFORCEAHCI:
+      Name[0] = 'M';
+      Name[1] = '6';
+      Name[2] = '5';
+      if (!AcceptAHCI (npA)) return (FALSE);
+      break;
+  }
+
+  sprntf (npA->PCIDeviceMsg, NForceMsgtxt, Name);
 
   /* determine the presence of a 80wire cable as per defined procedure	 */
   /* hack! There is no defined cable detection procedure, use BIOS hints */

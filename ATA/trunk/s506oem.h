@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2006
+ *	       COPYRIGHT Daniela Engert 1999-2008
  *
  * DESCRIPTION : Locally defined equates.
  *****************************************************************************/
@@ -458,6 +458,7 @@ typedef struct _DeviceCountersData
   USHORT      ReadErrors[4];
   USHORT      WriteErrors[2];
   USHORT      SeekErrors[2];
+  USHORT      SATAErrors;
 } DeviceCountersData, NEAR *NPDeviceCountersData, FAR *PDeviceCountersData;
 
 /*

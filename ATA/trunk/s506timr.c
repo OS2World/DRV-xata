@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2006
+ *	       COPYRIGHT Daniela Engert 1999-2008
  *
  * DESCRIPTION : Adapter Driver timer driven entry points.
  ****************************************************************************/
@@ -32,7 +32,7 @@
 #pragma optimize(OPTIMIZE, on)
 
 #define PCITRACER 0
-#define TRPORT 0xC810
+#define TRPORT 0xA800
 
 #define npA ((NPA)pA)
 
@@ -55,8 +55,16 @@ VOID FAR _cdecl IRQTimer (USHORT TimerHandle, PACB pA)
   if (npA->State & ACBS_WAIT) {
     // The device may be ready to transfer data but failed to interrupt.  If so
     // just continue.
+    NPU npU = npA->npU;
 
-    if (npA->BM_CommandCode & BMICOM_START) {
+    METHOD(npA).StopDMA (npA);	/* controller is locked, Clear Active bit */
+
+    if (SERROR && InD (SERROR)) {
+      IssueSATAReset (npU);
+      npA->TimerFlags |= ACBT_SATACOMM;
+      npA->State       = ACBS_ERROR;
+
+    } else if (npA->BM_CommandCode & BMICOM_START) {
       USHORT PCIStatus;
 
       PciGetReg (npA->PCIInfo.PCIAddr, PCIREG_STATUS, (PULONG)&PCIStatus, 2);

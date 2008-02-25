@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2007
+ *	       COPYRIGHT Daniela Engert 1999-2008
  *
  * DESCRIPTION : Adapter Driver initialization routines.
  *
@@ -707,6 +707,7 @@ TTIME
       }
 
       memset (&(npU->DeviceCounters), 0, sizeof (DeviceCountersData));
+      npU->DeviceCounters.wRevisionNumber = 1;
     }
 
   npA->IRQTimeOut = (npA->IRQTimeOutSet > 0) ? 100 * npA->IRQTimeOutSet

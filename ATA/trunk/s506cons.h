@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2006
+ *	       COPYRIGHT Daniela Engert 1999-2008
  *
  * DESCRIPTION : Locally defined equates.
  ****************************************************************************/
@@ -37,6 +37,7 @@
 #define DELAYED_RESET_INTERVAL	      200L
 
 #define RESET_ASSERT_TIME		50 // microseconds
+#define SATA_RESET_ASSERT_TIME		 5 // microseconds
 
 /*------------------------------------------*/
 /* TimeOut for IRQ from last interrupt (5s) */

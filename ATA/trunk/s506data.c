@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert, 1999-2007
+ *	       COPYRIGHT Daniela Engert, 1999-2008
  *
  *****************************************************************************/
 
@@ -32,8 +32,8 @@
 
 #define YEAR  2008
 #define MONTH 2
-#define DAY   10
-#define PCMCIAVERSION 0x181
+#define DAY   24
+#define PCMCIAVERSION 0x182
 
 /*-------------------------------------------------------------------*/
 /*								     */

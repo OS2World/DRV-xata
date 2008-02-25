@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2007
+ *	       COPYRIGHT Daniela Engert 1999-2008
  *
  * DESCRIPTION : I/O State Machine for ATA Adapter Driver
  *
@@ -1428,6 +1428,14 @@ VOID NEAR DoneState (NPA npA)
   npA->State = ACBS_START;
 }
 
+#undef PCITRACER
+#define PCITRACER 0
+
+#if !PCITRACER
+#undef BEEB
+#define BEEB 0
+#endif
+
 /*---------------------------------------------*/
 /* ErrorState				       */
 /* ----------				       */
@@ -1455,7 +1463,7 @@ VOID NEAR ErrorState (NPA npA)
 
   if (npA->TimerFlags & ACBT_IRQ) {
     ++npU->DeviceCounters.TotalIRQsLost;
-    Reset = 1;
+    if (!(npA->TimerFlags & ACBT_SATACOMM)) Reset = 1;
 #if PCITRACER
     outpw (TRPORT, 0xDCE0);
     outpw (TRPORT, npA->TimerFlags);
@@ -1497,7 +1505,20 @@ VOID NEAR ErrorState (NPA npA)
   RemovableNotReady = (npU->Flags & UCBF_REMOVABLE)
 		   && (npA->IORBError == IOERR_UNIT_NOT_READY);
 
-  if (npA->ReqFlags & ACBR_DMAIO) {
+  if (npA->TimerFlags & ACBT_SATACOMM) {
+    /* a SATA communication error has happened */
+    /* simply retry after a SATA link reset    */
+
+    npU->DeviceCounters.SATAErrors++;
+
+  } else if (npA->ReqFlags & ACBR_DMAIO) {
+    if (npA->TimerFlags & ACBT_SATACOMM) {
+      /* a SATA communication error has happened */
+      /* simply retry after a SATA link reset	 */
+
+      npU->DeviceCounters.SATAErrors++;
+
+    } else
     if ((npA->DataErrorCnt == 1) && (npA->IORBError == IOERR_DEVICE_ULTRA_CRC)) {
       /**********************************************/
       /* Retry the Ultra DMA operation one (1) time */
@@ -1578,6 +1599,8 @@ VOID NEAR ErrorState (NPA npA)
     SetRetryState (npA);
 }
 
+#undef PCITRACER
+#define PCITRACER 0
 
 /*---------------------------------------------*/
 /*					       */
@@ -2113,8 +2136,6 @@ USHORT NEAR MapError (NPA npA)
     IORBError = IOERR_UNIT_NOT_READY;
 
   } else if (STATUS & FX_ERROR) {
-//    ERROR = InBd (ERRORREG, npA->IODelayCount);
-
     npA->DataErrorCnt++;
 
     if (ERROR & FX_AMNF) {

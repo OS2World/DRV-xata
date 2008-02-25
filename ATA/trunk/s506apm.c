@@ -4,7 +4,7 @@
  *
  * DESCRIPTIVE NAME = DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- * Copyright : COPYRIGHT Daniela Engert 1999-2007
+ * Copyright : COPYRIGHT Daniela Engert 1999-2008
  *
  * DESCRIPTION : Adapter Driver APM callback routines
  ****************************************************************************/
@@ -298,16 +298,23 @@ VOID NEAR StartDetect (NPA npA) {
 
 VOID NEAR IssueSATAReset (NPU npU) {
   ULONG temp;
+  UCHAR loop;
 
-  DISABLE
+//  DISABLE
   temp = InD (SCONTROL) & ~0xF;
   OutD (SCONTROL, temp);	      // deassert COMRESET
   OutD (SCONTROL, temp | 1);	      // issue COMRESET
-  ENABLE
-  InDd (SSTATUS, RESET_ASSERT_TIME * IODelayCount);  // flush write, wait
+//  ENABLE
+  InDd (SSTATUS, SATA_RESET_ASSERT_TIME * IODelayCount);  // flush write, wait
   OutD (SCONTROL, temp);	      // deassert COMRESET
-  InD  (SSTATUS);		      // flush write
-  OutD (SERROR, InD (SERROR));	      // clear SERROR
+  InDd (SSTATUS, SATA_RESET_ASSERT_TIME * IODelayCount);  // flush write, wait
+  OutD (SERROR, InD (SERROR));				  // clear SERROR
+  InDd (SSTATUS, IODelayCount); 			  // flush write, wait
+  for (loop = 10; --loop > 0;) {
+    if (!(temp = InD (SERROR))) break;
+    OutD (SERROR, temp);				  // clear SERROR
+    InDd (SSTATUS, IODelayCount);			  // flush write, wait
+  }
 }
 
 VOID NEAR SATARemoval (NPU npU)

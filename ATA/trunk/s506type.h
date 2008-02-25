@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2007
+ *	       COPYRIGHT Daniela Engert 1999-2008
  *
  * DESCRIPTION : Locally defined structures for this driver.
  *
@@ -586,6 +586,7 @@ typedef struct _A
 #define ACBT_IRQ	0x0004
 #define ACBT_READY	0x0008
 #define ACBT_RESETFAIL	0x0010
+#define ACBT_SATACOMM	0x0020
 
 #define BMICOM_RD	  0x08	  /* Read when 0, write when 1 */
 #define BMICOM_START	  0x01	  /* Start when 1, stop when 0 */
