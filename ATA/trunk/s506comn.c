@@ -4,7 +4,7 @@
  *
  * DESCRIPTIVE NAME = DANIS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- * Copyright : COPYRIGHT Daniela Engert 1999-2007
+ * Copyright : COPYRIGHT Daniela Engert 1999-2008
  *
  ****************************************************************************/
 
@@ -194,10 +194,19 @@ VOID SetupCommonPost (NPA npA)
       if (npU->Flags & UCBF_BM_DMA) Data |= Mask;
     }
 
-    SelectUnit (npU);  /* select unit */
+    if (npU->AMLevel != 0)
+      IssueSetFeatures (npU, FX_SETAMLVL, (UCHAR)(0x80 + ~(npU->AMLevel)));
 
-    if ((npU->Status == UTS_OK) && !CheckBusy (npA)) { /* check ready status */
-      if (npU->AMLevel != 0) IssueSetFeatures (npU, FX_SETAMLVL, (UCHAR)(0x80 + ~(npU->AMLevel)));
+//    if (npU->APMLevel != 0)
+//	IssueSetFeatures (npU, FX_ENABLE_APM, (UCHAR)(0x80 + ~(npU->APMLevel)));
+      IssueSetFeatures (npU, FX_ENABLE_APM, (UCHAR)0xC0);
+
+    if ((npU->SATACmdSupported & FX_DIPMSUPPORTED) && SCONTROL) {
+      OutD (SCONTROL, InD (SCONTROL) & SCTRL_SPD);
+      OutD (SERROR, InD (SERROR));
+      InD (SSTATUS);  // flush
+      OutD (SERROR, InD (SERROR));
+      InD (SSTATUS);  // flush
     }
   }
 

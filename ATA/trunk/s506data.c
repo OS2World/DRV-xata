@@ -31,8 +31,8 @@
  #include "s506pro.h"
 
 #define YEAR  2008
-#define MONTH 2
-#define DAY   24
+#define MONTH 3
+#define DAY   22
 #define PCMCIAVERSION 0x182
 
 /*-------------------------------------------------------------------*/
@@ -404,6 +404,18 @@ USHORT CListCIntel[] = {
 	0x292F, 0x2920,     // ICH9MAHCI4 -> ICH9 SATA
 	0x294D, 0x2920,     // ICH9 AHCI6 -> ICH9 SATA
 	0x294E, 0x2920,     // ICH9MAHCI5 -> ICH9 SATA
+	0x2976, 0x2920,     // ICH9 Redirection 2p -> ICH9 SATA
+	0x2996, 0x2920,     // ICH9 Redirection 2p -> ICH9 SATA
+	0x29A6, 0x2920,     // ICH9 Redirection 2p -> ICH9 SATA
+	0x29B6, 0x2920,     // ICH9 Redirection 2p -> ICH9 SATA
+	0x29C6, 0x2920,     // ICH9 Redirection 2p -> ICH9 SATA
+	0x29D6, 0x2920,     // ICH9 Redirection 2p -> ICH9 SATA
+	0x29E6, 0x2920,     // ICH9 Redirection 2p -> ICH9 SATA
+	0x29F6, 0x2920,     // ICH9 Redirection 2p -> ICH9 SATA
+	0x2A06, 0x2920,     // ICH9 Redirection 2p -> ICH9 SATA
+	0x2A16, 0x2920,     // ICH9 Redirection 2p -> ICH9 SATA
+	0x2A52, 0x2920,     // ICH9 Redirection 2p -> ICH9 SATA
+	0x2E06, 0x2920,     // ICH9 Redirection 2p -> ICH9 SATA
 	0x5028, 0x2920,     // Tolapai SATA  -> ICH9 SATA
 	0x502A, 0x2920,     // Tolapai AHCI  -> ICH9 SATA
 	0x502B, 0x2920,     // Tolapai AHCI2 -> ICH9 SATA

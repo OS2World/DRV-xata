@@ -156,6 +156,8 @@ typedef struct _U
 
   ULONG 	CmdSupported;					       // 12
   ULONG 	CmdEnabled;					       //  8
+  USHORT	SATACmdSupported;
+  USHORT	SATACmdEnabled;
 
   /*------------------------------------------*/
   /* Replacement UNITINFO from Filter ADD     */
@@ -264,6 +266,8 @@ typedef struct _U
 #define UCBR_DISABLEWCACHE  0x0080
 #define UCBR_ENABLERAHEAD   0x0040
 #define UCBR_FREEZELOCK     0x0020
+#define UCBR_ENABLESSP	    0x0010
+#define UCBR_ENABLEDIPM     0x0008
 
 #define UCBS_SMART	    0x00000001	/* S.M.A.R.T. active  */
 #define UCBS_SECURITY	    0x00000002	/* Security supported */
@@ -523,6 +527,8 @@ typedef struct _A
 #define ACBR_ENABLERAHEAD	UCBR_ENABLERAHEAD
 #define ACBR_DISABLEWCACHE	UCBR_DISABLEWCACHE
 #define ACBR_FREEZELOCK 	UCBR_FREEZELOCK
+#define ACBR_ENABLEDIPM 	UCBR_ENABLEDIPM
+#define ACBR_ENABLESSP		UCBR_ENABLESSP
 
 #define ACBR_BLOCKIO	       (ACBR_READ | ACBR_WRITE | ACBR_VERIFY | ACBR_WRITEV)
 #define ACBR_MULTIPLEMODE      (ACBR_READ | ACBR_WRITE)

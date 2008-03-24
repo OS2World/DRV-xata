@@ -5,7 +5,7 @@
  * DESCRIPTIVE NAME = DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
  *
- * Copyright : COPYRIGHT Daniela Engert 1999-2007
+ * Copyright : COPYRIGHT Daniela Engert 1999-2008
  *
  * DESCRIPTION : PCI detection code
  ****************************************************************************/
@@ -557,7 +557,9 @@ UCHAR NEAR HandleFoundAdapter (NPA npA, NPPCI_DEVICE npDev)
       hasPhy = TRUE;
       isAttached   = CheckSATAPhy (npU);
       isPopulated |= isAttached;
-      if (!isAttached) npU->FlagsT |= UTBF_DISABLED;
+      if (!isAttached) {
+	npU->FlagsT |= UTBF_DISABLED;
+      }
     }
   }
   if (!hasPhy)
@@ -589,6 +591,7 @@ UCHAR NEAR HandleFoundAdapter (NPA npA, NPPCI_DEVICE npDev)
 
     npC->populatedChannels++;
     return (FALSE);
+
   } else {
     return (TRUE);
   }

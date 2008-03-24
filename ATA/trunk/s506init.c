@@ -2435,9 +2435,14 @@ VOID NEAR IdentifyDevice (NPU npU, NPIDENTIFYDATA npID)
       (npU->CmdEnabled & ((ULONG)FX_POWERSUPPORTED3 << 16)))
     npU->CmdEnabled |= FX_POWERSUPPORTED2;
 
+  if ((npID->SATAFeatSupported != 0) && (~npID->SATAFeatSupported != 0)) {
+    npU->SATACmdSupported = npID->SATAFeatSupported;
+    npU->SATACmdEnabled   = npID->SATAFeatEnabled;
+  }
+
 #if TRACES
   if (Debug & 8) {
-    TraceStr ("C%lX/%lX", npU->CmdSupported, npU->CmdEnabled);
+    TraceStr ("C%lX/%lX,%X/%X", npU->CmdSupported, npU->CmdEnabled, npU->SATACmdSupported, npU->SATACmdEnabled);
   }
 #endif
 

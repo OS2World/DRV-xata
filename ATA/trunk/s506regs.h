@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2006
+ *	       COPYRIGHT Daniela Engert 1999-2008
  *
  ****************************************************************************/
 
@@ -77,7 +77,15 @@
 #define FX_DISABLE_WCACHE	0x82
 #define FX_ENABLE_RAHEAD	0xAA /* Read look ahead 		      */
 #define FX_DISABLE_RAHEAD	0x55
+#define FX_ENABLE_APM		0x05 /* Enable APM (level)		      */
+#define FX_APM_MIN		0x80 /* minimum power consumption w/o standby */
+#define FX_APM_MAX		0xFE /* maximum power consumption w/o standby */
+#define FX_DISABLE_APM		0x85
 #define FX_ENABLE_CFA_POWER1	0x0A /* allow up to 500mA		      */
+#define FX_ENABLE_SATA_FEATURE	0x10
+#define FX_DISABLE_SATA_FEATURE 0x90
+#define FX_SATA_FEATURE_DIPM	0x03 /* device initiated power state transitions */
+#define FX_SATA_FEATURE_SSP	0x06 /* software settings preservation	      */
 
 /* SMART functions */
 
@@ -167,20 +175,20 @@
 #define FI_PSTAT    13		   /* status register			      */
 
 #define FM_PDAT    (1 << FI_PDAT ) /* read/write data		      */
-#define FM_PFEAT   (1 << FI_PFEAT) /* features register		      */
-#define FM_PSCNT   (1 << FI_PSCNT) /* sector count register 	      */
-#define FM_LBA0    (1 << FI_PLBA0) /* LBA0 register 		      */
+#define FM_PFEAT   (1 << FI_PFEAT) /* features register 	      */
+#define FM_PSCNT   (1 << FI_PSCNT) /* sector count register	      */
+#define FM_LBA0    (1 << FI_PLBA0) /* LBA0 register		      */
 #define FM_PCYLL   (1 << FI_PLBA1) /* cylinder register (low)	      */
-#define FM_LBA1    (1 << FI_PLBA1) /* LBA1 register 		      */
+#define FM_LBA1    (1 << FI_PLBA1) /* LBA1 register		      */
 #define FM_PCYLH   (1 << FI_PLBA2) /* cylinder register (high)	      */
-#define FM_LBA2    (1 << FI_PLBA2) /* LBA2 register 		      */
+#define FM_LBA2    (1 << FI_PLBA2) /* LBA2 register		      */
 #define FM_PDRHD   (1 << FI_PDRHD) /* drive/head register		      */
 #define FM_PCMD    (1 << FI_PCMD ) /* command register		      */
-#define FM_LBA3    (1 << FI_PLBA3) /* LBA3 register 		      */
-#define FM_LBA4    (1 << FI_PLBA4) /* LBA4 register 		      */
-#define FM_LBA5    (1 << FI_PLBA5) /* LBA5 register 		      */
-#define FM_HFEAT   (1 << 11      )
-#define FM_HSCNT   (1 << 12      )
+#define FM_LBA3    (1 << FI_PLBA3) /* LBA3 register		      */
+#define FM_LBA4    (1 << FI_PLBA4) /* LBA4 register		      */
+#define FM_LBA5    (1 << FI_PLBA5) /* LBA5 register		      */
+#define FM_HFEAT   (1 << 11	 )
+#define FM_HSCNT   (1 << 12	 )
 #define FM_LOW	   (FM_PFEAT | FM_PSCNT | FM_LBA0 | FM_LBA1 | FM_LBA2 | FM_PCMD)
 #define FM_HIGH    (FM_HFEAT | FM_HSCNT | FM_LBA3 | FM_LBA4 | FM_LBA5)
 
@@ -237,10 +245,22 @@
 #define SSTAT_DET	    0x000F
 #define SSTAT_DEV_OK	    0x1
 #define SSTAT_COM_OK	    0x3
+#define SSTAT_OFFLINE	    0x4
 #define SSTAT_SPD	    0x00F0
 #define SSTAT_SPD_1	    0x1
 #define SSTAT_SPD_2	    0x2
 #define SDIAG_PHYRDY_CHANGE 0x0001
+#define SCTRL_DET	    SSTAT_DET
+#define SCTRL_RESET	    0x1
+#define SCTRL_DISABLE	    0x4
+#define SCTRL_SPD	    SSTAT_SPD
+#define SCTRL_SPD_LIMIT_1   SSTAT_SPD_1
+#define SCTRL_IPM	    0x0F00
+#define SCTRL_IPM_ALL	    0x0
+#define SCTRL_IPM_NO_PARTL  0x1
+#define SCTRL_IPM_NO_SLMBR  0x2
+#define SCTRL_IPM_NONE	    0x3
+
 //
 // Boot Record Partiton Table Entry
 //
@@ -487,7 +507,8 @@ typedef struct _IDENTIFYDATA
 #define FX_HPROTSUPPORTED	0x0400	/* Word 82/85 Host prot supported bit */
 #define FX_LBA48SUPPORTED	0x0400	/* Word 83    48Bit ULONG supported bit */
 #define FX_FLUSHXSUPPORTED	0x2000	/* Word 83    Flush ext supported bit */
-
+#define FX_DIPMSUPPORTED	0x0008	/* Word 78/79 dev-inited pm supported bit */
+#define FX_SSPSUPPORTED 	0x0040	/* Word 78/79 SATA SSP	supported bit */
 #define FX_WORDS54_58VALID	0x0001	/* Words 54-58 in ID valid	      */
 #define FX_WORDS64_70VALID	0x0002	/* Words 64-70 in ID valid	      */
 #define FX_WORD88_VALID 	0x0004	/* Word 88 valid ->Ultra DMA	      */

@@ -4,7 +4,7 @@
  *
  * DESCRIPTIVE NAME = DANIS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- * Copyright : COPYRIGHT Daniela Engert 1999-2007
+ * Copyright : COPYRIGHT Daniela Engert 1999-2008
  *
  * DESCRIPTION : Adapter Driver ServerWorks OSB routines.
  ****************************************************************************/
@@ -149,6 +149,8 @@ BOOL NEAR AcceptBCM (NPA npA)
 //    npU[1].FlagsT |= UTBF_NOTUNLOCKHPA;
   }
 
+  npU[0].FlagsT |= UTBF_DISABLED;
+  npU[1].FlagsT |= UTBF_DISABLED;
   return (TRUE);
 }
 

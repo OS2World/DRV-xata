@@ -63,6 +63,7 @@ VOID FAR _cdecl IRQTimer (USHORT TimerHandle, PACB pA)
       IssueSATAReset (npU);
       npA->TimerFlags |= ACBT_SATACOMM;
       npA->State       = ACBS_ERROR;
+      ReInitUnit (npU);
 
     } else if (npA->BM_CommandCode & BMICOM_START) {
       USHORT PCIStatus;

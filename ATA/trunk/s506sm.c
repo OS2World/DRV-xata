@@ -873,6 +873,20 @@ USHORT NEAR StartOtherIO (NPA npA)
     npA->IOPendingMask |= FM_PFEAT;
     npA->ReqMask	= ACBR_ENABLERAHEAD;
 
+  } else if (ReqFlags & ACBR_ENABLESSP) {
+    COMMAND		= FX_SETFEAT;
+    FEAT		= FX_ENABLE_SATA_FEATURE;
+    SECCNT		= FX_SATA_FEATURE_SSP;
+    npA->IOPendingMask |= FM_PFEAT | FM_PSCNT;
+    npA->ReqMask	= ACBR_ENABLESSP;
+
+  } else if (ReqFlags & ACBR_ENABLEDIPM) {
+    COMMAND		= FX_SETFEAT;
+    FEAT		= FX_ENABLE_SATA_FEATURE;
+    SECCNT		= FX_SATA_FEATURE_DIPM;
+    npA->IOPendingMask |= FM_PFEAT | FM_PSCNT;
+    npA->ReqMask	= ACBR_ENABLEDIPM;
+
   } else if (ReqFlags & ACBR_FREEZELOCK) {
     COMMAND		= FX_FREEZELOCK;
     npA->ReqMask	= ACBR_FREEZELOCK;
