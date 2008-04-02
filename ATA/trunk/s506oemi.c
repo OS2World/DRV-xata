@@ -559,6 +559,10 @@ UCHAR NEAR HandleFoundAdapter (NPA npA, NPPCI_DEVICE npDev)
       isPopulated |= isAttached;
       if (!isAttached) {
 	npU->FlagsT |= UTBF_DISABLED;
+
+	// switch off unused ports
+	OutD (SCONTROL, (InD (SCONTROL) & ~SCTRL_DET) | SCTRL_DISABLE);
+	InD (SCONTROL);
       }
     }
   }
