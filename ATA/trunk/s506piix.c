@@ -5,7 +5,7 @@
  * DESCRIPTIVE NAME = DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
  *
- * Copyright : COPYRIGHT Daniela Engert 1999-2007
+ * Copyright : COPYRIGHT Daniela Engert 1999-2008
  *
  * DESCRIPTION : Adapter Driver PIIX and SMSC routines.
  ****************************************************************************/
@@ -82,6 +82,7 @@
 #define   ICH9SPCIIDE_DEV_ID  0x2920
 #define  ICH10SPCIIDE_DEV_ID  0x3A00
 #define ICH10S2PCIIDE_DEV_ID  0x3A06
+#define 	 IDER_DEV_ID  0x2986
 
 #define  SLC66PCIIDE_DEV_ID  0x9130
 
@@ -247,6 +248,14 @@ BOOL NEAR AcceptPIIX (NPA npA)
 	}
       }
       goto ICHCommon;
+      break;
+    case IDER_DEV_ID:
+      str = IDERMsgtxt;
+      PciInfo->Level = ICH;
+      MEMBER(npA).CfgTable = CfgNull;
+      METHOD(npA).GetPIOMode = 0;
+      npA->FlagsT |= ATBF_BIOSDEFAULTS;
+
       break;
   }
   sprntf (npA->PCIDeviceMsg, str, val);

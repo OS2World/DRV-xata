@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2007
+ *	       COPYRIGHT Daniela Engert 1999-2008
  *
  * DESCRIPTION : Data External References
  *
@@ -277,6 +277,7 @@ extern UCHAR	      InitioMsgtxt[];
 extern UCHAR	      BroadcomMsgtxt[];
 extern UCHAR	      GenericBMMsgtxt[];
 extern UCHAR	      GenericMsgtxt[];
+extern UCHAR	      IDERMsgtxt[];
 extern UCHAR	      ParmErrMsg[];
 extern UCHAR	      VersionMsg[];
 extern UCHAR	      EBIOSIdString[];
