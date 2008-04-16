@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2007
+ *	       COPYRIGHT Daniela Engert 1999-2008
  *
  * DESCRIPTION : IORB Routine/Processing
  ****************************************************************************/
@@ -264,6 +264,8 @@ static USHORT NEAR GetVirtualAdapters (NPA npA, UCHAR findSCSI)
   NPU	npU, npUF;
 
   for (npU = npA->UnitCB; npU < (npA->UnitCB + npA->cUnits); npU++) {
+    if ((npU->Flags & UCBF_ATAPIDEVICE) && (DATAREG > 0xFFF0)) continue;
+
     npUF = (NPU)((USHORT)npU + 4);
     if (findSCSI == isSCSI (npU))
       count++;
@@ -456,6 +458,8 @@ VOID NEAR GetDeviceTable (PIORB pIORB)
 
       CurrentUnit = 0;
       for (j = 0, npU = npA->UnitCB; j < npA->cUnits; j++, npU++) {
+	if ((npU->Flags & UCBF_ATAPIDEVICE) && (DATAREG > 0xFFF0)) continue;
+
 	npUF = (NPU)((USHORT)npU + 4);
 
 #if PCITRACER

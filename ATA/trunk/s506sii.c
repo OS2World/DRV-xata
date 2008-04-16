@@ -4,7 +4,7 @@
  *
  * DESCRIPTIVE NAME = DANIS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- * Copyright : COPYRIGHT Daniela Engert 2002-2007
+ * Copyright : COPYRIGHT Daniela Engert 2002-2008
  *
  * DESCRIPTION : Adapter Driver Silicon Image routines.
  ****************************************************************************/
@@ -84,14 +84,20 @@ VOID NEAR SiISATA (NPA npA)
   npA->SCR.Offsets = 0x021;
   SSTATUS = BA5 | PortOffsetSC[npA->IDEChannel];
 
-  if (npA->FlagsT & ATBF_BIOSDEFAULTS) {  // use generic PIO mode
-    npA->Cap |= CHIPCAP_ATAPIDMA;
+  if ((npA->FlagsT & ATBF_BIOSDEFAULTS) ||
+      (npU->Features & 0x80)) { 	 // use generic PIO mode
+    npA->FlagsT &= ~ATBF_BIOSDEFAULTS;
+//    npA->Cap |= CHIPCAP_ATAPIDMA;
     if (PciInfo->CompatibleID == PCIDEV_SII3114) {
       npA->maxUnits = 2;
       npU[1].SStatus = BA5 + PortOffsetSC[npA->IDEChannel + 2];
       npU[1].FlagsT |= UTBF_NOTUNLOCKHPA;
     }
-    npA->FlagsT &= ~ATBF_BIOSDEFAULTS;
+    if (npU->Features & 0x80) {
+      METHOD(npA).GetPIOMode = GetSIISATAPio;
+      METHOD(npA).Setup      = SetupCommon;
+      METHOD(npA).ProgramChip= ProgramSIISATAChip;
+    }
 
   } else {				 // use MMIO
 
@@ -179,8 +185,10 @@ USHORT NEAR GetSIISATAPio (NPA npA, UCHAR Unit) {
     npU->SecPerBlk   = 8;  // SiI3112 bug
   }
 
-  METHOD(npA).SetTF	= SIISetTF;
-  METHOD(npA).StartDMA	= SIIStartOp;
+  if (!(npU->Features & 0x80)) {
+    METHOD(npA).SetTF	  = SIISetTF;
+    METHOD(npA).StartDMA  = SIIStartOp;
+  }
   return (GetGenericPio (npA, Unit));
 }
 

@@ -32,7 +32,7 @@
 
 #define YEAR  2008
 #define MONTH 4
-#define DAY   4
+#define DAY   16
 #define PCMCIAVERSION 0x183
 
 /*-------------------------------------------------------------------*/
@@ -1187,34 +1187,31 @@ PBYTE	 poutbuf	    = outbuf;
 /*							    /T: 	      */
 
 OPT OPT_NOTBEEP =      {TOK_NOTBEEP,	 "!AA",      TYPE_0,       {0, 1, 2, 3}};
-OPT OPT_NOT_ATAPI =    {TOK_NOT_ATAPI,	 "!ATAPI",   TYPE_0,       {E, E, E, 3}};
 OPT OPT_NOT_BIOS =     {TOK_NOT_BIOS,	 "!BIOS",    TYPE_0,       {0, 1, 2, 3}};
 OPT OPT_NOT_BM_DMA  =  {TOK_NOT_BM_DMA,  "!BM",      TYPE_0,       {0, 1, 2, 3}};
 OPT OPT_NOT_DM =       {TOK_NOT_DM,	 "!DM",      TYPE_0,       {E, 1, 2, 3}};
 OPT OPT_NOTREMOVABLE = {TOK_NOTREMOVABLE,"!RMV",     TYPE_0,       {E, E, E, 3}};
-OPT OPT_NORESET =      {TOK_NORESET,	 "!R",       TYPE_0,       {E, 1, E, E}};
 OPT OPT_NOT_SETMAX =   {TOK_NOTSETMAX,	 "!SETMAX",  TYPE_0,       {0, 1, 2, 3}};
 OPT OPT_NOSHTDWN =     {TOK_NOSHTDWN,	 "!SHUTDOWN",TYPE_0,       {0, 1, 2, 3}};
 OPT OPT_NOT_SMS =      {TOK_NOT_SMS,	 "!SMS",     TYPE_0,       {E, E, E, 3}};
 OPT OPT_NOT_VERBOSE =  {TOK_NOT_V,	 "!V",       TYPE_0,       {0, 1, 2, 3}};
 OPT OPT_NOT_VPAUSE =   {TOK_NOT_VPAUSE,  "!W",       TYPE_0,       {0, 1, 2, 3}};
 OPT OPT_80WIRE =       {TOK_80WIRE,	 "80WIRE",   TYPE_0,       {E, 1, 2, E}};
-OPT OPT_ATAPI =        {TOK_ATAPI,	 "ATAPI",    TYPE_0,       {E, E, E, 3}};
 OPT OPT_ADAPTER =      {TOK_ADAPTER,	 "A",        TYPE_DD,      {1, 1, 1, 1}};
+OPT OPT_APM =	       {TOK_APM,	 "APM",      TYPE_DDDD,    {0, 1, 2, 3}};
 OPT OPT_BAY  =	       {TOK_BAY,	 "BAY",      TYPE_0,       {E, 1, 2, E}};
 OPT OPT_BM_DMA	=      {TOK_BM_DMA,	 "BM",       TYPE_0,       {0, 1, 2, 3}};
 OPT OPT_DEBUG =        {TOK_DEBUG,	 "DEBUG",    TYPE_DDDD,    {0, 1, 2, 3}};
 OPT OPT_DM =	       {TOK_DM, 	 "DM",       TYPE_0,       {E, 1, 2, 3}};
 OPT OPT_FIXES =        {TOK_FIXES,	 "FIXES",    TYPE_HHHH,    {0, 1, 2, 3}};
 OPT OPT_FORCEGBM =     {TOK_FORCEGBM,	 "FORCEGBM", TYPE_0,       {0, 1, 2, 3}};
-OPT OPT_FORCE =        {TOK_FORCE,	 "FORCE",    TYPE_0,       {E, E, E, 3}};
 OPT OPT_GBM =	       {TOK_GBM,	 "GBM",      TYPE_0,       {0, 1, 2, 3}};
 OPT OPT_IRQ  =	       {TOK_IRQ,	 "IRQ",      TYPE_DD,      {0, 1, 2, E}};
 OPT OPT_IDLETIMER =    {TOK_IDLETIMER,	 "IT",       TYPE_DDDD,    {0, 1, 2, 3}};
 OPT OPT_IGNORE =       {TOK_IGNORE,	 "I",        TYPE_0,       {E, 1, 2, 3}};
 OPT OPT_LATENCY =      {TOK_LATENCY,	 "LAT",      TYPE_DDDD,    {0, 1, 2, 3}};
 OPT OPT_LOC =	       {TOK_PCILOC,	 "LOC",      TYPE_PCILOC,  {E, 1, 2, E}};
-OPT OPT_MGAFIX =       {TOK_MGAFIX,	 "MGAFIX",   TYPE_0,       {0, 1, 2, 3}};
+OPT OPT_LPM =	       {TOK_LPM,	 "LPM",      TYPE_DD,      {0, 1, 2, 3}};
 OPT OPT_MAXRATE =      {TOK_MAXRATE,	 "MR",       TYPE_HHHH,    {E, E, E, 3}};
 OPT OPT_NOISE =        {TOK_NOISE,	 "NL",       TYPE_DDDD,    {E, E, E, 3}};
 OPT OPT_PCMCIA =       {TOK_PCMCIA,	 "PCS",      TYPE_O,       {0, 1, 2, 3}};
@@ -1223,7 +1220,6 @@ OPT OPT_PORT =	       {TOK_PORT,	 "PORT",     TYPE_HHHH,    {0, 1, 2, E}};
 OPT OPT_PF   =	       {TOK_PF, 	 "PF",       TYPE_HHHH,    {0, 1, 2, 3}};
 OPT OPT_P    =	       {TOK_PORT,	 "P",        TYPE_HHHH,    {E, 1, 2, E}};
 OPT OPT_REMOVABLE =    {TOK_REMOVABLE,	 "RMV",      TYPE_0,       {E, E, E, 3}};
-OPT OPT_RESET  =       {TOK_RESET,	 "R",        TYPE_0,       {E, 1, E, E}};
 OPT OPT_SHTDWN =       {TOK_SHTDWN,	 "SHUTDOWN", TYPE_0,       {0, 1, 2, 3}};
 OPT OPT_SMS =	       {TOK_SMS,	 "SMS",      TYPE_DDDD,    {E, E, E, 3}};
 OPT OPT_IRQTIMEOUT =   {TOK_IRQTIMEOUT,  "TO",       TYPE_DDDD,    {E, 1, 2, E}};
@@ -1248,19 +1244,17 @@ OPTIONTABLE  opttable =
 
 {   ENTRY_STATE, MAX_STATES,
     { (NPOPT) &OPT_NOTBEEP,
-      (NPOPT) &OPT_NOT_ATAPI,
       (NPOPT) &OPT_NOT_BIOS,
       (NPOPT) &OPT_NOT_BM_DMA,
       (NPOPT) &OPT_NOT_DM,
       (NPOPT) &OPT_NOTREMOVABLE,
-      (NPOPT) &OPT_NORESET,
       (NPOPT) &OPT_NOT_SETMAX,
       (NPOPT) &OPT_NOSHTDWN,
       (NPOPT) &OPT_NOT_SMS,
       (NPOPT) &OPT_NOT_VERBOSE,
       (NPOPT) &OPT_NOT_VPAUSE,
       (NPOPT) &OPT_80WIRE,
-      (NPOPT) &OPT_ATAPI,
+      (NPOPT) &OPT_APM,
       (NPOPT) &OPT_ADAPTER,
       (NPOPT) &OPT_BAY,
       (NPOPT) &OPT_BM_DMA,
@@ -1268,14 +1262,13 @@ OPTIONTABLE  opttable =
       (NPOPT) &OPT_DM,
       (NPOPT) &OPT_FIXES,
       (NPOPT) &OPT_FORCEGBM,
-      (NPOPT) &OPT_FORCE,
       (NPOPT) &OPT_GBM,
       (NPOPT) &OPT_IRQ,
       (NPOPT) &OPT_IDLETIMER,
       (NPOPT) &OPT_IGNORE,
       (NPOPT) &OPT_LATENCY,
       (NPOPT) &OPT_LOC,
-      (NPOPT) &OPT_MGAFIX,
+      (NPOPT) &OPT_LPM,
       (NPOPT) &OPT_MAXRATE,
       (NPOPT) &OPT_NOISE,
       (NPOPT) &OPT_PCMCIA,
@@ -1284,7 +1277,6 @@ OPTIONTABLE  opttable =
       (NPOPT) &OPT_PF,
       (NPOPT) &OPT_P,
       (NPOPT) &OPT_REMOVABLE,
-      (NPOPT) &OPT_RESET,
       (NPOPT) &OPT_SHTDWN,
       (NPOPT) &OPT_SMS,
       (NPOPT) &OPT_IRQTIMEOUT,

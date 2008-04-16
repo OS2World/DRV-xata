@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2006
+ *	       COPYRIGHT Daniela Engert 1999-2008
  *
  * DESCRIPTION : Token IDs
  *
@@ -34,11 +34,6 @@
 #define TOK_IGNORE	  14
 #define TOK_V		  15
 #define TOK_NOT_V	  16
-#define TOK_RESET	  18
-#define TOK_NORESET	  19
-#define TOK_ATAPI	  20
-#define TOK_NOT_ATAPI	  21
-#define TOK_FORCE	  22
 #define TOK_PCMCIA	  23
 
 #define TOK_BM_DMA	  25	    /* Bus Master DMA enable */
@@ -55,13 +50,12 @@
 #define TOK_REMOVABLE	  35	    /* /RMV   */
 #define TOK_NOTREMOVABLE  36	    /* /!RMV  */
 #define TOK_NOTBEEP	  37	    /* /!AA   */
-#define TOK_MGAFIX	  38	    /* /MGAFIX*/
 #define TOK_80WIRE	  39	    /* /80WIRE*/
 #define TOK_NOSHTDWN	  40	    /* /!SHUTDWON */
 #define TOK_SHTDWN	  41	    /* /SHUTDWON */
 #define TOK_IRQTIMEOUT	  42	    /* /TO: */
 #define TOK_PF		  43	    /* /PF:	*/
-#define TOK_NOISE	  44	    /* /PF:	*/
+#define TOK_NOISE	  44	    /* /NL:	*/
 #define TOK_VL		  45	    /* /VL	*/
 #define TOK_VLL 	  46	    /* /VLL	*/
 #define TOK_VPAUSEL	  47	    /* /WL	*/
@@ -72,6 +66,8 @@
 #define TOK_WP		  52	    /* /WP:	*/
 #define TOK_LATENCY	  53	    /* /LAT:	*/
 #define TOK_BAY 	  54	    /* /BAY:	*/
+#define TOK_APM 	  55	    /* /APM:	*/
+#define TOK_LPM 	  56	    /* /LPM:	*/
 
 #ifdef BBR
 #define TOK_BBRINT3	  98	    // BBR with an int 3

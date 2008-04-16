@@ -268,13 +268,15 @@ VOID NEAR SetupT13StandardController (NPA npA)
 
 UCHAR NEAR CheckSATAPhy (NPU npU) {
   if (SERROR) {
-    USHORT Status = InD (SSTATUS);
-    ULONG  Diag   = InD (SERROR);
+    USHORT Status  = InD (SSTATUS);
+    USHORT Control = InD (SCONTROL);
+    ULONG  Diag    = InD (SERROR);
 #if TRACES
-    if (Debug & 8) TraceStr (" S(%X:%X)", Status, Diag);
+    if (Debug & 8) TraceStr (" S(%X:%X:%X)", Status, (USHORT)Diag, Control);
 #endif
     if ((Status & SSTAT_DET) & (SSTAT_DEV_OK | SSTAT_COM_OK)) {
       OutD (SERROR, Diag);
+      npU->FoundLPMLevel = (Control & SCTRL_IPM) >> 8;
       npU->Flags |= UCBF_PHYREADY;
       return TRUE;
     }

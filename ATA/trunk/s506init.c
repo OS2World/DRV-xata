@@ -1140,13 +1140,7 @@ USHORT FAR ParseCmdLine (PSZ pCmdLine)
       Value = *(NPUSHORT)(pOutBuf+2);
 
       switch (pOutBuf[1]) {
-	case TOK_RESET:
-	case TOK_NORESET:
-	case TOK_FORCE:
-	case TOK_ATAPI:
-	case TOK_NOT_ATAPI:
 	case TOK_DM:
-	case TOK_MGAFIX:
 	  break;
 
 	/*-------------------------------------------*/
@@ -1446,6 +1440,26 @@ USHORT FAR ParseCmdLine (PSZ pCmdLine)
 	case TOK_NOISE:
 
 	  npU->AMLevel = ~Value;
+	  break;
+
+	/*-------------------------------------------*/
+	/* Set APM Level -  /APM:d		     */
+	/*					     */
+	/*-------------------------------------------*/
+
+	case TOK_APM:
+
+	  SetOption (npU, npA, offsetof (UCB, APMLevel), (UCHAR)(~Value));
+	  break;
+
+	/*-------------------------------------------*/
+	/* Set Link Power Management Level -  /LPM:d */
+	/*					     */
+	/*-------------------------------------------*/
+
+	case TOK_LPM:
+
+	  SetOption (npU, npA, offsetof (UCB, LPMLevel), (UCHAR)(~(Value & 3)));
 	  break;
 
 	/*-------------------------------------------*/

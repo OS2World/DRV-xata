@@ -4,7 +4,7 @@
  *
  * DESCRIPTIVE NAME = DANIS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- * Copyright : COPYRIGHT Daniela Engert 1999-2006
+ * Copyright : COPYRIGHT Daniela Engert 1999-2008
  *
  * DESCRIPTION : Device Geometry and Features stuff
  ****************************************************************************/
@@ -208,6 +208,8 @@ T('a')
   MediaStatusEnable (npU, npID);
   MultipleModeEnable (npU, npID);
   AcousticEnable (npU, npID);
+  APMEnable (npU, npID);
+  LPMEnable (npU, npID);
 
   if (npID->GeneralConfig.Word == GC_CFA) {
     npU->Flags |= UCBF_CFA | UCBF_READY;
@@ -1095,6 +1097,55 @@ VOID NEAR AcousticEnable (NPU npU, NPIDENTIFYDATA npID)
     }
   } else {
     npU->FoundAMLevel = npU->AMLevel = 0;
+  }
+}
+
+//
+//   APMEnable()
+//
+// (Determine if this drive supports the advanced power management feature set
+// If not, APM level settings are ignored.)
+//
+VOID NEAR APMEnable (NPU npU, NPIDENTIFYDATA npID)
+{
+  if (npU->CmdSupported & UCBS_APM) {
+    if (npU->APMLevel != 0) {
+      UCHAR Level;
+
+      Level = ~(npU->APMLevel);
+      if (Level > 254) Level = 254;
+      npU->APMLevel = Level;
+      TSTR ("APM:%X,", Level);
+    }
+  }
+}
+
+//
+//   LPMEnable()
+//
+// Check for valid link power managent selection and infer preset value
+// from SATA CONTROL register
+//
+VOID NEAR LPMEnable (NPU npU, NPIDENTIFYDATA npID)
+{
+  if ((npU->SATACmdSupported & FX_DIPMSUPPORTED) && SCONTROL) {
+    if (npU->LPMLevel != 0) {
+      UCHAR Level;
+
+      Level = ~(npU->LPMLevel);
+      switch (Level) {
+	case 0:  Level = npU->FoundLPMLevel ^ 3;
+		 if (Level) Level ^= 0x83;
+		 break;
+	case 1:  Level = 0x80; break;
+	case 2:  Level = 0x82; break;
+	default: Level = 0x00; break;
+      }
+      npU->LPMLevel = Level;
+      TSTR ("LPM:%X,", Level);
+    }
+  } else {
+    npU->LPMLevel = 0;
   }
 }
 

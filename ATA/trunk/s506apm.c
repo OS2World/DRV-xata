@@ -107,8 +107,8 @@ void NEAR InitUnitSync (NPU npU) {
   if (npU->CmdSupported & UCBS_RAHEAD)	 npU->ReqFlags |= UCBR_ENABLERAHEAD;
   if (npU->CmdSupported & UCBS_SECURITY) npU->ReqFlags |= UCBR_FREEZELOCK;
   if (npU->Flags & UCBF_SMSENABLED)	 npU->ReqFlags |= UCBR_SETMULTIPLE;
-  if (npU->SATACmdSupported & FX_SSPSUPPORTED)	npU->ReqFlags |= UCBR_ENABLESSP;
-  if (npU->SATACmdSupported & FX_DIPMSUPPORTED) npU->ReqFlags |= UCBR_ENABLEDIPM;
+  if (npU->SATACmdSupported & FX_SSPSUP) npU->ReqFlags |= UCBR_ENABLESSP;
+  if (npU->LPMLevel != 0)		 npU->ReqFlags |= UCBR_ENABLEDIPM;
 }
 
 void NEAR ReInitUnit (NPU npU) {

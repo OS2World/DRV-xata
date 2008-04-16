@@ -508,7 +508,7 @@ typedef struct _IDENTIFYDATA
 #define FX_LBA48SUPPORTED	0x0400	/* Word 83    48Bit ULONG supported bit */
 #define FX_FLUSHXSUPPORTED	0x2000	/* Word 83    Flush ext supported bit */
 #define FX_DIPMSUPPORTED	0x0008	/* Word 78/79 dev-inited pm supported bit */
-#define FX_SSPSUPPORTED 	0x0040	/* Word 78/79 SATA SSP	supported bit */
+#define FX_SSPSUP		0x0040	/* Word 78/79 SATA SSP	supported bit */
 #define FX_WORDS54_58VALID	0x0001	/* Words 54-58 in ID valid	      */
 #define FX_WORDS64_70VALID	0x0002	/* Words 64-70 in ID valid	      */
 #define FX_WORD88_VALID 	0x0004	/* Word 88 valid ->Ultra DMA	      */

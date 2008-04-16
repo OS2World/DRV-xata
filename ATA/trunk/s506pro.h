@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2007
+ *	       COPYRIGHT Daniela Engert 1999-2008
  *
  * DESCRIPTION : C Function Prototype statements
  *
@@ -697,6 +697,8 @@ VOID   NEAR IDStringsExtract (NPCH s, NPIDENTIFYDATA npID);
 VOID   NEAR MediaStatusEnable (NPU npU, NPIDENTIFYDATA npID);
 VOID   NEAR MultipleModeEnable (NPU npU, NPIDENTIFYDATA npID);
 VOID   NEAR AcousticEnable (NPU npU, NPIDENTIFYDATA npID);
+VOID   NEAR APMEnable (NPU npU, NPIDENTIFYDATA npID);
+VOID   NEAR LPMEnable (NPU npU, NPIDENTIFYDATA npID);
 VOID   NEAR IdleTimerEnable (NPU npU, NPIDENTIFYDATA npID);
 USHORT NEAR DriveTypeToGeometry (USHORT DriveType, NPGEO1 npGEO);
 

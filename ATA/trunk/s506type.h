@@ -175,6 +175,9 @@ typedef struct _U
   UCHAR 	FoundAMLevel;					       //  4
   ULONG 	FoundLBASize;					       //  4
   UCHAR 	FoundPIOMode;					       //  4
+  UCHAR 	APMLevel;					       //  9
+  UCHAR 	LPMLevel;					       //  9
+  UCHAR 	FoundLPMLevel;					       //  9
 
   USHORT	Features;					       //  5
   USHORT	IdleCounter, IdleCountInit;			       // 3,4
@@ -276,6 +279,7 @@ typedef struct _U
 #define UCBS_POWER	    0x00000008	/* power mgmt active  */
 #define UCBS_ACOUSTIC	    0x02000000	/* acoustic mgmt active  */
 #define UCBS_HPROT	    0x00000400	/* Host protected area encountered */
+#define UCBS_APM	    0x00080000	/* Advanced Power Management suppported */
 
 typedef enum { CtNone = 0, CtATA = 1, CtATAPI = 2} eControllerType;
 
