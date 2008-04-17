@@ -84,26 +84,20 @@ VOID NEAR SiISATA (NPA npA)
   npA->SCR.Offsets = 0x021;
   SSTATUS = BA5 | PortOffsetSC[npA->IDEChannel];
 
-  if ((npA->FlagsT & ATBF_BIOSDEFAULTS) ||
-      (npU->Features & 0x80)) { 	 // use generic PIO mode
-    npA->FlagsT &= ~ATBF_BIOSDEFAULTS;
-//    npA->Cap |= CHIPCAP_ATAPIDMA;
+  METHOD(npA).GetPIOMode = GetSIISATAPio;
+  METHOD(npA).Setup	 = SetupCommon;
+  METHOD(npA).ProgramChip= ProgramSIISATAChip;
+
+  if (npU->Features & 0x80) {		 // use port IO
+    npA->Cap |= CHIPCAP_ATAPIDMA;
     if (PciInfo->CompatibleID == PCIDEV_SII3114) {
       npA->maxUnits = 2;
       npU[1].SStatus = BA5 + PortOffsetSC[npA->IDEChannel + 2];
       npU[1].FlagsT |= UTBF_NOTUNLOCKHPA;
     }
-    if (npU->Features & 0x80) {
-      METHOD(npA).GetPIOMode = GetSIISATAPio;
-      METHOD(npA).Setup      = SetupCommon;
-      METHOD(npA).ProgramChip= ProgramSIISATAChip;
-    }
 
   } else {				 // use MMIO
 
-    METHOD(npA).GetPIOMode = GetSIISATAPio;
-    METHOD(npA).Setup	   = SetupCommon;
-    METHOD(npA).ProgramChip= ProgramSIISATAChip;
     METHOD(npA).CheckIRQ   = SIICheckIRQ;
 
     if (PciInfo->Level == SII_SATA0)
@@ -185,7 +179,7 @@ USHORT NEAR GetSIISATAPio (NPA npA, UCHAR Unit) {
     npU->SecPerBlk   = 8;  // SiI3112 bug
   }
 
-  if (!(npU->Features & 0x80)) {
+  if (DATAREG >= 0x10000) {
     METHOD(npA).SetTF	  = SIISetTF;
     METHOD(npA).StartDMA  = SIIStartOp;
   }
@@ -257,6 +251,9 @@ VOID ProgramSIISATAChip (NPA npA)
   UCHAR newVal = BYTE(SII_Mode)[0];
 
   if (newVal) {
+    if (DATAREG < 0x10000)
+      WConfigB ((UCHAR)(npA->IDEChannel ? PCI_SII_IDEMODE + 4 : PCI_SII_IDEMODE), newVal);
+    else
       OutW (DATAREG | 0x34, newVal); // set data transfer mode
   }
 }

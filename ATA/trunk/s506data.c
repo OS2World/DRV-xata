@@ -32,8 +32,8 @@
 
 #define YEAR  2008
 #define MONTH 4
-#define DAY   16
-#define PCMCIAVERSION 0x183
+#define DAY   17
+#define PCMCIAVERSION 0x184
 
 /*-------------------------------------------------------------------*/
 /*								     */
