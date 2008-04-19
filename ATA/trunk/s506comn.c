@@ -198,7 +198,9 @@ VOID SetupCommonPost (NPA npA)
       IssueSetFeatures (npU, FX_SETAMLVL, (UCHAR)(0x80 + ~(npU->AMLevel)));
 
     if (npU->APMLevel != 0)
-      IssueSetFeatures (npU, FX_ENABLE_APM, npU->APMLevel);
+      IssueSetFeatures (npU, (UCHAR)(npU->APMLevel == 0xFF ? FX_DISABLE_APM
+							   : FX_ENABLE_APM),
+							     npU->APMLevel);
 
     if ((npU->LPMLevel != 0) && SCONTROL) {
       UCHAR Level = npU->LPMLevel & 3;

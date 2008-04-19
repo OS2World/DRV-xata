@@ -1109,14 +1109,9 @@ VOID NEAR AcousticEnable (NPU npU, NPIDENTIFYDATA npID)
 VOID NEAR APMEnable (NPU npU, NPIDENTIFYDATA npID)
 {
   if (npU->CmdSupported & UCBS_APM) {
-    if (npU->APMLevel != 0) {
-      UCHAR Level;
-
-      Level = ~(npU->APMLevel);
-      if (Level > 254) Level = 254;
-      npU->APMLevel = Level;
-      TSTR ("APM:%X,", Level);
-    }
+    TSTR ("APM:%X,", npU->APMLevel);
+  } else {
+    npU->APMLevel = 0;
   }
 }
 
@@ -1134,12 +1129,12 @@ VOID NEAR LPMEnable (NPU npU, NPIDENTIFYDATA npID)
 
       Level = ~(npU->LPMLevel);
       switch (Level) {
-	case 0:  Level = npU->FoundLPMLevel ^ 3;
+	case 0:  Level = npU->FoundLPMLevel ^ 3;  // LPM as found in PHY
 		 if (Level) Level ^= 0x83;
 		 break;
-	case 1:  Level = 0x80; break;
-	case 2:  Level = 0x82; break;
-	default: Level = 0x00; break;
+	case 1:  Level = 0x80; break;		  // override: all modes
+	case 2:  Level = 0x82; break;		  // override: no Slumber
+	default: Level = 0x00; break;		  // override: no PM
       }
       npU->LPMLevel = Level;
       TSTR ("LPM:%X,", Level);

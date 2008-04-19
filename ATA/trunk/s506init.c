@@ -1449,7 +1449,7 @@ USHORT FAR ParseCmdLine (PSZ pCmdLine)
 
 	case TOK_APM:
 
-	  SetOption (npU, npA, offsetof (UCB, APMLevel), (UCHAR)(~Value));
+	  SetOption (npU, npA, offsetof (UCB, APMLevel), Value);
 	  break;
 
 	/*-------------------------------------------*/
@@ -1459,7 +1459,7 @@ USHORT FAR ParseCmdLine (PSZ pCmdLine)
 
 	case TOK_LPM:
 
-	  SetOption (npU, npA, offsetof (UCB, LPMLevel), (UCHAR)(~(Value & 3)));
+	  SetOption (npU, npA, offsetof (UCB, LPMLevel), (UCHAR)(~Value));
 	  break;
 
 	/*-------------------------------------------*/

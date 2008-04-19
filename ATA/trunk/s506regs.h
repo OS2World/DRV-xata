@@ -78,6 +78,7 @@
 #define FX_ENABLE_RAHEAD	0xAA /* Read look ahead 		      */
 #define FX_DISABLE_RAHEAD	0x55
 #define FX_ENABLE_APM		0x05 /* Enable APM (level)		      */
+#define FX_DISABLE_APM		0x85 /* Disable APM			      */
 #define FX_APM_MIN		0x80 /* minimum power consumption w/o standby */
 #define FX_APM_MAX		0xFE /* maximum power consumption w/o standby */
 #define FX_DISABLE_APM		0x85
