@@ -952,10 +952,12 @@ VOID NEAR MediaStatusEnable (NPU npU, NPIDENTIFYDATA npID)
 
     if (!rc) {
       npU->Flags |= UCBF_REMOVABLE | UCBF_BECOMING_READY; // indicate removable media
-      if (IssueGetMediaStatus (npU) != IOERR_CMD_ABORTED) {
+      npU->ReqFlags = ACBR_GETMEDIASTAT;
+      NoOp (npU);
+  TS("m%X,",npU->MediaStatus)
+      if (!(ERROR & FX_ABORT)) {
+//	if (IssueGetMediaStatus (npU) != IOERR_CMD_ABORTED) {
 	IssueSetFeatures (npU, FX_DISABLE_MEDIA_STATUS, 0);
-	if (npU->MediaStatus & FX_MC)
-	  IssueOneByte (npU, FX_ACK_MEDIA_CHANGE);
 	if (npU->MediaStatus & FX_NM) {
 	  npU->Flags &= ~UCBF_READY;
 	  npU->Flags |=  UCBF_BECOMING_READY;
@@ -963,7 +965,6 @@ VOID NEAR MediaStatusEnable (NPU npU, NPIDENTIFYDATA npID)
 	  npU->Flags |= UCBF_READY;
 	}
       }
-  TS("m%X,",npU->MediaStatus)
     } else if (npU->FlagsT & UTBF_SETREMOVABLE)
       npU->Flags |= UCBF_REMOVABLE | UCBF_BECOMING_READY; // indicate removable media
   }

@@ -271,6 +271,7 @@ typedef struct _U
 #define UCBR_FREEZELOCK     0x0020
 #define UCBR_ENABLESSP	    0x0010
 #define UCBR_ENABLEDIPM     0x0008
+#define UCBR_GETMEDIASTAT   0x0004
 
 #define UCBS_SMART	    0x00000001	/* S.M.A.R.T. active  */
 #define UCBS_SECURITY	    0x00000002	/* Security supported */
@@ -369,6 +370,7 @@ typedef struct _A
 	USHORT	SecToGo;					       // 18
 	USHORT	SecPerInt;					       // 11
 
+	UCHAR	MediaStatusMask; /* media status bits in error register */
 	UCHAR	TimerFlags;					       // 21
 	UCHAR	DataErrorCnt;					       //  6
 	UCHAR	BusyTimeoutCnt; 				       //  2
@@ -515,9 +517,9 @@ typedef struct _A
 #define ACBR_WRITEV		0x08000000
 #define ACBR_PASSTHRU		0x10000000
 #define ACBR_NONPASSTHRU	0x20000000
+#define ACBR_RESETCONTROLLER	0x00100000
 
-#define ACBR_NONDATA		0x0002
-#define ACBR_RESETCONTROLLER	0x0001
+#define ACBR_NONDATA		0x0001
 
 // warning, warning, these are predefined as top bits
 #define ACBR_SETIDLETIM 	UCBR_SETIDLETIM
@@ -533,6 +535,7 @@ typedef struct _A
 #define ACBR_FREEZELOCK 	UCBR_FREEZELOCK
 #define ACBR_ENABLEDIPM 	UCBR_ENABLEDIPM
 #define ACBR_ENABLESSP		UCBR_ENABLESSP
+#define ACBR_GETMEDIASTAT	UCBR_GETMEDIASTAT
 
 #define ACBR_BLOCKIO	       (ACBR_READ | ACBR_WRITE | ACBR_VERIFY | ACBR_WRITEV)
 #define ACBR_MULTIPLEMODE      (ACBR_READ | ACBR_WRITE)
@@ -542,11 +545,13 @@ typedef struct _A
 				ACBR_SETIDLETIM | ACBR_SETPIOMODE | \
 				ACBR_SETMULTIPLE | ACBR_SETDMAMODE | \
 				ACBR_ENABLEWCACHE | ACBR_DISABLEWCACHE | \
-				ACBR_ENABLERAHEAD | ACBR_FREEZELOCK)
+				ACBR_ENABLERAHEAD | ACBR_FREEZELOCK | \
+				ACBR_ENABLEDIPM | ACBR_ENABLESSP)
 
 #define ACBR_OTHERIO	       (ACBR_SETUP | \
 				ACBR_READMAX | ACBR_SETMAXNATIVE | \
-				ACBR_RESETCONTROLLER | ACBR_NONDATA)
+				ACBR_GETMEDIASTAT | \
+				ACBR_NONDATA)
 
 /* ACB->State values */
 

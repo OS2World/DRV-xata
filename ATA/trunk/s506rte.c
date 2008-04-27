@@ -607,38 +607,6 @@ int NEAR IssueSetIdle (NPU npU, UCHAR Cmd, BYTE Arg)
   return (IssueCommandTO (npU, 100));
 }
 
-/*---------------------------------------------------------------------------*
- * Issue GetMediaStatus 						     *
- * ------------------							     *
- *									     *
- *									     *
- *---------------------------------------------------------------------------*/
-
-int NEAR IssueGetMediaStatus (NPU npU)
-{
-  NPA	 npA = npU->npA;
-  USHORT rc;
-
-  ClearIORB (npA);
-
-  npA->icp.TaskFileIn.Command = FX_GET_MEDIA_STATUS;
-  npA->icp.RegisterMapW = RTM_COMMAND;
-  npA->icp.RegisterMapR = RTM_ERROR | RTM_STATUS;
-
-  rc = IssueCommand (npU);
-
-  if (rc) {
-    if (npA->icp.TaskFileOut.Error & FX_ABORT) {
-      rc = IOERR_CMD_ABORTED;
-    } else {
-      // signal the status has changed
-      rc = IOERR_DEVICE_NONSPECIFIC;
-      npU->MediaStatus = npA->icp.TaskFileOut.Error;
-    }
-  }
-  return (rc);
-}
-
 #ifdef ENABLE_SET_TIMINGS
 
 /*---------------------------------------------------------------------------*
@@ -989,7 +957,7 @@ void NEAR DoIOCTLs (PRP_GENIOCTL pRP_IOCTL)
       }
 
       case DSKSP_RESET:
-	npU->ReqFlags |= ACBR_RESETCONTROLLER;
+	npA->ReqFlags |= ACBR_RESETCONTROLLER;
 	NoOp (npU);
 	break;
 

@@ -48,9 +48,7 @@
 #define FX_EJECT_MEDIA		0xED /* eject media			      */
 #define FX_SETFEAT		0xEF /* Set Features			      */
 #define FX_SMARTCMD		0xB0 /* SMART command			      */
-#define FX_ENABLE_MEDIA_STATUS	0x95 /* enable media status command	      */
-#define FX_DISABLE_MEDIA_STATUS 0x31 /* disable media status command	      */
-#define FX_ACK_MEDIA_CHANGE	0xDB /* acknowledge media change	      */
+//#define FX_ACK_MEDIA_CHANGE	0xDB /* acknowledge media change	      */
 #define FX_SETSTANDBY		0xE2 /* set standby timer		      */
 #define FX_STANDBYIMM		0xE0 /* enter standby mode		      */
 #define FX_SETIDLE		0xE3 /* set idle timer			      */
@@ -73,6 +71,8 @@
 #define FX_MWDMAMODEX		0x20 /*    multiword DMA Mode x 	      */
 #define FX_ULTRADMAMODEX	0x40 /*   Ultra DMA Mode x - 5 4 3 2 1 0      */
 #define FX_DEVICE_SPIN_UP	0x07
+#define FX_ENABLE_MEDIA_STATUS	0x95 /* enable media status command	      */
+#define FX_DISABLE_MEDIA_STATUS 0x31 /* disable media status command	      */
 #define FX_ENABLE_WCACHE	0x02 /* Write Cache			      */
 #define FX_DISABLE_WCACHE	0x82
 #define FX_ENABLE_RAHEAD	0xAA /* Read look ahead 		      */
@@ -130,9 +130,8 @@
 #define FX_IDNF      0x10	  /* ID Not Found			     */
 #define FX_MC	     0x20	  /* Media changed			     */
 #define FX_ECCERROR  0x40	  /* Data ECC Error			     */
-#define FX_WRT_PRT   0x40	  /* write protect			     */
+#define FX_WP	     0x40	  /* write protect			     */
 #define FX_BADBLK    0x80	  /* Bad Block was detected in the ID field  */
-#define FX_RD_PRT    0x80	  /* read protect			     */
 #define FX_ICRC      0x80	  /* ULTRA DMA CRC error		     */
 
 /* Error Register - Diagnostic Codes */

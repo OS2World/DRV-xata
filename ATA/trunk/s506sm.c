@@ -40,7 +40,7 @@
 
 #define BEEB 0
 #define PCITRACER 0
-#define TRPORT 0xA800
+#define TRPORT 0xA80C
 
 #if 0
 void IBeep (USHORT freq) {
@@ -428,6 +428,7 @@ VOID NEAR StartIO (NPA npA)
 
 VOID NEAR RetryState(NPA npA)
 {
+  npA->IOPendingMask = 0;
   if (npA->ReqFlags & ACBR_PASSTHRU)
     SetupFromATA (npA, npA->npU);
 
@@ -463,7 +464,9 @@ USHORT NEAR InitACBRequest (NPA npA)
   *(NPUSHORT)&LBA2 = 0;
 	      LBA3 = 0;
   *(NPUSHORT)&LBA4 = 0;
+  npA->IOPendingMask = 0;
 
+  /// TODO: ACBR_RESETCONTROLLER gets lost here!
   memset (&(npA->ReqFlags), 0,
 	  offsetof (struct _A, cResets) + 1 - offsetof (struct _A, ReqFlags));
   memset (&(npA->IOSGPtrs.numTotalBytes), 0, 16);
@@ -475,69 +478,74 @@ USHORT NEAR InitACBRequest (NPA npA)
   /* Translate IORB Command Code/Modifier to ACBR_* flags */
   /*------------------------------------------------------*/
   if (CmdCod == IOCC_EXECUTE_IO) {
-    if ((npU->Flags & (UCBF_REMOVABLE | UCBF_READY)) == UCBF_REMOVABLE) {
-      Error (npA, IOERR_UNIT_NOT_READY);
-      return (TRUE);
-    }
+    if (CmdMod == IOCM_NO_OPERATION) {
+      npA->ReqFlags |= npU->ReqFlags;
 
-    if ((CmdMod == IOCM_WRITE) || (CmdMod == IOCM_WRITE_VERIFY)) {
-      if (npU->WriteProtect) {
-	if ((npU->WriteProtect > 1) ||
-	    ((((PIORB_EXECUTEIO)pIORB)->RBA + ((PIORB_EXECUTEIO)pIORB)->BlockCount) < npU->LogGeom.SectorsPerTrack)) {
-	  npA->IORBStatus &= ~IORB_RECOV_ERROR;
-	  npA->IORBStatus |= IORB_DONE;
-	  npA->IORBError = 0;
-	  return (TRUE);
-	}
+    } else {
+      if ((npU->Flags & (UCBF_REMOVABLE | UCBF_READY)) == UCBF_REMOVABLE) {
+	Error (npA, IOERR_UNIT_NOT_READY);
+	return (TRUE);
       }
 
-      npA->IOSGPtrs.Mode = SGLIST_TO_PORT;
+      switch (CmdMod) {
 
-      ++npU->DeviceCounters.TotalWriteOperations;
-      npU->DeviceCounters.TotalSectorsWritten +=
-	(ULONG)(((PIORB_EXECUTEIO)pIORB)->BlockCount);
+	case IOCM_WRITE_VERIFY:
+	  npA->ReqFlags |= ACBR_WRITEV;
+	  /* fall through */
 
-      if (npU->CmdSupported & UCBS_WCACHE) {
-	if (npU->FlushCount >= 0) npU->FlushCount--;
-	if ((npU->FlushCount == 0) && !(npU->Flags & UCBF_WCACHEENABLED))
-	  npU->ReqFlags |= UCBR_ENABLEWCACHE;
-      }
-    } else { // read operation
+	case IOCM_WRITE:
 
-      npA->IOSGPtrs.Mode = PORT_TO_SGLIST;
-
-      ++npU->DeviceCounters.TotalReadOperations;
-      npU->DeviceCounters.TotalSectorsRead +=
-	(ULONG)(((PIORB_EXECUTEIO)pIORB)->BlockCount);
-    }
-
-    switch (CmdMod) {
-      case IOCM_READ:
-	npA->ReqFlags |= npU->ReqFlags | ACBR_READ;
-	break;
-
-      case IOCM_WRITE:
-	npA->ReqFlags |= npU->ReqFlags | ACBR_WRITE;
-	break;
-
-      case IOCM_WRITE_VERIFY:
-	npA->ReqFlags |= npU->ReqFlags | (ACBR_WRITEV | ACBR_WRITE);
-	break;
-
-      case IOCM_READ_VERIFY:
-	if (npU->CmdSupported & UCBS_WCACHE) {
-	  if (npU->Flags & UCBF_WCACHEENABLED) {
-	    npU->ReqFlags |=  UCBR_DISABLEWCACHE;
-	    npU->ReqFlags &= ~UCBR_ENABLEWCACHE;
+	  if (npU->WriteProtect) {
+	    if ((npU->WriteProtect > 1) ||
+		((((PIORB_EXECUTEIO)pIORB)->RBA + ((PIORB_EXECUTEIO)pIORB)->BlockCount) < npU->LogGeom.SectorsPerTrack)) {
+	      npA->IORBStatus &= ~IORB_RECOV_ERROR;
+	      npA->IORBStatus |= IORB_DONE;
+	      npA->IORBError = 0;
+	      return (TRUE);
+	    }
 	  }
-	  npU->FlushCount = 10;
-	}
-	npA->ReqFlags |= npU->ReqFlags | ACBR_VERIFY;
-	break;
 
-      case IOCM_NO_OPERATION:
-	npA->ReqFlags |= npU->ReqFlags;
-	break;
+	  npA->IOSGPtrs.Mode = SGLIST_TO_PORT;
+
+	  ++npU->DeviceCounters.TotalWriteOperations;
+	  npU->DeviceCounters.TotalSectorsWritten +=
+	    (ULONG)(((PIORB_EXECUTEIO)pIORB)->BlockCount);
+
+	  if (npU->CmdSupported & UCBS_WCACHE) {
+	    if (npU->FlushCount >= 0) npU->FlushCount--;
+	    if ((npU->FlushCount == 0) && !(npU->Flags & UCBF_WCACHEENABLED))
+	      npU->ReqFlags |= UCBR_ENABLEWCACHE;
+	  }
+
+	  npA->MediaStatusMask = FX_NM | FX_MCR | FX_MC | FX_WP;
+	  npA->ReqFlags |= npU->ReqFlags | ACBR_WRITE;
+	  break;
+
+	case IOCM_READ_VERIFY:
+	  if (npU->CmdSupported & UCBS_WCACHE) {
+	    if (npU->Flags & UCBF_WCACHEENABLED) {
+	      npU->ReqFlags |=	UCBR_DISABLEWCACHE;
+	      npU->ReqFlags &= ~UCBR_ENABLEWCACHE;
+	    }
+	    npU->FlushCount = 10;
+	  }
+	  npA->ReqFlags |= npU->ReqFlags | ACBR_VERIFY;
+	  goto READ_Common;
+	  break;
+
+	case IOCM_READ:
+	  npA->ReqFlags |= npU->ReqFlags | ACBR_READ;
+
+	READ_Common:
+	  npA->MediaStatusMask = FX_NM | FX_MCR | FX_MC;
+	  npA->IOSGPtrs.Mode = PORT_TO_SGLIST;
+
+	  ++npU->DeviceCounters.TotalReadOperations;
+	  npU->DeviceCounters.TotalSectorsRead +=
+	    (ULONG)(((PIORB_EXECUTEIO)pIORB)->BlockCount);
+
+	  break;
+      }
     }
   } else if (CmdCod == IOCC_ADAPTER_PASSTHRU) {
     switch (CmdMod) {
@@ -550,6 +558,7 @@ USHORT NEAR InitACBRequest (NPA npA)
 
 	if ((SCSICmd[0] == SCSI_START_STOP_UNIT) && (SCSICmd[4] == 2)) {
 	  SetupCommand (npA, npU, FX_EJECT_MEDIA);
+	  npA->MediaStatusMask = FX_NM;
 	  break;
 	} // else fall-through to unsupported
       }
@@ -563,16 +572,23 @@ USHORT NEAR InitACBRequest (NPA npA)
     switch (CmdMod) {
       case IOCM_GET_UNIT_STATUS:
 	/*
-	** Setup a seek to see if there is a drive out there.
+	** Setup a seek and a GET_MEDIA_STATUS to see if there is a drive out there.
 	*/
 	SetupSeek (npA, npU);
+	npU->ReqFlags |= UCBR_GETMEDIASTAT;
 	break;
     }
   } else if (CmdCod == IOCC_DEVICE_CONTROL) {
     switch (CmdMod) {
-      case IOCM_LOCK_MEDIA:    SetupCommand (npA, npU, FX_LOCK_DOOR);	 break;
-      case IOCM_UNLOCK_MEDIA:  SetupCommand (npA, npU, FX_UNLOCK_DOOR);  break;
-      case IOCM_EJECT_MEDIA:   SetupCommand (npA, npU, FX_EJECT_MEDIA);  break;
+      case IOCM_LOCK_MEDIA:   SetupCommand (npA, npU, FX_LOCK_DOOR);
+			      npA->MediaStatusMask = FX_NM | FX_MCR;
+			      break;
+      case IOCM_UNLOCK_MEDIA: SetupCommand (npA, npU, FX_UNLOCK_DOOR);
+			      npA->MediaStatusMask = FX_NM;
+			      break;
+      case IOCM_EJECT_MEDIA:  SetupCommand (npA, npU, FX_EJECT_MEDIA);
+			      npA->MediaStatusMask = FX_NM;
+			      break;
     }
   } else if (CmdCod == IOCC_GEOMETRY) {
     switch (CmdMod) {
@@ -677,6 +693,7 @@ VOID NEAR SetupSeek (NPA npA, NPU npU)
 {
   SetupCommand (npA, npU, FX_SEEK);
   npA->IOPendingMask = (FM_PSCNT | FM_LBA0 | FM_LBA1 | FM_LBA2 | FM_PDRHD | FM_PCMD);
+  npA->MediaStatusMask = FX_NM | FX_MCR | FX_MC;
 }
 
 ///
@@ -685,7 +702,7 @@ VOID NEAR SetupCommand (NPA npA, NPU npU, UCHAR Cmd)
   COMMAND	     = Cmd;
   npA->IOPendingMask = FM_PCMD;
 
-  npA->ReqFlags = ACBR_NONDATA;
+  npA->ReqFlags = ACBR_NONDATA | ACBR_NONPASSTHRU;
   npA->Flags |= ACBF_DISABLERETRY;
   npU->Flags |= UCBF_DISABLERESET;
 }
@@ -694,7 +711,7 @@ VOID NEAR SetupCommand (NPA npA, NPU npU, UCHAR Cmd)
 /*
 ** Setup to identify device command
 */
-BOOL NEAR SetupIdentify (NPA npA, NPU npU)
+VOID NEAR SetupIdentify (NPA npA, NPU npU)
 {
   npA->IdentifySGList.ppXferBuf  = ppDataSeg + (USHORT)&(npA->IdentifyBuf);
   npA->IdentifySGList.XferBufLen = 512;
@@ -711,9 +728,7 @@ BOOL NEAR SetupIdentify (NPA npA, NPU npU)
   npA->IOPendingMask = FM_PDRHD | FM_PCMD;
 
   npA->IOSGPtrs.Mode = PORT_TO_SGLIST | 0x40; // slow!
-  npA->ReqFlags |= ACBR_READ | ACBR_NONPASSTHRU;
-
-  return (TRUE);
+  npA->ReqFlags = ACBR_READ | ACBR_NONPASSTHRU;
 }
 
 
@@ -787,8 +802,7 @@ USHORT NEAR StartOtherIO (NPA npA)
   DRVHD    = npU->DriveHead;
   ReqFlags = npA->ReqFlags;
 
-  if (ReqFlags & ACBR_RESETCONTROLLER) {
-    npA->ReqMask = ACBR_RESETCONTROLLER;
+  if (npA->ReqFlags & ACBR_RESETCONTROLLER) {
     DoReset (npA);
     goto StartOtherIOExit;
   }
@@ -891,8 +905,13 @@ USHORT NEAR StartOtherIO (NPA npA)
     COMMAND		= FX_FREEZELOCK;
     npA->ReqMask	= ACBR_FREEZELOCK;
 
-  } else if (ReqFlags & ACBR_NONDATA) {
-    npA->ReqMask = ACBR_NONDATA;
+  } else if (ReqFlags & ACBR_GETMEDIASTAT) {
+    COMMAND		= FX_GET_MEDIA_STATUS;
+    npA->ReqMask	= ACBR_GETMEDIASTAT;
+    npA->MediaStatusMask= FX_NM | FX_MCR | FX_MC | FX_WP;
+
+  } else if (ReqFlags & ACBR_NONDATA) {  // indicates any other non-r/w operation
+    npA->ReqMask	= ACBR_NONDATA;
   }
 
   /*--------------------------------------*/
@@ -1116,22 +1135,33 @@ VOID NEAR InterruptState (NPA npA)
   /*----------------------------------------*/
   /* Check the STATUS Reg for the ERROR bit */
   /*----------------------------------------*/
+  npU->MediaStatus &= ~FX_MC; // clear all media status bits except for media change
   if (STATUS & FX_ERROR) {
     rc = 1;
     if (npA->ReqMask & ACBR_OTHERIO) {
       rc = !(ERROR & FX_ABORT);
     }
+    npU->MediaStatus |= ERROR & npA->MediaStatusMask; // update media status
+    ERROR &= ~npA->MediaStatusMask; // retain only true errors
     if (npU->Flags & (UCBF_REMOVABLE | UCBF_ATAPIDEVICE)) {
-      if (!ERROR || (ERROR == FX_MC)) {
+      if (!ERROR) {
 	rc = 0;
 	STATUS &= ~FX_ERROR;
       }
     }
   }
 
+#if PCITRACER
+  outpw (TRPORT, 0xDEB8);
+  outp	(TRPORT, ERROR);
+  outp	(TRPORT, rc);
+#endif
+
   if (rc) {
     npA->State = ACBS_ERROR;
   } else {
+
+#if 0
     USHORT Cmd = REQ (npA->pIORB->CommandCode, npA->pIORB->CommandModifier);
 
     if (!InitActive && (npU->Flags & UCBF_REMOVABLE)) {
@@ -1174,7 +1204,7 @@ VOID NEAR InterruptState (NPA npA)
 	if (MediaChanged) {
 	  UCHAR MErr = GetMediaError (npU);
 	  if ((MErr | ERROR) & FX_MC) {
-	    SendAckMediaChange (npA);
+//	      SendAckMediaChange (npA);
 	  } else if (MErr & FX_NM) {
 	    STATUS     |= FX_ERROR;
 	    npU->Flags &= ~UCBF_READY;
@@ -1184,6 +1214,7 @@ VOID NEAR InterruptState (NPA npA)
       }
       ENABLE
     }
+#endif
 
     /*--------------------------------------------*/
     /* Handle Other Operations			  */
@@ -1192,14 +1223,11 @@ VOID NEAR InterruptState (NPA npA)
     if (npA->ReqFlags & ACBR_OTHERIO) {
       DoOtherIO (npA);
 
-      if (Cmd == REQ (IOCC_UNIT_STATUS, IOCM_GET_UNIT_STATUS))
-	GetUnitStatus (npA);
-    }
+    } else if (npA->ReqFlags & ACBR_BLOCKIO) {
 
     /*----------------------*/
     /* Handle Block I/O Ops */
     /*----------------------*/
-    else if (npA->ReqFlags & ACBR_BLOCKIO) {
 
       /*    Modified to add Bus Master DMA shutdown when command completes */
       /*    Interrupt routine now supports two separate shutdown procedures */
@@ -1339,8 +1367,8 @@ USHORT NEAR DoBlockIO (NPA npA, USHORT cSec)
 /*---------------------------------------------*/
 /* DoOtherIO				       */
 /* ---------				       */
-/*					       */
-/*					       */
+/* postprocess any command matching OTHERIO    */
+/* mask 				       */
 /*					       */
 /*---------------------------------------------*/
 
@@ -1349,9 +1377,14 @@ VOID NEAR DoOtherIO (NPA npA)
   NPU npU = npA->npU;
 
   (USHORT)(npA->ReqFlags) &= ~npA->ReqMask;
-  npU->ReqFlags &= ~npA->ReqMask;
+  npU->ReqFlags = npA->ReqFlags;
 
-  npA->State = (npA->ReqFlags & ~(ACBR_NONDATA | ACBR_NONBLOCKIO)) ? ACBS_RETRY : ACBS_DONE;
+#if PCITRACER
+  outpw (TRPORT, 0xDEB7);
+  outpw (TRPORT, npA->ReqMask);
+  OutD	(TRPORT, npA->ReqFlags);
+#endif
+  npA->State = (npA->ReqFlags & ~ACBR_NONBLOCKIO) ? ACBS_RETRY : ACBS_DONE;
 
   if ((npA->ReqMask == ACBR_SETMULTIPLE) && (npU->Flags & UCBF_SMSENABLED))
     npU->Flags |= UCBF_MULTIPLEMODE;
@@ -1366,6 +1399,7 @@ VOID NEAR DoOtherIO (NPA npA)
     else
       *(USHORT *)&LBA4 = 0;
     METHOD(npA).GetTF (npA, IOMask);
+
   }
 }
 
@@ -1381,12 +1415,10 @@ VOID NEAR DoneState (NPA npA)
 {
   NPU	npU   = npA->npU;
   PIORB pIORB = npA->pIORB;
+  USHORT Cmd  = REQ (pIORB->CommandCode, pIORB->CommandModifier);
 
   if (npA->ReqFlags & ACBR_PASSTHRU) {
     PPassThruATA picp;
-
-    npA->ReqFlags = npU->ReqFlags = 0;		  /* don't run this code again */
-    npA->ReqMask = 0;				  /* don't run this code again */
 
     picp = (PPassThruATA)((PIORB_ADAPTER_PASSTHRU)pIORB)->pControllerCmd;
 
@@ -1407,36 +1439,45 @@ VOID NEAR DoneState (NPA npA)
     }
   }
 
-  if ((pIORB->CommandCode == IOCC_GEOMETRY) &&
-      ((pIORB->CommandModifier == IOCM_GET_MEDIA_GEOMETRY)  ||
-       (pIORB->CommandModifier == IOCM_GET_DEVICE_GEOMETRY))) {
-    PGEOMETRY pGEO = ((PIORB_GEOMETRY)pIORB)->pGeometry;
+  switch (Cmd) {
+    case REQ (IOCC_GEOMETRY, IOCM_GET_MEDIA_GEOMETRY):
+    case REQ (IOCC_GEOMETRY, IOCM_GET_DEVICE_GEOMETRY): {
+      PGEOMETRY pGEO = ((PIORB_GEOMETRY)pIORB)->pGeometry;
 
-    if ((npU->Flags & (UCBF_REMOVABLE | UCBF_READY)) == (UCBF_REMOVABLE | UCBF_READY)) {
-      npU->Flags &= ~UCBF_CHANGELINE;
-      // Get the physical geometry from the identify data.
-      IDEGeomExtract (&(npU->PhysGeom), &(npA->IdentifyBuf));
-      LogGeomCalculate (&(npU->LogGeom), &(npU->PhysGeom));
-      if (npU->LogGeom.TotalCylinders > npU->MaxTotalCylinders)
-	npU->MaxTotalCylinders = npU->LogGeom.TotalCylinders;
-      if (npU->LogGeom.TotalSectors > npU->MaxTotalSectors)
-	npU->MaxTotalSectors = npU->LogGeom.TotalSectors;
+      if ((npU->Flags & (UCBF_REMOVABLE | UCBF_READY)) == (UCBF_REMOVABLE | UCBF_READY)) {
+	npU->Flags &= ~UCBF_CHANGELINE;
+	// Get the physical geometry from the identify data.
+	IDEGeomExtract (&(npU->PhysGeom), &(npA->IdentifyBuf));
+	LogGeomCalculate (&(npU->LogGeom), &(npU->PhysGeom));
+	if (npU->LogGeom.TotalCylinders > npU->MaxTotalCylinders)
+	  npU->MaxTotalCylinders = npU->LogGeom.TotalCylinders;
+	if (npU->LogGeom.TotalSectors > npU->MaxTotalSectors)
+	  npU->MaxTotalSectors = npU->LogGeom.TotalSectors;
+      }
+
+      pGEO->TotalSectors    = npU->LogGeom.TotalSectors;
+      pGEO->BytesPerSector  = 512;
+      pGEO->Reserved	    = 0;
+      pGEO->NumHeads	    = npU->LogGeom.NumHeads;
+      pGEO->TotalCylinders  = npU->LogGeom.TotalCylinders;
+      pGEO->SectorsPerTrack = npU->LogGeom.SectorsPerTrack;
+
+      if (CmdModifier == IOCM_GET_DEVICE_GEOMETRY) {
+	pGEO->TotalSectors   = npU->MaxTotalSectors;
+	pGEO->TotalCylinders = npU->MaxTotalCylinders;
+      }
+      break;
     }
 
-    pGEO->TotalSectors	  = npU->LogGeom.TotalSectors;
-    pGEO->BytesPerSector  = 512;
-    pGEO->Reserved	  = 0;
-    pGEO->NumHeads	  = npU->LogGeom.NumHeads;
-    pGEO->TotalCylinders  = npU->LogGeom.TotalCylinders;
-    pGEO->SectorsPerTrack = npU->LogGeom.SectorsPerTrack;
-
-    if (pIORB->CommandModifier == IOCM_GET_DEVICE_GEOMETRY) {
-      pGEO->TotalSectors   = npU->MaxTotalSectors;
-      pGEO->TotalCylinders = npU->MaxTotalCylinders;
-    }
+    case REQ (IOCC_UNIT_STATUS, IOCM_GET_UNIT_STATUS):
+      GetUnitStatus (npA);
+      break;
   }
 
   if (METHOD(npA).StartStop) METHOD(npA).StartStop (npA, FALSE);
+
+  npA->ReqFlags = npU->ReqFlags = 0;		/* don't run this code again */
+  npA->ReqMask = 0;				/* don't run this code again */
 
   IORBDone (npA);
   npA->State = ACBS_START;
@@ -1704,10 +1745,8 @@ VOID NEAR DoReset (NPA npA)
     ReInitUnit (npU);
   }
 
-  npU = npA->npU;
   npA->ReqFlags |= npU->ReqFlags & ACBR_SETUP;
   npA->ReqFlags &= ~ACBR_RESETCONTROLLER;
-  npU->ReqFlags &= ~ACBR_RESETCONTROLLER;
 
   npA->cResets++;
   npA->DelayedResetCtr = (DELAYED_RESET_MAX / DELAYED_RESET_INTERVAL);
@@ -1760,7 +1799,7 @@ VOID NEAR ResetCheck (NPA npA)
       if (npU->Flags & UCBF_NOTPRESENT) continue;
 
       if ((npA->Cap & CHIPCAP_SATA) && SSTATUS) {
-	if ((InD (SSTATUS) & SSTAT_DET) != SSTAT_COM_OK) {
+	if (!(InD (SSTATUS) & (SSTAT_DEV_OK | SSTAT_COM_OK))) {
 	  connected = FALSE;
 	  npU->Flags &= ~UCBF_PHYREADY;
 	} else {
@@ -2056,72 +2095,6 @@ VOID NEAR GetUnitStatus (NPA npA)
 }
 
 
-/*----------------------------------------------------------*/
-/*  SendAckMediaChange()				    */
-/*							    */
-/*  Send the drive a Media Change Acknowledge command to    */
-/*  clear the error bit (ERR) in the Status Register and    */
-/*  clear media changed (MC) bit in the Error Register.     */
-/*							    */
-/*  This is done as a synchronious operation (with	    */
-/*  interrupts disabled) because the command is vendor	    */
-/*  specific and is also, hopefully, a relatively  rare     */
-/*  command.						    */
-/*							    */
-/*----------------------------------------------------------*/
-VOID NEAR SendAckMediaChange (NPA npA)
-{
-  UCHAR Data;
-
-  CheckReady (npA);
-
-  /* Turn off interrupts, temporarily */
-  OutBdms (DEVCTLREG, DEVCTL = FX_nIEN);
-
-  /* Write the Acknowledge Media Change command */
-  OutBd (COMMANDREG, COMMAND = FX_ACK_MEDIA_CHANGE, 8 * IODelayCount);
-
-  CheckReady (npA);
-  Data = InB (ERRORREG);
-
-  /* Turn interrupts back on */
-  OutBdms (DEVCTLREG, DEVCTL = FX_DCRRes);
-}
-
-
-/*----------------------------------------------------------*/
-/*  GetMediaError()					    */
-/*							    */
-/*  Read the Removable Media Status error.  Called only for */
-/*  removable media devices.				    */
-/*							    */
-/*----------------------------------------------------------*/
-UCHAR NEAR GetMediaError (NPU npU)
-{
-  UCHAR Data = 0;
-  NPA npA = npU->npA;
-
-  CheckReady (npA);
-
-  /* Turn off interrupts, temporarily */
-  OutBdms (DEVCTLREG, DEVCTL = FX_nIEN);
-
-  /* Write the Get Media Status command */
-  OutBd (COMMANDREG, COMMAND = FX_GET_MEDIA_STATUS, 8 * IODelayCount);
-
-  /* Wait for INTRQ */
-  CheckReady (npA);
-  Data = InB (ERRORREG);
-  if (Data & FX_ABORT) Data = 0;
-
-  ERROR = Data;
-
-  /* Turn interrupts back on */
-  OutBdms (DEVCTLREG, DEVCTL = FX_DCRRes);
-
-  return (Data);
-}
-
 /*------------------------------------*/
 /*				      */
 /* MapError			      */
@@ -2171,16 +2144,18 @@ USHORT NEAR MapError (NPA npA)
 
       // if device is removable media
       if (npU->Flags & UCBF_REMOVABLE) {
-	if (ERROR = GetMediaError (npU)) {
+	UCHAR MediaStat = npU->MediaStatus & (FX_NM | FX_MC | FX_WP);
+	if (MediaStat) {
 	  // Media Status reported some error, so disable further retries.
 
 	  npA->Flags |= ACBF_DISABLERETRY;
 
-	  if (ERROR & FX_WRT_PRT) {
+	  if (MediaStat & FX_WP) {
 	    IORBError = IOERR_MEDIA_WRITE_PROTECT;
-	  } else if (ERROR & FX_MC) {
-	     /* Handled below */
-	  } else if (ERROR & FX_NM) {
+	  } else if (MediaStat & FX_MC) {
+	    IORBError = IOERR_MEDIA_CHANGED;
+	    npU->Flags |= UCBF_READY;
+	  } else if (MediaStat & FX_NM) {
 	    IORBError = IOERR_MEDIA_NOT_PRESENT;
 	    npU->Flags &= ~UCBF_READY;
 	  } else {
@@ -2250,37 +2225,24 @@ USHORT NEAR MapError (NPA npA)
 
       // if device is removable media
       if (npU->Flags & UCBF_REMOVABLE) {
-	if (ERROR = GetMediaError (npU)) {
+	UCHAR MediaStat = npU->MediaStatus & (FX_NM | FX_MC | FX_WP);
+	if (MediaStat) {
 	  // Media Status reported some error, so disable further retries.
 
 	  npA->Flags |= ACBF_DISABLERETRY;
-	  if (ERROR & FX_WRT_PRT) {
+
+	  if (MediaStat & FX_WP) {
 	    IORBError = IOERR_MEDIA_WRITE_PROTECT;
-	  } else if (ERROR & FX_MC) {
-	    /* Handled below */
-	  } else if (ERROR & FX_NM) {
+	  } else if (MediaStat & FX_MC) {
+	    IORBError = IOERR_MEDIA_CHANGED;
+	    npU->Flags |= UCBF_READY;
+	  } else if (MediaStat & FX_NM) {
 	    IORBError = IOERR_MEDIA_NOT_PRESENT;
 	    npU->Flags &= ~UCBF_READY;
-	    npU->Flags |=  UCBF_BECOMING_READY;
 	  } else {
 	    IORBError = IOERR_DEVICE_NONSPECIFIC;
 	  }
 	}
-      }
-    }
-
-    /*
-    ** The spec is not clear on whether the Media Changed bit
-    ** always goes active by itself or not.  Always acknowledge
-    ** the media change and just in case the bit can be set with
-    ** other error bits, check it seperately.
-    */
-    if (ERROR & FX_MC) {
-      if (npU->Flags & UCBF_REMOVABLE) {
-	/* Media Changed */
-	SendAckMediaChange (npA);
-	IORBError = IOERR_MEDIA_CHANGED;
-	npU->Flags |= UCBF_READY;
       }
     }
   }
