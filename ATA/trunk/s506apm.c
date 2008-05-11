@@ -99,16 +99,16 @@ USHORT FAR _cdecl APMEventHandler (PAPMEVENT Event)
 
 void NEAR InitUnitSync (NPU npU) {
   npU->Flags &= ~(UCBF_MULTIPLEMODE | UCBF_DIAG_FAILED);
-				       npU->ReqFlags |= UCBR_SETPIOMODE;
-  if (npU->Flags & UCBF_BM_DMA)        npU->ReqFlags |= UCBR_SETDMAMODE;
-  if (npU->IdleTime != 0)	       npU->ReqFlags |= UCBR_SETIDLETIM;
+					 npU->ReqFlags |= UCBR_SETPIOMODE;
+  if (npU->Flags & UCBF_BM_DMA) 	 npU->ReqFlags |= UCBR_SETDMAMODE;
+  if (npU->IdleTime != 0)		 npU->ReqFlags |= UCBR_SETIDLETIM;
+  if (npU->LPMLevel != 0)		 npU->ReqFlags |= UCBR_ENABLEDIPM;
+  if (npU->SATACmdSupported & FX_SSPSUP) npU->ReqFlags |= UCBR_ENABLESSP;
   if (npU->Flags & UCBF_ATAPIDEVICE) return;
   if (npU->CmdSupported & UCBS_WCACHE)	 npU->ReqFlags |= UCBR_ENABLEWCACHE;
   if (npU->CmdSupported & UCBS_RAHEAD)	 npU->ReqFlags |= UCBR_ENABLERAHEAD;
   if (npU->CmdSupported & UCBS_SECURITY) npU->ReqFlags |= UCBR_FREEZELOCK;
   if (npU->Flags & UCBF_SMSENABLED)	 npU->ReqFlags |= UCBR_SETMULTIPLE;
-  if (npU->SATACmdSupported & FX_SSPSUP) npU->ReqFlags |= UCBR_ENABLESSP;
-  if (npU->LPMLevel != 0)		 npU->ReqFlags |= UCBR_ENABLEDIPM;
 }
 
 void NEAR ReInitUnit (NPU npU) {

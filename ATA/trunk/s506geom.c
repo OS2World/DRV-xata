@@ -198,6 +198,7 @@ T('a')
   IDStringsExtract (npU->ModelNum, npID);
   IdleTimerEnable (npU, npID);
   UCBSetupDMAPIO (npU, npID);
+  LPMEnable (npU, npID);
 
   if (npU->Flags & UCBF_ATAPIDEVICE) return (TRUE);
 
@@ -209,7 +210,6 @@ T('a')
   MultipleModeEnable (npU, npID);
   AcousticEnable (npU, npID);
   APMEnable (npU, npID);
-  LPMEnable (npU, npID);
 
   if (npID->GeneralConfig.Word == GC_CFA) {
     npU->Flags |= UCBF_CFA | UCBF_READY;
@@ -951,7 +951,7 @@ VOID NEAR MediaStatusEnable (NPU npU, NPIDENTIFYDATA npID)
     rc = IssueSetFeatures (npU, FX_ENABLE_MEDIA_STATUS, 0);
 
     if (!rc) {
-      npU->Flags |= UCBF_REMOVABLE | UCBF_BECOMING_READY; // indicate removable media
+      npU->Flags |= UCBF_REMOVABLE; // indicate removable media
       npU->ReqFlags = ACBR_GETMEDIASTAT;
       NoOp (npU);
   TS("m%X,",npU->MediaStatus)
@@ -960,13 +960,14 @@ VOID NEAR MediaStatusEnable (NPU npU, NPIDENTIFYDATA npID)
 	IssueSetFeatures (npU, FX_DISABLE_MEDIA_STATUS, 0);
 	if (npU->MediaStatus & FX_NM) {
 	  npU->Flags &= ~UCBF_READY;
-	  npU->Flags |=  UCBF_BECOMING_READY;
+	} else if (npU->MediaStatus & FX_MC) {
+	  npU->Flags |= UCBF_BECOMING_READY;
 	} else {
 	  npU->Flags |= UCBF_READY;
 	}
       }
     } else if (npU->FlagsT & UTBF_SETREMOVABLE)
-      npU->Flags |= UCBF_REMOVABLE | UCBF_BECOMING_READY; // indicate removable media
+      npU->Flags |= UCBF_REMOVABLE; // indicate removable media
   }
 }
 

@@ -36,7 +36,7 @@
 #pragma optimize(OPTIMIZE, on)
 
 #define PCITRACER 0
-#define TRPORT 0xD020
+#define TRPORT 0xA80C
 
 #ifdef CHECK_HANDLES
 VOID NEAR Trap3 (USHORT Code, void *value)
@@ -711,9 +711,11 @@ VOID NEAR GetUnitResources (NPA npA, PIORB pIORBR)
 
 VOID NEAR Error (NPA npA, USHORT ErrorCode)
 {
-  npA->IORBStatus &= ~IORB_RECOV_ERROR;
-  npA->IORBStatus |= IORB_ERROR;
-  npA->IORBError   = ErrorCode;
+  if (ErrorCode) {
+    npA->IORBStatus &= ~IORB_RECOV_ERROR;
+    npA->IORBStatus |= IORB_ERROR;
+    npA->IORBError   = ErrorCode;
+  }
 }
 
 /*--------------------------------------------------------------*/

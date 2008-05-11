@@ -83,6 +83,7 @@
 #define  ICH10SPCIIDE_DEV_ID  0x3A00
 #define ICH10S2PCIIDE_DEV_ID  0x3A06
 #define 	 IDER_DEV_ID  0x2986
+#define 	  SCH_DEV_ID  0x811A
 
 #define  SLC66PCIIDE_DEV_ID  0x9130
 
@@ -249,8 +250,13 @@ BOOL NEAR AcceptPIIX (NPA npA)
       }
       goto ICHCommon;
       break;
+
+    case SCH_DEV_ID:
+      str = SCHMsgtxt;
+      goto IDERcommon;
     case IDER_DEV_ID:
       str = IDERMsgtxt;
+    IDERcommon:
       PciInfo->Level = ICH;
       MEMBER(npA).CfgTable = CfgNull;
       METHOD(npA).GetPIOMode = 0;

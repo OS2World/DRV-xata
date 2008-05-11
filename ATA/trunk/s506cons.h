@@ -40,9 +40,9 @@
 #define SATA_RESET_ASSERT_TIME		 5 // microseconds
 
 /*------------------------------------------*/
-/* TimeOut for IRQ from last interrupt (5s) */
+/* TimeOut for IRQ from last interrupt (7s) */
 /*------------------------------------------*/
-#define IRQ_TIMEOUT_INTERVAL	 (5*1000L)
+#define IRQ_TIMEOUT_INTERVAL	 (7*1000L) // matches Windows driver
 
 /*---------------------------------------*/
 /* TimeOut for IRQ after spin-down (30s) */

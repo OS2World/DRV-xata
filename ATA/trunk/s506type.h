@@ -223,7 +223,7 @@ typedef struct _U
 #define UCBF_PCMCIA	    0x00008000	/* PCCard */
 
 #define UCBF_DIAG_FAILED    0x00010000
-#define UCBF______________  0x00020000
+#define UCBF_LOCKED	    0x00020000
 #define UCBF_WCACHEENABLED  0x00040000
 #define UCBF_MEDIASTATUS    0x00080000
 #define UCBF_IGNORE_BM_ACTV 0x00100000	/* ignore BM active on ALi */
@@ -518,6 +518,7 @@ typedef struct _A
 #define ACBR_PASSTHRU		0x10000000
 #define ACBR_NONPASSTHRU	0x20000000
 #define ACBR_RESETCONTROLLER	0x00100000
+#define ACBR_IDENTIFY		0x00200000
 
 #define ACBR_NONDATA		0x0001
 

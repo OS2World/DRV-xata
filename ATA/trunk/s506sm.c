@@ -217,7 +217,7 @@ USHORT NEAR CatchInterrupt (NPA npA)
 }
 
 #undef PCITRACER
-#define PCITRACER 0
+#define PCITRACER 1
 
 #define outpdelay(Port,Data) OutBd (Port,Data,npA->IODelayCount)
 
@@ -315,6 +315,7 @@ VOID NEAR StartState (NPA npA)
     case REQ (IOCC_DEVICE_CONTROL, IOCM_LOCK_MEDIA):
     case REQ (IOCC_DEVICE_CONTROL, IOCM_UNLOCK_MEDIA):
     case REQ (IOCC_DEVICE_CONTROL, IOCM_EJECT_MEDIA):
+    case REQ (IOCC_ADAPTER_PASSTHRU, IOCM_EXECUTE_CDB):
 
     case REQ (IOCC_UNIT_STATUS, IOCM_GET_UNIT_STATUS):	    StartIO (npA);	 break;
     case REQ (IOCC_UNIT_STATUS, IOCM_GET_LOCK_STATUS):	    GetLockStatus (npA); break;
@@ -413,7 +414,7 @@ VOID NEAR StartIO (NPA npA)
   if (!InitACBRequest (npA)) {
     if (npA->ReqFlags & ACBR_OTHERIO)
       StartOtherIO (npA);
-    else if (npA->ReqFlags & ACBR_BLOCKIO)
+    else if (npA->ReqFlags & (ACBR_BLOCKIO | ACBR_IDENTIFY))
       StartBlockIO (npA);
   }
 }
@@ -428,13 +429,15 @@ VOID NEAR StartIO (NPA npA)
 
 VOID NEAR RetryState(NPA npA)
 {
-  npA->IOPendingMask = 0;
+  npA->IOPendingMask   = 0;
+  npA->MediaStatusMask = 0;
+
   if (npA->ReqFlags & ACBR_PASSTHRU)
     SetupFromATA (npA, npA->npU);
 
   if (npA->ReqFlags & ACBR_OTHERIO)
     StartOtherIO (npA);
-  else if (npA->ReqFlags & ACBR_BLOCKIO)
+  else if (npA->ReqFlags & (ACBR_BLOCKIO | ACBR_IDENTIFY))
     StartBlockIO (npA);
 }
 
@@ -555,10 +558,14 @@ USHORT NEAR InitACBRequest (NPA npA)
 
       case IOCM_EXECUTE_CDB : {
 	PCHAR SCSICmd = ((PIORB_ADAPTER_PASSTHRU)pIORB)->pControllerCmd;
+#if PCITRACER
+  outpw (TRPORT, (SCSICmd[0] << 8) | SCSICmd[4]);
+#endif
 
 	if ((SCSICmd[0] == SCSI_START_STOP_UNIT) && (SCSICmd[4] == 2)) {
 	  SetupCommand (npA, npU, FX_EJECT_MEDIA);
 	  npA->MediaStatusMask = FX_NM;
+	  npU->Flags &= ~(UCBF_READY | UCBF_LOCKED);
 	  break;
 	} // else fall-through to unsupported
       }
@@ -575,19 +582,21 @@ USHORT NEAR InitACBRequest (NPA npA)
 	** Setup a seek and a GET_MEDIA_STATUS to see if there is a drive out there.
 	*/
 	SetupSeek (npA, npU);
-	npU->ReqFlags |= UCBR_GETMEDIASTAT;
 	break;
     }
   } else if (CmdCod == IOCC_DEVICE_CONTROL) {
     switch (CmdMod) {
       case IOCM_LOCK_MEDIA:   SetupCommand (npA, npU, FX_LOCK_DOOR);
 			      npA->MediaStatusMask = FX_NM | FX_MCR;
+			      npU->Flags |= UCBF_LOCKED;
 			      break;
       case IOCM_UNLOCK_MEDIA: SetupCommand (npA, npU, FX_UNLOCK_DOOR);
 			      npA->MediaStatusMask = FX_NM;
+			      npU->Flags &= ~UCBF_LOCKED;
 			      break;
       case IOCM_EJECT_MEDIA:  SetupCommand (npA, npU, FX_EJECT_MEDIA);
 			      npA->MediaStatusMask = FX_NM;
+			      npU->Flags &= ~(UCBF_READY | UCBF_LOCKED);
 			      break;
     }
   } else if (CmdCod == IOCC_GEOMETRY) {
@@ -595,7 +604,7 @@ USHORT NEAR InitACBRequest (NPA npA)
       case IOCM_GET_MEDIA_GEOMETRY:
       case IOCM_GET_DEVICE_GEOMETRY:
 	if ((npU->Flags & (UCBF_REMOVABLE | UCBF_ATAPIDEVICE)) == UCBF_REMOVABLE) {
-	  SetupIdentify (npA, npU);
+	  npA->ReqFlags = ACBR_GETMEDIASTAT | ACBR_IDENTIFY;
 	  break;
 	} else {
 	  return (TRUE);
@@ -627,9 +636,14 @@ BOOL NEAR SetupFromATA (NPA npA, NPU npU)
   Map = picp->RegisterMapW;
   if (!(Map & RTM_COMMAND)) {
     return (FALSE);
-  } else if (picp->TaskFileIn.Command == FX_SMARTCMD) {
-    if (picp->TaskFileIn.Features == 0xD7) {
-      return (FALSE);
+  } else {
+    switch (picp->TaskFileIn.Command) {
+      case FX_SMARTCMD:
+	if (picp->TaskFileIn.Features == 0xD7) return (FALSE);
+	break;
+      case FX_EJECT_MEDIA:
+	npU->Flags &= ~(UCBF_READY | UCBF_LOCKED);
+	break;
     }
   }
 
@@ -691,9 +705,7 @@ BOOL NEAR SetupFromATA (NPA npA, NPU npU)
 */
 VOID NEAR SetupSeek (NPA npA, NPU npU)
 {
-  SetupCommand (npA, npU, FX_SEEK);
-  npA->IOPendingMask = (FM_PSCNT | FM_LBA0 | FM_LBA1 | FM_LBA2 | FM_PDRHD | FM_PCMD);
-  npA->MediaStatusMask = FX_NM | FX_MCR | FX_MC;
+  npA->ReqFlags = ACBR_GETMEDIASTAT | ACBR_NONPASSTHRU;
 }
 
 ///
@@ -727,7 +739,7 @@ VOID NEAR SetupIdentify (NPA npA, NPU npU)
   COMMAND = FX_IDENTIFY;
   npA->IOPendingMask = FM_PDRHD | FM_PCMD;
 
-  npA->IOSGPtrs.Mode = PORT_TO_SGLIST | 0x40; // slow!
+  npA->IOSGPtrs.Mode = PORT_TO_SGLIST;
   npA->ReqFlags = ACBR_READ | ACBR_NONPASSTHRU;
 }
 
@@ -781,7 +793,6 @@ USHORT NEAR StartOtherIO (NPA npA)
   NPU	 npU = npA->npU;
   USHORT Data;
   UCHAR  longWait = FALSE;
-  USHORT i;
 
 #if PCITRACER
   outpw (TRPORT, 0xDEB4);
@@ -789,15 +800,9 @@ USHORT NEAR StartOtherIO (NPA npA)
 #endif
   if (!(npA->ReqFlags & ACBR_PASSTHRU)) {
     FEAT = 0;
-    npA->IOPendingMask |= FM_PFEAT | FM_PDRHD | FM_PCMD;
-  } else {
-    npA->IOPendingMask |= FM_PDRHD | FM_PCMD;
-    if (COMMAND == FX_EJECT_MEDIA) {
-      longWait = TRUE;
-      npU->Flags &= ~UCBF_READY;
-      npU->Flags |= UCBF_BECOMING_READY;
-    }
+    npA->IOPendingMask |= FM_PFEAT;
   }
+  npA->IOPendingMask |= FM_PDRHD | FM_PCMD;
 
   DRVHD    = npU->DriveHead;
   ReqFlags = npA->ReqFlags;
@@ -925,7 +930,7 @@ USHORT NEAR StartOtherIO (NPA npA)
   /* of the TASK File Regs in the ACB to the */
   /* controller.			     */
   /*-----------------------------------------*/
-  longWait |= (npU->Flags & (UCBF_REMOVABLE | UCBF_READY | UCBF_BECOMING_READY)) == (UCBF_REMOVABLE | UCBF_BECOMING_READY);
+  longWait = (npU->Flags & (UCBF_REMOVABLE | UCBF_READY | UCBF_BECOMING_READY)) == (UCBF_REMOVABLE | UCBF_BECOMING_READY);
   ADD_StartTimerMS (&npA->IRQTimerHandle,
 		    (ULONG)((longWait || npU->LongTimeout) ? npA->IRQLongTimeOut
 							   : npA->IRQTimeOut),
@@ -950,8 +955,11 @@ USHORT NEAR StartBlockIO (NPA npA)
 {
   NPU npU = npA->npU;
 
+  if (npA->ReqFlags & ACBR_IDENTIFY) {
+    SetupIdentify (npA, npU);
+  } else
   /*--------------------------------------*/
-  /* Set address and Sector Count  in ACB.  */
+  /* Set address and Sector Count in ACB. */
   /*--------------------------------------*/
   if (!(npA->ReqFlags & ACBR_NONBLOCKIO))
     SetIOAddress (npA);
@@ -1135,20 +1143,61 @@ VOID NEAR InterruptState (NPA npA)
   /*----------------------------------------*/
   /* Check the STATUS Reg for the ERROR bit */
   /*----------------------------------------*/
-  npU->MediaStatus &= ~FX_MC; // clear all media status bits except for media change
+  npU->MediaStatus &= ~npA->MediaStatusMask | FX_MC; // clear all affected media status bits except for media change
   if (STATUS & FX_ERROR) {
+#if PCITRACER
+  outpw (TRPORT, 0xDEB9);
+  outp	(TRPORT, ERROR);
+  outpw (TRPORT, npU->MediaStatus | (npA->MediaStatusMask << 8));
+  OutD	(TRPORT, npU->Flags & (UCBF_READY | UCBF_BECOMING_READY));
+#endif
     rc = 1;
     if (npA->ReqMask & ACBR_OTHERIO) {
       rc = !(ERROR & FX_ABORT);
     }
-    npU->MediaStatus |= ERROR & npA->MediaStatusMask; // update media status
+#if PCITRACER
+  outp	(TRPORT, ERROR);
+#endif
+    npU->MediaStatus = ERROR & npA->MediaStatusMask; // update media status
     ERROR &= ~npA->MediaStatusMask; // retain only true errors
+#if PCITRACER
+  outp	(TRPORT, ERROR);
+  outpw (TRPORT, npU->MediaStatus | (npA->MediaStatusMask << 8));
+#endif
     if (npU->Flags & (UCBF_REMOVABLE | UCBF_ATAPIDEVICE)) {
+      if (npA->MediaStatusMask) { // media status reporting is expected
+	if (ERROR == FX_ABORT) {
+	  // translate an abort into "no media"
+	  npU->MediaStatus |= FX_NM;
+	  ERROR = 0;
+#if PCITRACER
+  outp	(TRPORT, ERROR);
+  outpw (TRPORT, npU->MediaStatus | (npA->MediaStatusMask << 8));
+#endif
+	}
+      }
       if (!ERROR) {
 	rc = 0;
 	STATUS &= ~FX_ERROR;
       }
     }
+  }
+
+  if (npU->Flags & UCBF_REMOVABLE) {
+    if (npU->MediaStatus & FX_NM) {
+      STATUS	 |= FX_ERROR;
+      npU->Flags &= ~UCBF_READY;
+    } else if ((npU->MediaStatus & !FX_MC) == 0) {
+      if (npU->Flags & UCBF_BECOMING_READY) {
+	npU->Flags &= ~UCBF_BECOMING_READY;
+	npU->Flags |=  UCBF_READY;
+      } else if (!(npU->Flags & UCBF_READY)) {
+	npU->Flags |= UCBF_BECOMING_READY;
+      }
+    }
+#if PCITRACER
+    OutD  (TRPORT, npU->Flags & (UCBF_READY | UCBF_BECOMING_READY));
+#endif
   }
 
 #if PCITRACER
@@ -1160,62 +1209,6 @@ VOID NEAR InterruptState (NPA npA)
   if (rc) {
     npA->State = ACBS_ERROR;
   } else {
-
-#if 0
-    USHORT Cmd = REQ (npA->pIORB->CommandCode, npA->pIORB->CommandModifier);
-
-    if (!InitActive && (npU->Flags & UCBF_REMOVABLE)) {
-      /*
-      ** The current command succeeded and the previous command
-      ** failed so if the current command actually accessed the
-      ** media then assume the media is back and inform the caller
-      ** of this event by turning on the media changed bit.  Do
-      ** not notify the caller until the current operation is an
-      ** operation which actually accesses the media.
-      */
-      DISABLE
-      if (!(npU->Flags & UCBF_READY) || (npU->Flags & UCBF_BECOMING_READY)) {
-	UCHAR MediaChanged = FALSE;
-
-	switch (CmdCode) {
-	  case IOCC_EXECUTE_IO:
-	    switch (CmdModifier) {
-	      case IOCM_READ:
-	      case IOCM_READ_VERIFY:
-	      case IOCM_WRITE:
-	      case IOCM_WRITE_VERIFY:
-		if (!(npU->Flags & UCBF_READY)) {
-		  npU->Flags |= UCBF_READY;
-		  MediaChanged = TRUE;
-		}
-		npU->Flags &= ~UCBF_BECOMING_READY;
-	    }
-	    break;
-	  case IOCC_UNIT_STATUS:
-	    switch (CmdModifier) {
-	      case IOCM_GET_UNIT_STATUS:
-		npU->Flags |= UCBF_READY;
-		MediaChanged = TRUE;
-	    }
-	    break;
-	  default:
-	    break;
-	}
-	if (MediaChanged) {
-	  UCHAR MErr = GetMediaError (npU);
-	  if ((MErr | ERROR) & FX_MC) {
-//	      SendAckMediaChange (npA);
-	  } else if (MErr & FX_NM) {
-	    STATUS     |= FX_ERROR;
-	    npU->Flags &= ~UCBF_READY;
-	    npU->Flags |= UCBF_BECOMING_READY;
-	  }
-	}
-      }
-      ENABLE
-    }
-#endif
-
     /*--------------------------------------------*/
     /* Handle Other Operations			  */
     /*	    Recal, SetParam, Identify		  */
@@ -1405,10 +1398,6 @@ VOID NEAR DoOtherIO (NPA npA)
 
 /*---------------------------------------------*/
 /* DoneState				       */
-/* ---------				       */
-/*					       */
-/*					       */
-/*					       */
 /*---------------------------------------------*/
 
 VOID NEAR DoneState (NPA npA)
@@ -1466,12 +1455,18 @@ VOID NEAR DoneState (NPA npA)
 	pGEO->TotalSectors   = npU->MaxTotalSectors;
 	pGEO->TotalCylinders = npU->MaxTotalCylinders;
       }
+      Error (npA, MapMediaStatus (npU));
       break;
     }
 
     case REQ (IOCC_UNIT_STATUS, IOCM_GET_UNIT_STATUS):
       GetUnitStatus (npA);
+      Error (npA, MapMediaStatus (npU));
       break;
+
+    default:
+      if (npA->MediaStatusMask) Error (npA, MapMediaStatus (npU));
+
   }
 
   if (METHOD(npA).StartStop) METHOD(npA).StartStop (npA, FALSE);
@@ -1480,6 +1475,11 @@ VOID NEAR DoneState (NPA npA)
   npA->ReqMask = 0;				/* don't run this code again */
 
   IORBDone (npA);
+
+#if PCITRACER
+  outpw (TRPORT, 0xDEBE);
+  outpw (TRPORT, npA->IORBError);
+#endif
   npA->State = ACBS_START;
 }
 
@@ -2039,7 +2039,7 @@ VOID NEAR GetLockStatus (NPA npA)
   PIORB_UNIT_STATUS pIORB;
 
   pIORB = (PIORB_UNIT_STATUS) npA->pIORB;
-  pIORB->UnitStatus = 0;
+  pIORB->UnitStatus = npA->npU->Flags & UCBF_LOCKED ? US_LOCKED : 0;
 }
 
 
@@ -2051,45 +2051,21 @@ VOID NEAR GetLockStatus (NPA npA)
 
 VOID NEAR GetUnitStatus (NPA npA)
 {
-  PIORB_UNIT_STATUS pIORB;
-  NPU npU;
-
-  pIORB = (PIORB_UNIT_STATUS) npA->pIORB;
-  npU = npA->npU;
+  PIORB_UNIT_STATUS pIORB = (PIORB_UNIT_STATUS) npA->pIORB;
+  NPU npU = npA->npU;
 
 #if 0
   if (!LastAccessedUnit) LastAccessedUnit = npA->npU;
 #endif
 
-  /*
-  ** Set the ready flag for removable media.
-  */
-  pIORB->UnitStatus = US_POWER;
-  if (STATUS & FX_ERROR) {
-    npU->Flags &= ~UCBF_READY;
-    npU->Flags |= UCBF_BECOMING_READY;
-  } else {
-    npU->Flags |= UCBF_READY;
-    pIORB->UnitStatus |= US_READY;
-  }
-
   // If this is being faked, it is not ready and not powered
-  if (npU->Flags & UCBF_NOTPRESENT)
+  if (npU->Flags & UCBF_NOTPRESENT) {
     pIORB->UnitStatus = 0;
-  else if (STATUS & FX_ERROR) {
-    /*
-    ** Interpret the device's current status register, if the
-    ** preceding operation failed then interpret that to mean
-    ** the media is not present.
-    */
-    pIORB->UnitStatus = US_MEDIA_UNKNOWN;
-    npA->IORBStatus |= IORB_ERROR;
-    npA->IORBError   = MapError (npA);
-    if ((npU->Flags & UCBF_REMOVABLE) && (npA->IORBError == IOERR_UNIT_NOT_READY)) {
-      npA->IORBStatus = IORB_ERROR;
-    } else {
-      pIORB->UnitStatus |= US_DEFECTIVE;
-    }
+  } else {
+
+    pIORB->UnitStatus = US_POWER;
+    if (npU->Flags & (UCBF_READY | UCBF_BECOMING_READY))
+      pIORB->UnitStatus |= US_READY;
   }
   npA->State = ACBS_DONE;
 }
@@ -2142,28 +2118,6 @@ USHORT NEAR MapError (NPA npA)
       ++npU->DeviceCounters.TotalReadErrors;
       ++npU->DeviceCounters.ReadErrors[1];
 
-      // if device is removable media
-      if (npU->Flags & UCBF_REMOVABLE) {
-	UCHAR MediaStat = npU->MediaStatus & (FX_NM | FX_MC | FX_WP);
-	if (MediaStat) {
-	  // Media Status reported some error, so disable further retries.
-
-	  npA->Flags |= ACBF_DISABLERETRY;
-
-	  if (MediaStat & FX_WP) {
-	    IORBError = IOERR_MEDIA_WRITE_PROTECT;
-	  } else if (MediaStat & FX_MC) {
-	    IORBError = IOERR_MEDIA_CHANGED;
-	    npU->Flags |= UCBF_READY;
-	  } else if (MediaStat & FX_NM) {
-	    IORBError = IOERR_MEDIA_NOT_PRESENT;
-	    npU->Flags &= ~UCBF_READY;
-	  } else {
-	    IORBError = IOERR_DEVICE_NONSPECIFIC;
-	  }
-	}
-      }
-
     } else if (ERROR & FX_ICRC) {
       if (ERROR & FX_ABORT) {
 	/*************************************/
@@ -2201,17 +2155,10 @@ USHORT NEAR MapError (NPA npA)
       }
 
     } else if (ERROR & FX_TRK0) {
-      if (npU->Flags & UCBF_REMOVABLE) {
-	/* Media is not present, map this to a not ready error. */
 
-	IORBError = IOERR_UNIT_NOT_READY;
-	npU->Flags &= ~UCBF_READY;
-	npU->Flags |=  UCBF_BECOMING_READY;
-      } else {
-	IORBError = IOERR_DEVICE_NONSPECIFIC;
-	++npU->DeviceCounters.TotalSeekErrors;
-	++npU->DeviceCounters.SeekErrors[1];
-      }
+      IORBError = IOERR_DEVICE_NONSPECIFIC;
+      ++npU->DeviceCounters.TotalSeekErrors;
+      ++npU->DeviceCounters.SeekErrors[1];
 
     } else if (ERROR & FX_ABORT) {
       IORBError = IOERR_DEVICE_REQ_NOT_SUPPORTED;
@@ -2219,30 +2166,7 @@ USHORT NEAR MapError (NPA npA)
       if (npU->ReqFlags & ACBR_WRITE) {
 	++npU->DeviceCounters.TotalWriteErrors;
       } else {
-	if ((npU->Flags & (UCBF_REMOVABLE | UCBF_READY)) != UCBF_REMOVABLE)
-	  ++npU->DeviceCounters.TotalReadErrors;
-      }
-
-      // if device is removable media
-      if (npU->Flags & UCBF_REMOVABLE) {
-	UCHAR MediaStat = npU->MediaStatus & (FX_NM | FX_MC | FX_WP);
-	if (MediaStat) {
-	  // Media Status reported some error, so disable further retries.
-
-	  npA->Flags |= ACBF_DISABLERETRY;
-
-	  if (MediaStat & FX_WP) {
-	    IORBError = IOERR_MEDIA_WRITE_PROTECT;
-	  } else if (MediaStat & FX_MC) {
-	    IORBError = IOERR_MEDIA_CHANGED;
-	    npU->Flags |= UCBF_READY;
-	  } else if (MediaStat & FX_NM) {
-	    IORBError = IOERR_MEDIA_NOT_PRESENT;
-	    npU->Flags &= ~UCBF_READY;
-	  } else {
-	    IORBError = IOERR_DEVICE_NONSPECIFIC;
-	  }
-	}
+	++npU->DeviceCounters.TotalReadErrors;
       }
     }
   }
@@ -2250,6 +2174,18 @@ USHORT NEAR MapError (NPA npA)
   OutD (TRPORT, npU->Flags);
 #endif
   return (IORBError);
+}
+
+USHORT NEAR MapMediaStatus (NPU npU) {
+  if (npU->MediaStatus & FX_WP) {
+    return IOERR_MEDIA_WRITE_PROTECT;
+  } else if (npU->MediaStatus & FX_MC) {
+    npU->MediaStatus &= ~FX_MC;
+    return IOERR_MEDIA_CHANGED;
+  } else if (npU->MediaStatus & FX_NM) {
+    return IOERR_MEDIA_NOT_PRESENT;
+  }
+  return 0;
 }
 
 /*--------------------------------------------*/

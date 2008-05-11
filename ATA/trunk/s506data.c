@@ -32,7 +32,7 @@
 
 #define YEAR  2008
 #define MONTH 4
-#define DAY   18
+#define DAY   28
 #define PCMCIAVERSION 0x184
 
 /*-------------------------------------------------------------------*/
@@ -445,6 +445,7 @@ USHORT CListFIntel[] = {
 		0x2986,     // IDE Redirection
 		0x3A00,     // ICH10 SATA	  4p
 		0x3A06,     // ICH10 SATA	  2p
+		0x811A,     // SCH
 		0 };
 USHORT CListCVia[] = {
 	0x4149, 0x3149,     // VT6420	-> VT8237 SATA
@@ -960,10 +961,10 @@ PCI_DEVICE PCIDevice[] =
       0x04, 0x04, 0x00, 0x00, 0x10,
       NULL },
   { { 0, 0x1002, AHCI, MODE_NATIVE_OK, 0, 2,
-      AcceptAHCI, CfgGeneric,
+      AcceptAHCI, CfgNull,
       NULL, BMCheckIRQ,
-      GetGenericPio, SetupCommon,
-      CalculateGenericAdapterTiming, NULL, NULL},
+      NULL, SetupCommon,
+      CalculateAdapterTiming, NULL, NULL},
       CListCIXPA, CListFIXPA,
       0x04, 0x04, 0x00, 0x00, 0x10,
       IXPMsgtxt },
@@ -1139,6 +1140,7 @@ UCHAR  MarvellMsgtxt[] = "Marvell %X";
 UCHAR  InitioMsgtxt[]  = "Initio INIC-%x";
 UCHAR  BroadcomMsgtxt[]= "BCM ";
 UCHAR  IDERMsgtxt[]    = "IDE Redirection";
+UCHAR  SCHMsgtxt[]     = "Intel SCH";
 UCHAR  GenericMsgtxt[] = "Generic";
 UCHAR ParmErrMsg[] = " Warning: DANIS506.ADD - Invalid CONFIG.SYS parameters near pos %d";
 UCHAR VersionMsg[] = "            Daniela's Bus Master IDE Driver for OS/2 Version "VERSION;

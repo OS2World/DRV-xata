@@ -4,7 +4,7 @@
  *
  * DESCRIPTIVE NAME = DANIS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- * Copyright : COPYRIGHT Daniela Engert 2000-2007
+ * Copyright : COPYRIGHT Daniela Engert 2000-2008
  *
  * DESCRIPTION : Adapter Driver SIS routines.
  ****************************************************************************/

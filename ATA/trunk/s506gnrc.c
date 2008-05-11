@@ -145,12 +145,14 @@ BOOL NEAR AcceptAHCI (NPA npA)
   // AHCI mode enabled?
   if (BAR5 && (InD (BAR5 | AHCI_GHC) & AHCI_GHC_AHCIENABLED)) return (FALSE);
 
-  npA->FlagsT |= ATBF_BIOSDEFAULTS;
-
   npA->maxUnits = 2;
   npA->SCR.Offsets = 0x3120;
-  GenericSATA (npA);
-  npA->Cap |= CHIPCAP_ATAPIDMA;
+  npA->Cap |= CHIPCAP_SATA | CHIPCAP_ATAPIDMA;
+  METHOD(npA).GetPIOMode      = GetGenericPio;
+  METHOD(npA).Setup	      = SetupCommon;
+  METHOD(npA).CalculateTiming = CalculateAdapterTiming;
+  METHOD(npA).ProgramChip     = NULL;
+  MEMBER(npA).CfgTable	      = CfgNull;
 
   if (npA->UnitCB[0].SStatus = GetAHCISCR (npA, npA->IDEChannel + 0))
     havePhy = 1;

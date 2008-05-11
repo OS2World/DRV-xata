@@ -278,6 +278,7 @@ extern UCHAR	      BroadcomMsgtxt[];
 extern UCHAR	      GenericBMMsgtxt[];
 extern UCHAR	      GenericMsgtxt[];
 extern UCHAR	      IDERMsgtxt[];
+extern UCHAR	      SCHMsgtxt[];
 extern UCHAR	      ParmErrMsg[];
 extern UCHAR	      VersionMsg[];
 extern UCHAR	      EBIOSIdString[];

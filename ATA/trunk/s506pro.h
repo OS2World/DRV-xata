@@ -158,6 +158,7 @@ VOID   NEAR SelectUnit (NPU npU);
 VOID   NEAR SendAckMediaChange (NPA npA);
 UCHAR  NEAR GetMediaError (NPU npU);
 USHORT NEAR MapError(NPA npA);
+USHORT NEAR MapMediaStatus (NPU npU);
 VOID   NEAR StopBMDMA (NPA npA);
 BOOL   NEAR CreateBMSGList (NPA npA);
 USHORT NEAR BuildSGList (NPPRD npSGOut, NPADD_XFER_IO_X npSGPtrs, ULONG Bytes, UCHAR SGAlign);
