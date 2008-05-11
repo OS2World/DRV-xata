@@ -217,7 +217,7 @@ USHORT NEAR CatchInterrupt (NPA npA)
 }
 
 #undef PCITRACER
-#define PCITRACER 1
+#define PCITRACER 0
 
 #define outpdelay(Port,Data) OutBd (Port,Data,npA->IODelayCount)
 
@@ -1502,7 +1502,6 @@ VOID NEAR ErrorState (NPA npA)
 {
   NPU	 npU = npA->npU;
   UCHAR  Reset = 0;
-  UCHAR  RemovableNotReady = 0;
   USHORT TimerHandle;
 
   TimerHandle = saveXCHG (&(npA->IRQTimerHandle), 0);
@@ -1557,9 +1556,6 @@ VOID NEAR ErrorState (NPA npA)
 #endif
   }
 
-  RemovableNotReady = (npU->Flags & UCBF_REMOVABLE)
-		   && (npA->IORBError == IOERR_UNIT_NOT_READY);
-
   if (npA->TimerFlags & ACBT_SATACOMM) {
     /* a SATA communication error has happened */
     /* simply retry after a SATA link reset    */
@@ -1595,31 +1591,29 @@ VOID NEAR ErrorState (NPA npA)
       METHOD(npA).StopDMA (npA);  /* controller is locked, Clear Active bit */
       METHOD(npA).ErrorDMA (npA);
 
-      if (!RemovableNotReady) {
-	if (Beeps > 0) {
-	  DevHelp_Beep (1000, 10);
+      if (Beeps > 0) {
+	DevHelp_Beep (1000, 10);
   #if PCITRACER
     outpw (TRPORT, 0xDCCE);
   #endif
   #if BEEB
     outpw (TRPORT+1, 0xBEEB);
   #endif
-	}
-
-	/*******************************************************/
-	/* Changed DMA_FORCEPIO flag from an ACB Flags option  */
-	/* to an ACB ReqFlags option as this mechanism should  */
-	/* remain on for the remainder of the I/O operation but*/
-	/* be reset at the beginning of the next.  ReqFlags is */
-	/* always reset at the beginning of each request.      */
-	/*******************************************************/
-
-	/***************************/
-	/* force retry in PIO mode */
-	/***************************/
-
-	npA->ReqFlags |= ACBR_SETMULTIPLE | ACBR_BM_DMA_FORCEPIO;
       }
+
+      /*******************************************************/
+      /* Changed DMA_FORCEPIO flag from an ACB Flags option  */
+      /* to an ACB ReqFlags option as this mechanism should  */
+      /* remain on for the remainder of the I/O operation but*/
+      /* be reset at the beginning of the next.  ReqFlags is */
+      /* always reset at the beginning of each request.      */
+      /*******************************************************/
+
+      /***************************/
+      /* force retry in PIO mode */
+      /***************************/
+
+      npA->ReqFlags |= ACBR_SETMULTIPLE | ACBR_BM_DMA_FORCEPIO;
       npA->ReqFlags &= ~ACBR_DMAIO;	    /* clear DMA IO flag */
     }
   }
@@ -1641,15 +1635,6 @@ VOID NEAR ErrorState (NPA npA)
 
   if (Reset && !(npU->Flags & UCBF_DISABLERESET))
     DoReset (npA);
-
-  else if (RemovableNotReady) {
-    npA->IORBStatus = IORB_ERROR;
-    npA->State = ACBS_DONE;
-
-  } else if ((npU->Flags & UCBF_REMOVABLE) &&
-	     (npA->IORBError == IOERR_MEDIA_CHANGED))
-    npA->State = ACBS_DONE;
-
   else
     SetRetryState (npA);
 }
@@ -1991,8 +1976,6 @@ UCHAR NEAR CheckBusy (NPA npA)
 
 /*------------------------------------*/
 /*				      */
-/*				      */
-/*				      */
 /*------------------------------------*/
 
 VOID NEAR SelectUnit (NPU npU)
@@ -2005,8 +1988,6 @@ VOID NEAR SelectUnit (NPU npU)
 
 /*--------------------------------------------------------------*/
 /*  SetMediaGeometry()						*/
-/*								*/
-/*								*/
 /*--------------------------------------------------------------*/
 
 VOID NEAR SetMediaGeometry (NPA npA)
@@ -2015,8 +1996,6 @@ VOID NEAR SetMediaGeometry (NPA npA)
 
 /*--------------------------------------------------------------*/
 /*  GetChangeLine()						*/
-/*								*/
-/*								*/
 /*--------------------------------------------------------------*/
 
 VOID NEAR GetChangeLine (NPA npA)
@@ -2030,8 +2009,6 @@ VOID NEAR GetChangeLine (NPA npA)
 
 /*--------------------------------------------------------------*/
 /*  GetLockStatus()						*/
-/*								*/
-/*								*/
 /*--------------------------------------------------------------*/
 
 VOID NEAR GetLockStatus (NPA npA)
@@ -2045,8 +2022,6 @@ VOID NEAR GetLockStatus (NPA npA)
 
 /*--------------------------------------------------------------*/
 /*  GetUnitStatus()						*/
-/*								*/
-/*								*/
 /*--------------------------------------------------------------*/
 
 VOID NEAR GetUnitStatus (NPA npA)
@@ -2072,9 +2047,7 @@ VOID NEAR GetUnitStatus (NPA npA)
 
 
 /*------------------------------------*/
-/*				      */
 /* MapError			      */
-/*				      */
 /*------------------------------------*/
 
 USHORT NEAR MapError (NPA npA)
@@ -2176,6 +2149,10 @@ USHORT NEAR MapError (NPA npA)
   return (IORBError);
 }
 
+/*------------------------------------*/
+/* MapMediaStatus		      */
+/*------------------------------------*/
+
 USHORT NEAR MapMediaStatus (NPU npU) {
   if (npU->MediaStatus & FX_WP) {
     return IOERR_MEDIA_WRITE_PROTECT;
@@ -2192,9 +2169,6 @@ USHORT NEAR MapMediaStatus (NPU npU) {
 /* CreateBMSGList			      */
 /* --------------			      */
 /*					      */
-/* Arguments:				      */
-/*					      */
-/*					      */
 /* Actions:				      */
 /*	Takes OS/2 scatter/gather list and    */
 /*	builds SFF-8038i compatible list for  */
@@ -2203,8 +2177,6 @@ USHORT NEAR MapMediaStatus (NPU npU) {
 /*					      */
 /* Returns:				      */
 /*	0 if successful 		      */
-/*					      */
-/*					      */
 /*--------------------------------------------*/
 
 BOOL NEAR CreateBMSGList (NPA npA)

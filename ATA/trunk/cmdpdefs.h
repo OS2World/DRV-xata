@@ -47,8 +47,8 @@
 #define TOK_FORCEGBM	  32	    /* /FORCEGBM */
 #define TOK_PCICLOCK	  33	    /* /PCLK: */
 #define TOK_DEBUG	  34	    /* /DEBUG: */
-#define TOK_REMOVABLE	  35	    /* /RMV   */
-#define TOK_NOTREMOVABLE  36	    /* /!RMV  */
+#define TOK_REMOVABLE	  35
+#define TOK_NOTREMOVABLE  36
 #define TOK_NOTBEEP	  37	    /* /!AA   */
 #define TOK_80WIRE	  39	    /* /80WIRE*/
 #define TOK_NOSHTDWN	  40	    /* /!SHUTDWON */

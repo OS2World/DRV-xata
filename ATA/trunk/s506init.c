@@ -1488,13 +1488,7 @@ USHORT FAR ParseCmdLine (PSZ pCmdLine)
 	/*-------------------------------------------*/
 
 	case TOK_REMOVABLE:
-
-	  npU->FlagsT |= UTBF_SETREMOVABLE;
-	  break;
-
 	case TOK_NOTREMOVABLE:
-
-	  npU->FlagsT |= UTBF_NOTREMOVABLE;
 	  break;
 
 	/*-------------------------------------------*/

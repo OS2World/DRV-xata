@@ -31,8 +31,8 @@
  #include "s506pro.h"
 
 #define YEAR  2008
-#define MONTH 4
-#define DAY   28
+#define MONTH 5
+#define DAY   11
 #define PCMCIAVERSION 0x184
 
 /*-------------------------------------------------------------------*/

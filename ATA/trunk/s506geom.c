@@ -213,7 +213,6 @@ T('a')
 
   if (npID->GeneralConfig.Word == GC_CFA) {
     npU->Flags |= UCBF_CFA | UCBF_READY;
-    if (!(npU->FlagsT & UTBF_NOTREMOVABLE)) npU->Flags |= UCBF_REMOVABLE;
     npU->Flags &= ~UCBF_NOTPRESENT;
   }
 
@@ -943,8 +942,7 @@ VOID NEAR MediaStatusEnable (NPU npU, NPIDENTIFYDATA npID)
   TS("M:%X,", npID->MediaStatusWord)
 
   // check for media status support
-  if (((npID->MediaStatusWord & 1) && !(npU->FlagsT & UTBF_NOTREMOVABLE))
-     || (npU->FlagsT & UTBF_SETREMOVABLE)) {
+  if (npID->MediaStatusWord & 1) {
 
     // Media Status reporting is supported
     npU->Flags |= UCBF_MEDIASTATUS;
@@ -956,8 +954,8 @@ VOID NEAR MediaStatusEnable (NPU npU, NPIDENTIFYDATA npID)
       NoOp (npU);
   TS("m%X,",npU->MediaStatus)
       if (!(ERROR & FX_ABORT)) {
-//	if (IssueGetMediaStatus (npU) != IOERR_CMD_ABORTED) {
 	IssueSetFeatures (npU, FX_DISABLE_MEDIA_STATUS, 0);
+
 	if (npU->MediaStatus & FX_NM) {
 	  npU->Flags &= ~UCBF_READY;
 	} else if (npU->MediaStatus & FX_MC) {
@@ -966,8 +964,7 @@ VOID NEAR MediaStatusEnable (NPU npU, NPIDENTIFYDATA npID)
 	  npU->Flags |= UCBF_READY;
 	}
       }
-    } else if (npU->FlagsT & UTBF_SETREMOVABLE)
-      npU->Flags |= UCBF_REMOVABLE; // indicate removable media
+    }
   }
 }
 
