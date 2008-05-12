@@ -121,7 +121,8 @@ typedef enum {
 #define PCID_ATIIXPAHCI    25  /* ATI IXP AHCI */
 #define PCID_Initio	   26  /* Initio */
 #define PCID_Broadcom	   27  /* Broadcom */
-#define PCID_Generic	   28  /* Generic IDE */
+#define PCID_IntelSCH	   28  /* Intel SCH "Atom" */
+#define PCID_Generic	   29  /* Generic IDE */
 
 #define MAX_PCI_DEVICE_DESCRIPT  PCID_Generic+1
 

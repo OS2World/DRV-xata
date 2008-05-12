@@ -32,8 +32,8 @@
 
 #define YEAR  2008
 #define MONTH 5
-#define DAY   11
-#define PCMCIAVERSION 0x184
+#define DAY   12
+#define PCMCIAVERSION 0x185
 
 /*-------------------------------------------------------------------*/
 /*								     */
@@ -445,6 +445,8 @@ USHORT CListFIntel[] = {
 		0x2986,     // IDE Redirection
 		0x3A00,     // ICH10 SATA	  4p
 		0x3A06,     // ICH10 SATA	  2p
+		0 };
+USHORT CListFiSCH[] = {
 		0x811A,     // SCH
 		0 };
 USHORT CListCVia[] = {
@@ -986,6 +988,14 @@ PCI_DEVICE PCIDevice[] =
       CListCBCMSata, CListFBCMSata,
       0x04, 0x04, 0x00, 0x00, 0x10,
       BroadcomMsgtxt },
+  { { 0, 0x8086, Intel, MODE_COMPAT_ONLY, 0, 1,
+      AcceptSCH, CfgNull,
+      NULL, NonsharedCheckIRQ,
+      GetSCHPio, SetupCommon,
+      CalculateAdapterTiming, NULL, ProgramSCH},
+      CListNULL, CListFiSCH,
+      0x04, 0x04, 0x00, 0x00, 0x10,
+      SCHMsgtxt },
   { { 0, 0, generic, MODE_NATIVE_OK, 0, 2,
       AcceptGeneric, CfgGeneric,
       GenericInitComplete, NonsharedCheckIRQ,

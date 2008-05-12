@@ -108,6 +108,14 @@
 #define ACBX_IDETIM_TIME0    0x0001	/* fast timing select drive 0 */
 #define ACBX_IDETIM_ITE1     0x4000	/* PIIX3 slave timing enable */
 
+#define SCH_D0TIM	     0x80
+#define SCH_D1TIM	     0x84
+#define SCH_USD 	     (1ul << 31)
+#define SCH_PPE 	     (1ul << 30)
+#define SCH_UDM_SHIFT	     16
+#define SCH_MDM_SHIFT	     8
+#define SCH_PIO_SHIFT	     0
+
 #define PciInfo (&npA->PCIInfo)
 
 BOOL NEAR AcceptPIIX (NPA npA)
@@ -251,12 +259,8 @@ BOOL NEAR AcceptPIIX (NPA npA)
       goto ICHCommon;
       break;
 
-    case SCH_DEV_ID:
-      str = SCHMsgtxt;
-      goto IDERcommon;
     case IDER_DEV_ID:
       str = IDERMsgtxt;
-    IDERcommon:
       PciInfo->Level = ICH;
       MEMBER(npA).CfgTable = CfgNull;
       METHOD(npA).GetPIOMode = 0;
@@ -277,6 +281,19 @@ BOOL NEAR AcceptPIIX (NPA npA)
     if (Cable & (npA->IDEChannel ? 0xC0 : 0x30))
       npA->Cap |= CHANCAP_CABLE80;
   }
+
+  return (TRUE);
+}
+
+BOOL NEAR AcceptSCH (NPA npA)
+{
+  npA->npC->numChannels = 1;
+  npA->Cap |= CHIPCAP_ATA66 | CHIPCAP_ATA100;
+
+  // there's no architected method to determine cable type
+  if ((GetRegB (PciInfo->PCIAddr, SCH_D0TIM + 2) > 2) ||
+      (GetRegB (PciInfo->PCIAddr, SCH_D1TIM + 2) > 2))
+    npA->Cap |= CHANCAP_CABLE80;
 
   return (TRUE);
 }
@@ -318,6 +335,14 @@ USHORT NEAR GetPIIXPio (NPA npA, UCHAR Unit) {
       if (npA->IDEChannel) Timing >>= 4;
       return (9 - ((UCHAR)(Timing >> 2) & 0x03) - (Timing & 0x03));
     }
+  }
+}
+
+USHORT NEAR GetSCHPio (NPA npA, UCHAR Unit) {
+  switch (ReadConfigB (PciInfo, (UCHAR)(Unit ? SCH_D1TIM : SCH_D0TIM))) {
+    case 4:  return (4);
+    case 3:  return (6);
+    default: return (20);
   }
 }
 
@@ -430,6 +455,26 @@ VOID ProgramPIIXChip (NPA npA)
       UATA |= 0x0400; // Ping Pong enable
       WConfigW (PCI_PIIX_IDECFG, UATA);
     }
+  }
+}
+
+VOID ProgramSCH (NPA npA) {
+  NPU npU;
+  UCHAR Reg = SCH_D0TIM;
+
+  for (npU = npA->UnitCB; npU < (npA->UnitCB + npA->cUnits); npU++, Reg += SCH_D1TIM - SCH_D0TIM) {
+    ULONG val;
+
+    if (npU->Flags & UCBF_NOTPRESENT) continue;
+
+    val = npU->CurPIOMode;
+    if (npU->UltraDMAMode)
+      val |= ((ULONG)(npU->UltraDMAMode-1) << SCH_UDM_SHIFT) | SCH_USD;
+    else if (npU->CurDMAMode)
+      val |= (npU->CurDMAMode << SCH_MDM_SHIFT);
+    if (!(npU->Flags & UCBF_ATAPIDEVICE)) val |= SCH_PPE;
+
+    WConfigD (Reg, val);
   }
 }
 

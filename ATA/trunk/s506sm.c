@@ -325,66 +325,6 @@ VOID NEAR StartState (NPA npA)
   }
 }
 
-#if 0
-      if (CmdCode == IOCC_ADAPTER_PASSTHRU) {
-	PCHAR SCSICmd = ((PIORB_ADAPTER_PASSTHRU)pIORB)->pControllerCmd;
-
-	Cmd = 0;
-	if ((SCSICmd[0] == SCSI_START_STOP_UNIT) && (SCSICmd[4] == 2))
-	  Cmd = IOCM_EJECT_MEDIA;
-      }
-
-/*---------------------------------------------------------------------------*
- * ProcessLockUnlockEject						     *
- * ------------------							     *
- *									     *
- *									     *
- *---------------------------------------------------------------------------*/
-
-VOID NEAR ProcessLockUnlockEject (NPU npU, PIORB pIORB, UCHAR Function)
-{
-  npicp = &npA->icp;
-  switch (Function) {
-    case IOCM_EJECT_MEDIA:
-      if (npU->Flags & (UCBF_PCMCIA | UCBF_CFA)) {
-	IssueOneByte (npU, FX_STANDBYIMM);
-	DevHelp_Beep (2000, 100);
-      }
-      break;
-    case IOCM_LOCK_MEDIA:
-      break;
-    case IOCM_UNLOCK_MEDIA:
-      break;
-  }
-
-  if (npU->Flags & UCBF_PCMCIA) return;
-
-  npicp->RegisterMapW = RTM_COMMAND;
-  npicp->RegisterMapR = RTM_ERROR | RTM_STATUS;
-
-  rc = IssueCommand (npU);
-
-  if (rc) {
-    if (npicp->TaskFileOut.Error & FX_ABORT) {
-      pIORB->ErrorCode = IOERR_CMD_ABORTED;
-    } else {
-      // signal the status has changed
-      if (npicp->TaskFileOut.Error & FX_MCR) {
-	pIORB->ErrorCode = IOERR_MEDIA_CHANGED;
-      } else {
-	pIORB->ErrorCode = IOERR_DEVICE_NONSPECIFIC;
-      }
-      if (npicp->TaskFileOut.Error & FX_NM) {
-	npU->Flags &= ~UCBF_READY;
-	npU->Flags |=  UCBF_BECOMING_READY;
-      } else {
-	npU->Flags |=  UCBF_READY;
-      }
-    }
-  }
-}
-#endif
-
 /*-------------------------------------------------*/
 /*  StartIO()					   */
 /*						   */
@@ -558,9 +498,6 @@ USHORT NEAR InitACBRequest (NPA npA)
 
       case IOCM_EXECUTE_CDB : {
 	PCHAR SCSICmd = ((PIORB_ADAPTER_PASSTHRU)pIORB)->pControllerCmd;
-#if PCITRACER
-  outpw (TRPORT, (SCSICmd[0] << 8) | SCSICmd[4]);
-#endif
 
 	if ((SCSICmd[0] == SCSI_START_STOP_UNIT) && (SCSICmd[4] == 2)) {
 	  SetupCommand (npA, npU, FX_EJECT_MEDIA);
@@ -578,10 +515,7 @@ USHORT NEAR InitACBRequest (NPA npA)
   } else if (CmdCod == IOCC_UNIT_STATUS) {
     switch (CmdMod) {
       case IOCM_GET_UNIT_STATUS:
-	/*
-	** Setup a seek and a GET_MEDIA_STATUS to see if there is a drive out there.
-	*/
-	SetupSeek (npA, npU);
+	npA->ReqFlags = ACBR_GETMEDIASTAT | ACBR_NONPASSTHRU;
 	break;
     }
   } else if (CmdCod == IOCC_DEVICE_CONTROL) {
@@ -700,14 +634,6 @@ BOOL NEAR SetupFromATA (NPA npA, NPU npU)
 }
 
 
-/*
-** Setup to perform a seek to the first sector on the drive.
-*/
-VOID NEAR SetupSeek (NPA npA, NPU npU)
-{
-  npA->ReqFlags = ACBR_GETMEDIASTAT | ACBR_NONPASSTHRU;
-}
-
 ///
 VOID NEAR SetupCommand (NPA npA, NPU npU, UCHAR Cmd)
 {
@@ -715,8 +641,8 @@ VOID NEAR SetupCommand (NPA npA, NPU npU, UCHAR Cmd)
   npA->IOPendingMask = FM_PCMD;
 
   npA->ReqFlags = ACBR_NONDATA | ACBR_NONPASSTHRU;
-  npA->Flags |= ACBF_DISABLERETRY;
-  npU->Flags |= UCBF_DISABLERESET;
+  npA->Flags   |= ACBF_DISABLERETRY;
+  npU->Flags   |= UCBF_DISABLERESET;
 }
 
 
@@ -735,12 +661,12 @@ VOID NEAR SetupIdentify (NPA npA, NPU npU)
   npA->SecPerInt	= 1;
   npA->BytesToTransfer	= 512;
 
-  DRVHD   = npU->DriveHead;
-  COMMAND = FX_IDENTIFY;
+  DRVHD 	     = npU->DriveHead;
+  COMMAND	     = FX_IDENTIFY;
   npA->IOPendingMask = FM_PDRHD | FM_PCMD;
 
   npA->IOSGPtrs.Mode = PORT_TO_SGLIST;
-  npA->ReqFlags = ACBR_READ | ACBR_NONPASSTHRU;
+  npA->ReqFlags      = ACBR_READ | ACBR_NONPASSTHRU;
 }
 
 
@@ -760,9 +686,9 @@ VOID NEAR InitBlockIO (NPA npA)
   outpw (TRPORT, 0xDEB3);
 #endif
 
-  // if NOT a Passthru command
-  // then setup
+  // if NOT a Passthru command then setup
   // PASSTHRU requests are setup already
+
   if (!(npA->ReqFlags & ACBR_NONBLOCKIO)) {
     npA->IOSGPtrs.cSGList = pIORB->cSGList;
     npA->IOSGPtrs.pSGList = pIORB->pSGList;
@@ -945,10 +871,8 @@ StartOtherIOExit:
 
 /*---------------------------------------------*/
 /* StartBlockIO 			       */
-/* ------------ 			       */
 /*					       */
 /* Starts a Read/Write/Verify type operation   */
-/*					       */
 /*---------------------------------------------*/
 
 USHORT NEAR StartBlockIO (NPA npA)
@@ -1008,10 +932,6 @@ USHORT NEAR StartBlockIO (NPA npA)
 
 /*---------------------------------------------*/
 /* SetIOAddress 			       */
-/* ------------ 			       */
-/*					       */
-/*					       */
-/*					       */
 /*---------------------------------------------*/
 
 VOID NEAR SetIOAddress (NPA npA)
@@ -1145,44 +1065,30 @@ VOID NEAR InterruptState (NPA npA)
   /*----------------------------------------*/
   npU->MediaStatus &= ~npA->MediaStatusMask | FX_MC; // clear all affected media status bits except for media change
   if (STATUS & FX_ERROR) {
-#if PCITRACER
-  outpw (TRPORT, 0xDEB9);
-  outp	(TRPORT, ERROR);
-  outpw (TRPORT, npU->MediaStatus | (npA->MediaStatusMask << 8));
-  OutD	(TRPORT, npU->Flags & (UCBF_READY | UCBF_BECOMING_READY));
-#endif
     rc = 1;
-    if (npA->ReqMask & ACBR_OTHERIO) {
+    if (npA->ReqMask & ACBR_OTHERIO)
       rc = !(ERROR & FX_ABORT);
-    }
-#if PCITRACER
-  outp	(TRPORT, ERROR);
-#endif
+
     npU->MediaStatus = ERROR & npA->MediaStatusMask; // update media status
     ERROR &= ~npA->MediaStatusMask; // retain only true errors
-#if PCITRACER
-  outp	(TRPORT, ERROR);
-  outpw (TRPORT, npU->MediaStatus | (npA->MediaStatusMask << 8));
-#endif
-    if (npU->Flags & (UCBF_REMOVABLE | UCBF_ATAPIDEVICE)) {
+
+    if (npU->Flags & UCBF_REMOVABLE) {
       if (npA->MediaStatusMask) { // media status reporting is expected
 	if (ERROR == FX_ABORT) {
 	  // translate an abort into "no media"
-	  npU->MediaStatus |= FX_NM;
 	  ERROR = 0;
-#if PCITRACER
-  outp	(TRPORT, ERROR);
-  outpw (TRPORT, npU->MediaStatus | (npA->MediaStatusMask << 8));
-#endif
+	  npU->MediaStatus |= FX_NM;
 	}
       }
-      if (!ERROR) {
-	rc = 0;
-	STATUS &= ~FX_ERROR;
-      }
+    }
+
+    if (!ERROR) {
+      rc = 0;
+      STATUS &= ~FX_ERROR;
     }
   }
 
+  // translate current media status into READY state transitions
   if (npU->Flags & UCBF_REMOVABLE) {
     if (npU->MediaStatus & FX_NM) {
       STATUS	 |= FX_ERROR;
@@ -1195,7 +1101,9 @@ VOID NEAR InterruptState (NPA npA)
 	npU->Flags |= UCBF_BECOMING_READY;
       }
     }
+
 #if PCITRACER
+    outpw (TRPORT, npU->MediaStatus | (npA->MediaStatusMask << 8));
     OutD  (TRPORT, npU->Flags & (UCBF_READY | UCBF_BECOMING_READY));
 #endif
   }
@@ -1271,10 +1179,6 @@ VOID NEAR InterruptState (NPA npA)
 
 /*---------------------------------------------*/
 /* DoBlockIO				       */
-/* ---------				       */
-/*					       */
-/*					       */
-/*					       */
 /*---------------------------------------------*/
 
 USHORT NEAR DoBlockIO (NPA npA, USHORT cSec)
@@ -1472,7 +1376,7 @@ VOID NEAR DoneState (NPA npA)
   if (METHOD(npA).StartStop) METHOD(npA).StartStop (npA, FALSE);
 
   npA->ReqFlags = npU->ReqFlags = 0;		/* don't run this code again */
-  npA->ReqMask = 0;				/* don't run this code again */
+  npA->ReqMask	= 0;				/* don't run this code again */
 
   IORBDone (npA);
 
@@ -1903,10 +1807,6 @@ Send_Error:
 
 /*---------------------------------------------*/
 /* WaitDRQ				       */
-/* -------				       */
-/*					       */
-/*					       */
-/*					       */
 /*---------------------------------------------*/
 
 UCHAR NEAR WaitDRQ (NPA npA)
@@ -1938,10 +1838,6 @@ UCHAR NEAR WaitDRQ (NPA npA)
 
 /*---------------------------------------------*/
 /* CheckReady				       */
-/* ----------				       */
-/*					       */
-/*					       */
-/*					       */
 /*---------------------------------------------*/
 
 UCHAR NEAR CheckWorker (NPA npA, UCHAR Mask, UCHAR Value)

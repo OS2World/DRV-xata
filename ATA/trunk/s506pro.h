@@ -22,7 +22,6 @@
 
 VOID FAR  _cdecl S506Str1 (VOID);
 VOID NEAR StatusError (PRPH pRPH, USHORT ErrorCode);
-VOID NEAR ProcessLockUnlockEject (NPU npU, PIORB pIORB, UCHAR Function);
 VOID NEAR ClearIORB (NPA npA);
 int  NEAR IssueCommand (NPU npU);
 int  NEAR IssueOneByte (NPU npU, BYTE Cmd);
@@ -137,7 +136,6 @@ USHORT NEAR StartOtherIO(NPA npA);
 USHORT NEAR InitACBRequest(NPA npA);
 BOOL   NEAR SetupFromATA(NPA npA, NPU npU);
 VOID   NEAR SetupCommand (NPA npA, NPU npU, UCHAR Cmd);
-VOID   NEAR SetupSeek (NPA npA, NPU npU);
 VOID   NEAR SetupIdentify (NPA npA, NPU npU);
 VOID   NEAR InitBlockIO(NPA npA);
 USHORT NEAR StartBlockIO(NPA npA);
@@ -436,13 +434,17 @@ int    NEAR NonsharedCheckIRQ (NPA npA);
 /*----------------------------------------------------------------*/
 BOOL   NEAR AcceptPIIX (NPA npA);
 BOOL   NEAR AcceptSMSC (NPA npA);
+BOOL   NEAR AcceptSCH (NPA npA);
 USHORT NEAR GetPIIXPio (NPA npA, UCHAR Unit);
+USHORT NEAR GetSCHPio (NPA npA, UCHAR Unit);
 VOID   NEAR PIIXTimingValue (NPU npU);
 VOID   NEAR ProgramPIIXChip (NPA npA);
+VOID   NEAR ProgramSCH (NPA npA);
 VOID   NEAR EnableBusPIIX (NPA npA, UCHAR enable);
 
 #pragma alloc_text (FCode, AcceptPIIX)
 #pragma alloc_text (FCode, AcceptSMSC)
+#pragma alloc_text (FCode, AcceptSCH)
 
 /*----------------------------------------------------------------*/
 /*	S506VIA.C Procedures					  */
