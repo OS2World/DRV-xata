@@ -361,10 +361,6 @@ VOID NEAR StartIO (NPA npA)
 
 /*---------------------------------------------*/
 /* RetryState				       */
-/* ----------				       */
-/*					       */
-/*					       */
-/*					       */
 /*---------------------------------------------*/
 
 VOID NEAR RetryState(NPA npA)
@@ -383,10 +379,6 @@ VOID NEAR RetryState(NPA npA)
 
 /*---------------------------------------------*/
 /* InitACBRequest			       */
-/* --------------			       */
-/*					       */
-/*					       */
-/*					       */
 /*---------------------------------------------*/
 
 USHORT NEAR InitACBRequest (NPA npA)
@@ -460,7 +452,6 @@ USHORT NEAR InitACBRequest (NPA npA)
 	      npU->ReqFlags |= UCBR_ENABLEWCACHE;
 	  }
 
-	  npA->MediaStatusMask = FX_NM | FX_MCR | FX_MC | FX_WP;
 	  npA->ReqFlags |= npU->ReqFlags | ACBR_WRITE;
 	  break;
 
@@ -480,7 +471,6 @@ USHORT NEAR InitACBRequest (NPA npA)
 	  npA->ReqFlags |= npU->ReqFlags | ACBR_READ;
 
 	READ_Common:
-	  npA->MediaStatusMask = FX_NM | FX_MCR | FX_MC;
 	  npA->IOSGPtrs.Mode = PORT_TO_SGLIST;
 
 	  ++npU->DeviceCounters.TotalReadOperations;
@@ -500,9 +490,7 @@ USHORT NEAR InitACBRequest (NPA npA)
 	PCHAR SCSICmd = ((PIORB_ADAPTER_PASSTHRU)pIORB)->pControllerCmd;
 
 	if ((SCSICmd[0] == SCSI_START_STOP_UNIT) && (SCSICmd[4] == 2)) {
-	  SetupCommand (npA, npU, FX_EJECT_MEDIA);
-	  npA->MediaStatusMask = FX_NM;
-	  npU->Flags &= ~(UCBF_READY | UCBF_LOCKED);
+	  npA->ReqFlags = ACBR_EJECT | ACBR_NONPASSTHRU;
 	  break;
 	} // else fall-through to unsupported
       }
@@ -520,17 +508,11 @@ USHORT NEAR InitACBRequest (NPA npA)
     }
   } else if (CmdCod == IOCC_DEVICE_CONTROL) {
     switch (CmdMod) {
-      case IOCM_LOCK_MEDIA:   SetupCommand (npA, npU, FX_LOCK_DOOR);
-			      npA->MediaStatusMask = FX_NM | FX_MCR;
-			      npU->Flags |= UCBF_LOCKED;
+      case IOCM_LOCK_MEDIA:   npA->ReqFlags = ACBR_LOCK | ACBR_NONPASSTHRU;
 			      break;
-      case IOCM_UNLOCK_MEDIA: SetupCommand (npA, npU, FX_UNLOCK_DOOR);
-			      npA->MediaStatusMask = FX_NM;
-			      npU->Flags &= ~UCBF_LOCKED;
+      case IOCM_UNLOCK_MEDIA: npA->ReqFlags = ACBR_UNLOCK | ACBR_NONPASSTHRU;
 			      break;
-      case IOCM_EJECT_MEDIA:  SetupCommand (npA, npU, FX_EJECT_MEDIA);
-			      npA->MediaStatusMask = FX_NM;
-			      npU->Flags &= ~(UCBF_READY | UCBF_LOCKED);
+      case IOCM_EJECT_MEDIA:  npA->ReqFlags = ACBR_EJECT | ACBR_NONPASSTHRU;
 			      break;
     }
   } else if (CmdCod == IOCC_GEOMETRY) {
@@ -568,21 +550,7 @@ BOOL NEAR SetupFromATA (NPA npA, NPU npU)
   picp = (PPassThruATA) piorb_pt->pControllerCmd;
 
   Map = picp->RegisterMapW;
-  if (!(Map & RTM_COMMAND)) {
-    return (FALSE);
-  } else {
-    switch (picp->TaskFileIn.Command) {
-      case FX_SMARTCMD:
-	if (picp->TaskFileIn.Features == 0xD7) return (FALSE);
-	break;
-      case FX_EJECT_MEDIA:
-	npU->Flags &= ~(UCBF_READY | UCBF_LOCKED);
-	break;
-    }
-  }
-
-  npA->IOSGPtrs.cSGList = piorb_pt->cSGList;
-  npA->IOSGPtrs.pSGList = piorb_pt->pSGList;
+  if (!(Map & RTM_COMMAND)) return (FALSE);
 
   // copy caller supplied task file register info
 
@@ -595,28 +563,36 @@ BOOL NEAR SetupFromATA (NPA npA, NPU npU)
   if (Map & RTM_LBA4	) LBA4	 = picp->TaskFileIn.Lba4;
   if (Map & RTM_LBA5	) LBA5	 = picp->TaskFileIn.Lba5;
 			 COMMAND = picp->TaskFileIn.Command;
+  switch (COMMAND) {
+    case FX_EJECT_MEDIA:
+      npA->ReqFlags = ACBR_EJECT | ACBR_NONPASSTHRU;
+      return (TRUE);
+  }
+
   DRVHD   = npU->DriveHead;
   npA->IOPendingMask = Map | FM_PDRHD;
 
   // initialize mode, don't know yet
   npA->IOSGPtrs.Mode = 0;
+  npA->IOSGPtrs.pSGList = piorb_pt->pSGList;
+  npA->IOSGPtrs.cSGList = piorb_pt->cSGList;
 
   // if we have a scatter/gather list this is a DATA command
-  if (piorb_pt->cSGList) {
+  if (npA->IOSGPtrs.cSGList) {
     // scatter gather list is in SECTOR format
 
-    npA->SecRemain	 = piorb_pt->cSGList;
-    npA->SecToGo	 = piorb_pt->cSGList;
+    npA->SecRemain	 = npA->IOSGPtrs.cSGList;
+    npA->SecToGo	 = npA->IOSGPtrs.cSGList;
     npA->SecReq 	 = npA->SecToGo;
-    npA->BytesToTransfer = piorb_pt->cSGList * 512;
+    npA->BytesToTransfer = npA->IOSGPtrs.cSGList * 512;
     npA->SecPerInt	 = 1;
 
     if (piorb_pt->Flags & PT_DIRECTION_IN) {
       // if the IROB says inbound then set this as a READ command
 
       npA->IOSGPtrs.Mode = PORT_TO_SGLIST;
-      if ((picp->TaskFileIn.Command == FX_IDENTIFY) ||
-	  (picp->TaskFileIn.Command == FX_ATAPI_IDENTIFY))
+      if ((COMMAND == FX_IDENTIFY) ||
+	  (COMMAND == FX_ATAPI_IDENTIFY))
 	npA->IOSGPtrs.Mode |= 0x40; // slow!
 
       npA->ReqFlags |= npU->ReqFlags | ACBR_READ | ACBR_PASSTHRU;
@@ -632,19 +608,6 @@ BOOL NEAR SetupFromATA (NPA npA, NPU npU)
 
   return (TRUE);
 }
-
-
-///
-VOID NEAR SetupCommand (NPA npA, NPU npU, UCHAR Cmd)
-{
-  COMMAND	     = Cmd;
-  npA->IOPendingMask = FM_PCMD;
-
-  npA->ReqFlags = ACBR_NONDATA | ACBR_NONPASSTHRU;
-  npA->Flags   |= ACBF_DISABLERETRY;
-  npU->Flags   |= UCBF_DISABLERESET;
-}
-
 
 /*
 ** Setup to identify device command
@@ -672,10 +635,6 @@ VOID NEAR SetupIdentify (NPA npA, NPU npU)
 
 /*---------------------------------------------*/
 /* InitBlockIO				       */
-/* ------------ 			       */
-/*					       */
-/*					       */
-/*					       */
 /*---------------------------------------------*/
 
 VOID NEAR InitBlockIO (NPA npA)
@@ -707,10 +666,6 @@ VOID NEAR InitBlockIO (NPA npA)
 
 /*---------------------------------------------*/
 /* StartOtherIO 			       */
-/* ------------ 			       */
-/*					       */
-/*					       */
-/*					       */
 /*---------------------------------------------*/
 
 USHORT NEAR StartOtherIO (NPA npA)
@@ -722,7 +677,7 @@ USHORT NEAR StartOtherIO (NPA npA)
 
 #if PCITRACER
   outpw (TRPORT, 0xDEB4);
-  outpw (TRPORT, npA->ReqFlags);
+  OutD	(TRPORT, npA->ReqFlags);
 #endif
   if (!(npA->ReqFlags & ACBR_PASSTHRU)) {
     FEAT = 0;
@@ -842,7 +797,33 @@ USHORT NEAR StartOtherIO (NPA npA)
     npA->MediaStatusMask= FX_NM | FX_MCR | FX_MC | FX_WP;
 
   } else if (ReqFlags & ACBR_NONDATA) {  // indicates any other non-r/w operation
+    UCHAR Cmd;
+
     npA->ReqMask	= ACBR_NONDATA;
+    Cmd = (npA->ReqFlags & ACBR_INTERNALCOMMAND) >> 16;
+    if (Cmd) {
+      switch (Cmd) {
+	case ACBR_LOCK >> 16:
+	  COMMAND = FX_LOCK_DOOR;
+	  npA->MediaStatusMask = FX_NM | FX_MCR;
+	  npU->Flags |= UCBF_LOCKED;
+	  break;
+
+	case ACBR_UNLOCK >> 16:
+	  COMMAND = FX_UNLOCK_DOOR;
+	  npA->MediaStatusMask = FX_NM;
+	  npU->Flags &= ~UCBF_LOCKED;
+	  break;
+
+	case ACBR_EJECT >> 16:
+	  COMMAND = FX_EJECT_MEDIA;
+	  npA->MediaStatusMask = FX_NM;
+	  npU->Flags &= ~(UCBF_READY | UCBF_LOCKED);
+	  longWait = TRUE;
+	  break;
+      }
+      npA->ReqFlags &= ~ACBR_INTERNALCOMMAND;
+    }
   }
 
   /*--------------------------------------*/
@@ -856,7 +837,6 @@ USHORT NEAR StartOtherIO (NPA npA)
   /* of the TASK File Regs in the ACB to the */
   /* controller.			     */
   /*-----------------------------------------*/
-  longWait = (npU->Flags & (UCBF_REMOVABLE | UCBF_READY | UCBF_BECOMING_READY)) == (UCBF_REMOVABLE | UCBF_BECOMING_READY);
   ADD_StartTimerMS (&npA->IRQTimerHandle,
 		    (ULONG)((longWait || npU->LongTimeout) ? npA->IRQLongTimeOut
 							   : npA->IRQTimeOut),
@@ -980,6 +960,11 @@ VOID NEAR SetIOAddress (NPA npA)
 
   CmdIdx = ((((NPCH)&(npA->ReqFlags))[3] & ((ACBR_READ | ACBR_WRITE | ACBR_VERIFY) >> 24)) >> 1)
 	 | (((NPCH)&(npU->Flags))[0] & UCBF_MULTIPLEMODE);
+
+  if ((CmdIdx & 3) == 1)
+    npA->MediaStatusMask = FX_NM | FX_MCR | FX_MC | FX_WP; // write type
+  else
+    npA->MediaStatusMask = FX_NM | FX_MCR | FX_MC;	   // read type
 
   if ((npA->RBA & 0xF0000000) &&	   // if LBA48 addressing required
      !(npA->Cap & CHIPCAP_LBA48DMA))	   // but no LBA48 DMA possible
@@ -1632,6 +1617,7 @@ VOID NEAR DoReset (NPA npA)
 
   for (npU = npA->UnitCB; npU < (npA->UnitCB + npA->cUnits); npU++) {
     ReInitUnit (npU);
+    npU->Flags &= ~UCBF_READY;
   }
 
   npA->ReqFlags |= npU->ReqFlags & ACBR_SETUP;
@@ -1713,10 +1699,12 @@ VOID NEAR ResetCheck (NPA npA)
 
 	} else if (STATUS & FX_BUSY) {
 	  ResetComplete = FALSE;
+
 	} else {
 	  ERROR = InBd (ERRORREG, npA->IODelayCount);
-	  if ((ERROR & ~FX_DIAG_DRIVE1) != FX_DIAG_PASSED) {
-	    npU->Flags	    |= UCBF_DIAG_FAILED;
+	  if ((ERROR & ~FX_DIAG_DRIVE1) == FX_DIAG_PASSED) {
+	    npU->Flags |= UCBF_READY;
+	  } else {
 	    npA->TimerFlags |= ACBT_RESETFAIL;
 	  }
 	}

@@ -728,11 +728,6 @@ VOID NEAR IORBDone (NPA npA)
 {
   PIORB pIORB = npA->pIORB;
 
-  /*
-  ** If a removable media has changed then ignore any error that
-  ** may have occured and report the changed media error.
-  ** Report media changed only once.
-  */
   DISABLE
 
   pIORB->ErrorCode = npA->IORBError;
