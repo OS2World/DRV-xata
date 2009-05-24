@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2008
+ *	       COPYRIGHT Daniela Engert 1999-2009
  *
  * DESCRIPTION : C Function Prototype statements
  *
@@ -435,6 +435,7 @@ int    NEAR NonsharedCheckIRQ (NPA npA);
 BOOL   NEAR AcceptPIIX (NPA npA);
 BOOL   NEAR AcceptSMSC (NPA npA);
 BOOL   NEAR AcceptSCH (NPA npA);
+BOOL   NEAR AcceptITE8213 (NPA npA);
 USHORT NEAR GetPIIXPio (NPA npA, UCHAR Unit);
 USHORT NEAR GetSCHPio (NPA npA, UCHAR Unit);
 VOID   NEAR PIIXTimingValue (NPU npU);
@@ -445,6 +446,7 @@ VOID   NEAR EnableBusPIIX (NPA npA, UCHAR enable);
 #pragma alloc_text (FCode, AcceptPIIX)
 #pragma alloc_text (FCode, AcceptSMSC)
 #pragma alloc_text (FCode, AcceptSCH)
+#pragma alloc_text (FCode, AcceptITE8213)
 
 /*----------------------------------------------------------------*/
 /*	S506VIA.C Procedures					  */

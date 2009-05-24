@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert, 1999-2008
+ *	       COPYRIGHT Daniela Engert, 1999-2009
  *
  *****************************************************************************/
 
@@ -30,10 +30,10 @@
  #include "s506ext.h"
  #include "s506pro.h"
 
-#define YEAR  2008
+#define YEAR  2009
 #define MONTH 5
-#define DAY   12
-#define PCMCIAVERSION 0x185
+#define DAY   24
+#define PCMCIAVERSION 0x186
 
 /*-------------------------------------------------------------------*/
 /*								     */
@@ -422,6 +422,16 @@ USHORT CListCIntel[] = {
 	0x3A26, 0x3A06,     // ICH10 SATA2 2p -> ICH10 SATA 2p
 	0x3A05, 0x3A00,     // ICH10 AHCI  -> ICH10 SATA
 	0x3A25, 0x3A00,     // ICH10 AHCI2 -> ICH10 SATA
+	0x3B20, 0x3A00,     // PCH SATA  4p -> ICH10 SATA 4p
+	0x3B21, 0x3A06,     // PCH SATA  2p -> ICH10 SATA 2p
+	0x3B24, 0x3A00,     // PCH SATA RAID-> ICH10 SATA 4p
+	0x3B25, 0x3A00,     // PCH SATA RAID-> ICH10 SATA 4p
+	0x3B26, 0x3A06,     // PCH SATA  2p -> ICH10 SATA 2p
+	0x3B28, 0x3A00,     // PCH SATA  4p -> ICH10 SATA 4p
+	0x3B2B, 0x3A00,     // PCH SATA RAID-> ICH10 SATA 4p
+	0x3B2C, 0x3A00,     // PCH SATA RAID-> ICH10 SATA 4p
+	0x3B2D, 0x3A06,     // PCH SATA2 2p -> ICH10 SATA 2p
+	0x3B2E, 0x3A00,     // PCH SATA2 4p -> ICH10 SATA 4p
 		0 };
 USHORT CListFIntel[] = {
 		0x1230,     // PIIX	  82371FB
@@ -460,6 +470,8 @@ USHORT CListCVia[] = {
 	0x7372, 0x3149,     // VT8237S	-> VT8237 SATA
 	0x5287, 0x3349,     // VT8251	-> VT8251 SATA ?
 	0x6287, 0x3349,     // VT8251	-> VT8251 SATA
+	0x9000, 0x3349,     // VT8261	-> VT8251 SATA
+	0x9040, 0x3349,     // VT8261	-> VT8251 SATA
 		0 };
 USHORT CListFVia[] = {
 		0x0571,     // VIA 571
@@ -469,6 +481,7 @@ USHORT CListFVia[] = {
 		0x3249,     // VT6421 SATA/PATA
 		0x3349,     // VT8251 SATA
 		0x5324,     // CX700  PATA
+		0xC409,     // VX855/875 PATA
 		0 };
 USHORT CListCALi[] = {
 	0x5288, 0x5289,     // ALi M5288 -> ALi M5289
@@ -637,6 +650,14 @@ USHORT CListCNvidia[] = {
 	0x07F1, 0x044C,     // nForce7 M73 SATA2 -> nForce6 M65 SATA
 	0x07F2, 0x044C,     // nForce7 M73 SATA3 -> nForce6 M65 SATA
 	0x07F3, 0x044C,     // nForce7 M73 SATA4 -> nForce6 M65 SATA
+	0x07F4, 0x044C,     // nForce7 M73 SATA5 -> nForce6 M65 SATA
+	0x07F5, 0x044C,     // nForce7 M73 SATA6 -> nForce6 M65 SATA
+	0x07F6, 0x044C,     // nForce7 M73 SATA7 -> nForce6 M65 SATA
+	0x07F7, 0x044C,     // nForce7 M73 SATA8 -> nForce6 M65 SATA
+	0x07F8, 0x044C,     // nForce7 M73 SATA9 -> nForce6 M65 SATA
+	0x07F9, 0x044C,     // nForce7 M73 SATA10 -> nForce6 M65 SATA
+	0x07FA, 0x044C,     // nForce7 M73 SATA11 -> nForce6 M65 SATA
+	0x07FB, 0x044C,     // nForce7 M73 SATA12 -> nForce6 M65 SATA
 	0x0AD0, 0x044C,     // nForce7 M77 SATA  -> nForce6 M65 SATA
 	0x0AD1, 0x044C,     // nForce7 M77 SATA2 -> nForce6 M65 SATA
 	0x0AD2, 0x044C,     // nForce7 M77 SATA3 -> nForce6 M65 SATA
@@ -645,6 +666,26 @@ USHORT CListCNvidia[] = {
 	0x0AB5, 0x044C,     // nForce7 M79 SATA2 -> nForce6 M65 SATA
 	0x0AB6, 0x044C,     // nForce7 M79 SATA3 -> nForce6 M65 SATA
 	0x0AB7, 0x044C,     // nForce7 M79 SATA4 -> nForce6 M65 SATA
+	0x0AB8, 0x044C,     // nForce7 M79 SATA4 -> nForce6 M65 SATA
+	0x0AB9, 0x044C,     // nForce7 M79 SATA4 -> nForce6 M65 SATA
+	0x0ABA, 0x044C,     // nForce7 M79 SATA4 -> nForce6 M65 SATA
+	0x0ABB, 0x044C,     // nForce7 M79 SATA4 -> nForce6 M65 SATA
+	0x0ABC, 0x044C,     // nForce7 M79 SATA4 -> nForce6 M65 SATA
+	0x0ABD, 0x044C,     // nForce7 M79 SATA4 -> nForce6 M65 SATA
+	0x0ABE, 0x044C,     // nForce7 M79 SATA4 -> nForce6 M65 SATA
+	0x0ABF, 0x044C,     // nForce7 M79 SATA4 -> nForce6 M65 SATA
+	0x0D84, 0x044C,     // nForce7 M89 SATA  -> nForce6 M65 SATA
+	0x0D85, 0x044C,     // nForce7 M89 SATA  -> nForce6 M65 SATA
+	0x0D86, 0x044C,     // nForce7 M89 SATA  -> nForce6 M65 SATA
+	0x0D87, 0x044C,     // nForce7 M89 SATA  -> nForce6 M65 SATA
+	0x0D88, 0x044C,     // nForce7 M89 SATA  -> nForce6 M65 SATA
+	0x0D89, 0x044C,     // nForce7 M89 SATA  -> nForce6 M65 SATA
+	0x0D8A, 0x044C,     // nForce7 M89 SATA  -> nForce6 M65 SATA
+	0x0D8B, 0x044C,     // nForce7 M89 SATA  -> nForce6 M65 SATA
+	0x0D8C, 0x044C,     // nForce7 M89 SATA  -> nForce6 M65 SATA
+	0x0D8D, 0x044C,     // nForce7 M89 SATA  -> nForce6 M65 SATA
+	0x0D8E, 0x044C,     // nForce7 M89 SATA  -> nForce6 M65 SATA
+	0x0D8F, 0x044C,     // nForce7 M89 SATA  -> nForce6 M65 SATA
 		0 };
 USHORT CListFNvidia[] = {
 		0x008E,     // Nvidia nForce SATA
@@ -674,6 +715,9 @@ USHORT CListFSiI[] = {
 USHORT CListFITE[] = {
 		0x8212,     // ITE 8212
 		0x8211,     // ITE 8211
+		0 };
+USHORT CListFITE2[] = {
+		0x8213,     // ITE 8213
 		0 };
 USHORT CListCIXP[] = {
 	0x436E, 0x4369,     // IXP320 PATA -> IXP300 PATA
@@ -996,6 +1040,14 @@ PCI_DEVICE PCIDevice[] =
       CListNULL, CListFiSCH,
       0x04, 0x04, 0x00, 0x00, 0x10,
       SCHMsgtxt },
+  { { 0x8213, 0x1283, Intel, MODE_NATIVE_OK, TR_PIO_EQ_DMA | TR_PIO0_WITH_DMA, 2,
+      AcceptITE8213, CfgPIIX4,
+      NULL, BMCheckIRQ,
+      GetPIIXPio, SetupCommon,
+      CalculateAdapterTiming, PIIXTimingValue, ProgramPIIXChip},
+      CListNULL, CListFITE2,
+      0x41, 0x43, 0x77, 0x00, 0x10,
+      NULL },
   { { 0, 0, generic, MODE_NATIVE_OK, 0, 2,
       AcceptGeneric, CfgGeneric,
       GenericInitComplete, NonsharedCheckIRQ,
@@ -1037,7 +1089,7 @@ struct CI_Info CIInfo = {
   offsetof (struct CI_Info, CI_Name), sizeof (CIInfo.CI_Name),
   offsetof (struct CI_Info, CI_Vendor), sizeof (CIInfo.CI_Vendor),
   "DaniS506 EIDE Driver",
-  "Copyright Daniela Engert 2007, all rights reserved"
+  "Copyright Daniela Engert 2009, all rights reserved"
 };
 
 CCB	       ChipTable[MAX_ADAPTERS] = { 0 };

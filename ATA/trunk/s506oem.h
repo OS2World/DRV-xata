@@ -6,7 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2008
+ *	       COPYRIGHT Daniela Engert 1999-2009
  *
  * DESCRIPTION : Locally defined equates.
  *****************************************************************************/
@@ -122,7 +122,8 @@ typedef enum {
 #define PCID_Initio	   26  /* Initio */
 #define PCID_Broadcom	   27  /* Broadcom */
 #define PCID_IntelSCH	   28  /* Intel SCH "Atom" */
-#define PCID_Generic	   29  /* Generic IDE */
+#define PCID_ITE8213	   29  /* ITE8213 (ICH8M-lookalike)*/
+#define PCID_Generic	   30  /* Generic IDE */
 
 #define MAX_PCI_DEVICE_DESCRIPT  PCID_Generic+1
 

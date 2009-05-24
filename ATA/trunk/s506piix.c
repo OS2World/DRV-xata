@@ -5,9 +5,9 @@
  * DESCRIPTIVE NAME = DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
  *
- * Copyright : COPYRIGHT Daniela Engert 1999-2008
+ * Copyright : COPYRIGHT Daniela Engert 1999-2009
  *
- * DESCRIPTION : Adapter Driver PIIX and SMSC routines.
+ * DESCRIPTION : Adapter Driver PIIX, SMSC and ITE8213 routines.
  ****************************************************************************/
 
 #define INCL_NOPMAPI
@@ -48,6 +48,7 @@
 #define ICH2		    6	/* ICH2  244B		   */
 #define ICH3		    6	/* ICH3  248B		   */
 #define ICH4		    7	/* ICH4  24CB		   */
+#define ITE		    8   /* ITE8213			   */
 
 /*----------------------------------------------------------------*/
 /* PIIX PCI to IDE Bridge Device IDs				  */
@@ -86,6 +87,8 @@
 #define 	  SCH_DEV_ID  0x811A
 
 #define  SLC66PCIIDE_DEV_ID  0x9130
+
+#define      ITE8213_DEV_ID  0x8213
 
 #define IDETIM_IDE	     0x8000	/* IDE Decode Enable bit */
 #define PCI_PIIX_IDETIM      0x40	/* 0x40-41 IDE timing */
@@ -314,6 +317,26 @@ BOOL NEAR AcceptSMSC (NPA npA)
   return (TRUE);
 }
 
+BOOL NEAR AcceptITE8213 (NPA npA)
+{
+  UCHAR Cable;
+
+  npA->npC->numChannels = 1;
+  if (npA->IDEChannel) return (FALSE);
+  
+  sprntf (npA->PCIDeviceMsg, ITEMsgtxt, MEMBER(npA).Device);
+  PciInfo->Level = ITE;
+  npA->Cap |= CHIPCAP_ATA66 | CHIPCAP_ATA100 | CHIPCAP_ATA133;
+
+  /* determine the presence of a 80wire cable as per defined procedure */
+
+  Cable = GetRegB (PciInfo->PCIAddr, PCI_PIIX_IDECFG);
+  if (Cable & (npA->IDEChannel ? 0xC0 : 0x30))
+    npA->Cap |= CHANCAP_CABLE80;
+
+  return (TRUE);
+}
+
 #define IDEtim	(USHORT)npA->PIIX_IDEtim
 #define SIDEtim (UCHAR)npA->PIIX_SIDEtim
 
@@ -452,7 +475,7 @@ VOID ProgramPIIXChip (NPA npA)
     WConfigB (PCI_PIIX_SDMACTL, UCtl);
     WConfigW (PCI_PIIX_SDMATIM, UTim);
     if (npA->Cap & CHIPCAP_ATA66) {
-      UATA |= 0x0400; // Ping Pong enable
+      if (CurLevel != ITE) UATA |= 0x0400; // Ping Pong enable
       WConfigW (PCI_PIIX_IDECFG, UATA);
     }
   }

@@ -4,7 +4,7 @@
  *
  * DESCRIPTIVE NAME = DANIS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- * Copyright : COPYRIGHT Daniela Engert 1999-2008
+ * Copyright : COPYRIGHT Daniela Engert 1999-2009
  *
  * DESCRIPTION : Adapter Driver VIA routines.
  ****************************************************************************/
@@ -125,6 +125,7 @@ BOOL NEAR AcceptVIA (NPA npA)
 		     }
       }
       break;
+    case 0xC409: Name = "VX855";  npA->npC->numChannels = 1; PciInfo->Level = VIAF; break;
     case 0x5324: Name = "CX700";  PciInfo->Level = VIAF; break;
     case 0x3164: Name = "VT6410"; PciInfo->Level = VIAF; break;
     case 0x3149: {
