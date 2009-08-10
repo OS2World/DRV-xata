@@ -1,6 +1,6 @@
 ;*DDK*************************************************************************/
 ;
-; Copyright:   COPYRIGHT Daniela Engert 1999-2003
+; Copyright:   COPYRIGHT Daniela Engert 1999-2009
 ; COPYRIGHT    Copyright (C) 1995 IBM Corporation
 ;
 ;    The following IBM OS/2 WARP source code is provided to you solely for
@@ -8,6 +8,8 @@
 ;    drivers. You may use this code in accordance with the IBM License
 ;    Agreement provided in the IBM Device Driver Source Kit for OS/2. This
 ;    Copyright statement may not be removed.;
+;
+;* distributed under the terms of the GNU Lesser General Public License
 ;*****************************************************************************/
 
 ;**************************************************************************

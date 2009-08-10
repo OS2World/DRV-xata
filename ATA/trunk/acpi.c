@@ -4,7 +4,8 @@
  *
  * DESCRIPTIVE NAME =
  *
- * Copyright : COPYRIGHT Daniela Engert 2006-2007
+ * Copyright : COPYRIGHT Daniela Engert 2006-2009
+ * distributed under the terms of the GNU Lesser General Public License
  *
  ****************************************************************************/
 

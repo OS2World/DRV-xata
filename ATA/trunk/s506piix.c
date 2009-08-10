@@ -6,6 +6,7 @@
  *
  *
  * Copyright : COPYRIGHT Daniela Engert 1999-2009
+ * distributed under the terms of the GNU Lesser General Public License
  *
  * DESCRIPTION : Adapter Driver PIIX, SMSC and ITE8213 routines.
  ****************************************************************************/
@@ -99,6 +100,7 @@
 #define PCI_PIIX_MAP	     0x90	/* ICH SATA Address Map Register    */
 
 #define PCI_SMSC_CABLE	     0x47	/* SMSC cable configuration Register */
+#define PCI_ITE_CABLE	     0x42	/* ITE cable configuration Register */
 
 #define ACBX_IDETIM_MODE0    0x8000	/* mode 0 PIO timing */
 #define ACBX_IDETIM_DTE1     0x0080	/* DMA fast timing only drive 1 */
@@ -330,8 +332,8 @@ BOOL NEAR AcceptITE8213 (NPA npA)
 
   /* determine the presence of a 80wire cable as per defined procedure */
 
-  Cable = GetRegB (PciInfo->PCIAddr, PCI_PIIX_IDECFG);
-  if (Cable & (npA->IDEChannel ? 0xC0 : 0x30))
+  Cable = GetRegB (PciInfo->PCIAddr, PCI_ITE_CABLE);
+  if (!(Cable & 2))
     npA->Cap |= CHANCAP_CABLE80;
 
   return (TRUE);
@@ -399,6 +401,8 @@ VOID PIIXTimingValue (NPU npU)
       value |= ACBX_IDETIM_DTE1 | ACBX_IDETIM_DTE0;
     if (!(npU->Flags & UCBF_ATAPIDEVICE)) // Enable Pre-Fetch/Posting if FIXED Disk
       value |= ACBX_IDETIM_PPE1 | ACBX_IDETIM_PPE0;
+    if (CurLevel == ITE)  // Pre-Fetch/Posting reversed on ITE8213
+      value ^= ACBX_IDETIM_PPE1 | ACBX_IDETIM_PPE0;
     (UCHAR)IDEtim |= Flags & value;
     if (npU->UnitId && (CurLevel >= PIIX3)) /* Slave Timing Register enable */
       IDEtim |= ACBX_IDETIM_ITE1;

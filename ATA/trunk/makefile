@@ -7,7 +7,8 @@
 #/*									*/
 #/*---------------------------------------------------------------------*/
 #/*									*/
-#/* Copyright (C) 1999-2007 Daniela Engert				*/
+#/* Copyright (C) 1999-2009 Daniela Engert				*/
+#/* distributed under the terms of the GNU Lesser General Public License
 #/*									*/
 #/***********************************************************************/
 

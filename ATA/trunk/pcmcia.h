@@ -16,7 +16,8 @@
 //     Date	  : 8/31/93
 //     Version	  : 1.00
 //
-// * Copyright : COPYRIGHT Daniela Engert 1999-2006
+// * Copyright : COPYRIGHT Daniela Engert 1999-2009
+// * distributed under the terms of the GNU Lesser General Public License
 //
 // ============================================================================
 

@@ -6,8 +6,9 @@
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2008
- *
+ *	       COPYRIGHT Daniela Engert 1999-2009
+ * distributed under the terms of the GNU Lesser General Public License
+*
  * DESCRIPTION : Adapter Driver timer driven entry points.
  ****************************************************************************/
 

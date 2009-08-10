@@ -1,12 +1,13 @@
 /****************************************************************************
- *									    *
- *			     OCO Source Materials			    *
+ *							    *
+ *			     OCO Source Materials		    *
  *			       IBM Confidential 			    *
- *									    *
+ *							    *
  *		      Copyright (c) IBM Corporation 1998		    *
  *			     All Rights Reserved			    *
- * Copyright : COPYRIGHT Daniela Engert 1999-2006			    *
- *									    *
+ * Copyright : COPYRIGHT Daniela Engert 1999-2009			    *
+ * distributed under the terms of the GNU Lesser General Public License		    *
+ *							    *
  ****************************************************************************/
 
 #define INCL_NOBASEAPI

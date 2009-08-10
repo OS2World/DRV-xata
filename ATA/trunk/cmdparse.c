@@ -5,7 +5,8 @@
  * DESCRIPTIVE NAME =  DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2006
+ *	       COPYRIGHT Daniela Engert 1999-2009
+ * distributed under the terms of the GNU Lesser General Public License
  *
  * DESCRIPTION : ADD CONFIG.SYS Command Line Parser Helper Routine
  *

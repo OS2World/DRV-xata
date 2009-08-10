@@ -5,12 +5,13 @@
  * DESCRIPTIVE NAME =  IORB defines the interface between Device Managers
  *		       and Adapter Device Drivers (ADDs).
  *
- * Copyright : COPYRIGHT Daniela Engert 1999-2006
+ * Copyright : COPYRIGHT Daniela Engert 1999-2009
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1997
  *	       LICENSED MATERIAL - PROGRAM PROPERTY OF IBM
  *	       REFER TO COPYRIGHT INSTRUCTION FORM#G120-2083
  *	       RESTRICTED MATERIALS OF IBM
  *	       IBM CONFIDENTIAL
+ * distributed under the terms of the GNU Lesser General Public License
  *
  * VERSION = V2.0
  *

@@ -4,8 +4,9 @@
  *
  * DESCRIPTIVE NAME = DANIS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- * Copyright : COPYRIGHT Daniela Engert 1999-2008
- *
+ * Copyright : COPYRIGHT Daniela Engert 1999-2009
+ * distributed under the terms of the GNU Lesser General Public License
+*
  * DESCRIPTION : Adapter Driver ServerWorks OSB routines.
  ****************************************************************************/
 
@@ -53,6 +54,7 @@
 #define CSB5_100	    3	/* CSB5  ATA100 		*/
 #define ATI_IXP 	    4	/* IXP1  ATA100 		*/
 #define ATI_IXP2	    5	/* IXP2  ATA133 		*/
+#define VIA_SB 	            6	/* VIA SBxxx  ATA133 	*/
 
 /* remap some structure members */
 

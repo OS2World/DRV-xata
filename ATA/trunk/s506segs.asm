@@ -8,7 +8,8 @@
 ;*		      CODE/DATA segment declarations.
 ;*
 ;* Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
-;*	       COPYRIGHT Daniela Engert, 2000-2006
+;*	       COPYRIGHT Daniela Engert, 2000-2009
+;* distributed under the terms of the GNU Lesser General Public License
 ;*
 ;****************************************************************************
 

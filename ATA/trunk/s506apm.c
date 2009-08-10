@@ -4,7 +4,8 @@
  *
  * DESCRIPTIVE NAME = DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- * Copyright : COPYRIGHT Daniela Engert 1999-2008
+ * Copyright : COPYRIGHT Daniela Engert 1999-2009
+ * distributed under the terms of the GNU Lesser General Public License
  *
  * DESCRIPTION : Adapter Driver APM callback routines
  ****************************************************************************/

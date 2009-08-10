@@ -7,6 +7,7 @@
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
  *	       COPYRIGHT Daniela Engert, 1999-2009
+ * distributed under the terms of the GNU Lesser General Public License
  *
  *****************************************************************************/
 
@@ -32,7 +33,7 @@
 
 #define YEAR  2009
 #define MONTH 5
-#define DAY   24
+#define DAY   25
 #define PCMCIAVERSION 0x186
 
 /*-------------------------------------------------------------------*/
@@ -470,6 +471,7 @@ USHORT CListCVia[] = {
 	0x7372, 0x3149,     // VT8237S	-> VT8237 SATA
 	0x5287, 0x3349,     // VT8251	-> VT8251 SATA ?
 	0x6287, 0x3349,     // VT8251	-> VT8251 SATA
+	0x7800, 0x3349,     // SB900	-> VT8251 SATA
 	0x9000, 0x3349,     // VT8261	-> VT8251 SATA
 	0x9040, 0x3349,     // VT8261	-> VT8251 SATA
 		0 };
@@ -747,6 +749,9 @@ USHORT CListCIXPA[] = {
 		0 };
 USHORT CListFIXPA[] = {
 		0x4380,     // ATI IXP600 SATA
+		0 };
+USHORT CListFVSB[] = {
+		0x780c,     // VIA SB900
 		0 };
 USHORT CListNetCell[] = {
 		0x0044,     // SR510x/310x
@@ -1048,6 +1053,14 @@ PCI_DEVICE PCIDevice[] =
       CListNULL, CListFITE2,
       0x41, 0x43, 0x77, 0x00, 0x10,
       NULL },
+  { { 0, 0x1106, ATI, MODE_COMPAT_ONLY, TR_PIO_EQ_DMA | TR_SAME_DMA_TYPE, 2,
+      AcceptIXP, CfgOSB,
+      NULL, NonsharedCheckIRQ,
+      GetOSBPio, SetupCommon,
+      CalculateAdapterTiming, OSBTimingValue, ProgramOSBChip},
+      CListNULL, CListFVSB,
+      0x04, 0x04, 0x00, 0x00, 0x40,
+      VIASBMsgtxt },
   { { 0, 0, generic, MODE_NATIVE_OK, 0, 2,
       AcceptGeneric, CfgGeneric,
       GenericInitComplete, NonsharedCheckIRQ,
@@ -1194,6 +1207,7 @@ UCHAR  OPTIMsgtxt[]    = "Opti c621";
 UCHAR  NForceMsgtxt[]  = "NVidia nForce%s";
 UCHAR  ITEMsgtxt[]     = "ITE %X";
 UCHAR  IXPMsgtxt[]     = "ATI IXP";
+UCHAR  VIASBMsgtxt[]   = "VIA SB900";
 UCHAR  NsSCxMsgtxt[]   = "NS Geode SCx200";
 UCHAR  NetCellMsgtxt[] = "NetCell SyncRAID";
 UCHAR  JMMsgtxt[]      = "JMicron JMB%x";
