@@ -276,6 +276,7 @@ extern UCHAR	      PromiseMIOtxt[];
 extern UCHAR	      MarvellMsgtxt[];
 extern UCHAR	      InitioMsgtxt[];
 extern UCHAR	      BroadcomMsgtxt[];
+extern UCHAR	      VIASBMsgtxt[];	// 07 Jun 10 SHL
 extern UCHAR	      GenericBMMsgtxt[];
 extern UCHAR	      GenericMsgtxt[];
 extern UCHAR	      IDERMsgtxt[];
