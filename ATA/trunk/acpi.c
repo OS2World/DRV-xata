@@ -45,9 +45,9 @@ BOOL FAR ACPISetup (VOID)
   if (isACPIPresent) return (FALSE);	 /* already initialized */
 
   if (DevHelp_AttachDD (ACPICA_DDName, (NPBYTE)&ACPIIDC))
-    return (1);     /* couldn't find ACPICA IDC entry point
+    return (1);     /* couldn't find ACPICA IDC entry point */	// 07 Jun 10 SHL was nested
 
-  if (!isACPIPresent) || (ACPIIDC.ProtIDC_DS == NULL))
+  if (!isACPIPresent|| ACPIIDC.ProtIDC_DS == NULL)	// 07 Jun 10 SHL correct syntax error
     return (1);     /* Bad Entry Point or Data Segment */
 
   APICRewire = 0;
