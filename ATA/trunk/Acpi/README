@@ -1,0 +1,27 @@
+Danis506 ACPI interface notes
+07 Sep 2010
+
+The standard ACPI headers no longer support 16-bit platforms or 16-bit
+compilers.
+
+This directory tree contains a modified, minimal subset of ACPI PSD headers
+as of ACPI svn changeset 292.  See src/acpi/common/include.
+
+These headers have been modified to recognize the MSC compiler and generate
+definitions that are correctly packed and sized.
+
+References to unused headers have been deleted from acpi.h
+
+Code that needs modification to support the 16-bit MSC compiler has been
+wrapped in _MSC_VER #ifdefs.
+
+Code that would generate spurious warnings (bsekee.h) has been wrapped
+in _MSC_VER #ifdefs.
+
+Unused code that would generate compile errors has been wrapped in _MSC_VER
+#ifdefs.
+
+The following warning is expected
+
+Acpi\bsekee.h(485) : warning C4040: memory attribute on 'pfnHook' ignored
+

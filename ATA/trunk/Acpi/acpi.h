@@ -1,6 +1,7 @@
 /******************************************************************************
  *
  * Name: acpi.h - Master public include file used to interface to ACPICA
+ * Modified to support 16-bit eComStation/OS2 drivers (see _MSC_VER)
  *
  *****************************************************************************/
 
@@ -124,15 +125,9 @@
  * all ACPI tables (FADT, MADT, etc.)
  *
  * Note: The order of these include files is important.
+ * Ununsed headers deleted (_MSC_VER)
  */
 #include "platform/acenv.h"     /* Environment-specific items */
-#include "acnames.h"            /* Common ACPI names and strings */
 #include "actypes.h"            /* ACPICA data types and structures */
-#include "acexcep.h"            /* ACPICA exceptions */
-#include "actbl.h"              /* ACPI table definitions */
-#include "acoutput.h"           /* Error output and Debug macros */
-#include "acrestyp.h"           /* Resource Descriptor structs */
-#include "acpiosxf.h"           /* OSL interfaces (ACPICA-to-OS) */
-#include "acpixf.h"             /* ACPI core subsystem external interfaces */
 
 #endif /* __ACPI_H__ */

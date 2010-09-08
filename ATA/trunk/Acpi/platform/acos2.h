@@ -1,6 +1,7 @@
 /******************************************************************************
  *
  * Name: acos2.h - OS/2 specific defines, etc.
+ * Modified to support 16-bit eComStation/OS2 drivers (see _MSC_VER)
  *
  *****************************************************************************/
 
@@ -115,14 +116,23 @@
 
 #ifndef __ACOS2_H__
 #define __ACOS2_H__
+
+// 20 Jul 09 SHL
+#ifndef OS2_INCLUDED
+#error help me
 #define INCL_LONGLONG
 #include <os2.h>
-
+#endif
 
 #define ACPI_MACHINE_WIDTH          32
 
+#ifndef _MSC_VER // 20 Jul 09 SHL use values defined by DDK headers
 #define COMPILER_DEPENDENT_INT64    long long
 #define COMPILER_DEPENDENT_UINT64   unsigned long long
+#else
+#define COMPILER_DEPENDENT_INT64 LONGLONG
+#define COMPILER_DEPENDENT_UINT64 ULONGLONG
+#endif
 #define ACPI_USE_NATIVE_DIVIDE
 
 #define ACPI_SYSTEM_XFACE           APIENTRY
@@ -141,10 +151,8 @@
 #define ACPI_USE_STANDARD_HEADERS
 #include <io.h>
 
-#ifndef ACPI_EXEC_APP
 #define ACPI_FLUSH_CPU_CACHE() Wbinvd()
 void Wbinvd(void);
-#endif
 
 #define ACPI_ACQUIRE_GLOBAL_LOCK(GLptr, Acq)       Acq = OSPMAcquireGlobalLock(GLptr)
 #define ACPI_RELEASE_GLOBAL_LOCK(GLptr, Pnd)       Pnd = OSPMReleaseGlobalLock(GLptr)
@@ -166,11 +174,9 @@ unsigned short OSPMReleaseGlobalLock (void *);
 #define inline
 #endif
 
-#if !defined(ACPI_ASL_COMPILER) && !defined(ACPI_EXEC_APP)
+#ifndef ACPI_ASL_COMPILER
 #define ACPI_USE_LOCAL_CACHE
 #undef ACPI_DEBUGGER
 #endif
-
-#define ACPI_MUTEX_TYPE ACPI_OSL_MUTEX
 
 #endif /* __ACOS2_H__ */

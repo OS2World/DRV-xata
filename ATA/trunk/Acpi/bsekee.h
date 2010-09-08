@@ -1,7 +1,7 @@
-/*static char *SCCSID = "@(#)bsekee.h   1.00 98/02/03";*/
 /***************************************************************************
 *
 * Module Name: BSEKEE.H
+* Modified to support 16-bit eComStation/OS2 drivers (see _MSC_VER)
 *
 * OS/2 Base Include File For KEE
 *
@@ -129,6 +129,9 @@ APIRET  APIENTRY KernLinToPageList (VOID           *pLinAddr,
 /*
  * LockFlags
  */
+
+#ifndef _MSC_VER // 07 Sep 10 SHL use values defined in DDK dhcalls.h to avoid warnings
+
 #define VMDHL_NOBLOCK     0x01  /* (0000 0001B)
                                  * If set, return if the requested pages are
                                  * not immediately available.
@@ -182,6 +185,8 @@ APIRET  APIENTRY KernLinToPageList (VOID           *pLinAddr,
                                   * just lock non-contiguosly
                                   */
 
+#endif // _MSC_VER // 07 Sep 10 SHL use values defined in DDK dhcalls.h to avoid warnings
+
 APIRET APIENTRY KernVMLock (ULONG           VMLockFlags,
                             VOID           *pLinAddr,
                             ULONG           cBytes,
@@ -194,6 +199,9 @@ APIRET  APIENTRY KernVMUnlock (KernVMLock_t *pLockHandle);
 /*
  * AllocFlags
  */
+
+#ifndef _MSC_VER // 07 Sep 10 SHL use values defined in DDK dhcalls.h to avoid warnings
+
 #define VMDHA_16MB        0x001 /* (0000 0000 00001B)
                                  * If set, the object will be allocated below
                                  * the 16M line
@@ -280,6 +288,8 @@ APIRET  APIENTRY KernVMUnlock (KernVMLock_t *pLockHandle);
                                  * will be aligned on 64K boundary.
                                  */
 
+#endif // _MSC_VER // 07 Sep 10 SHL use values defined in DDK dhcalls.h to avoid warnings
+
 APIRET APIENTRY KernVMAlloc (ULONG   cBytes,
                              ULONG   VMAllocFlags,
                              VOID  **ppLinAddr,
@@ -291,6 +301,9 @@ APIRET  APIENTRY KernVMFree (VOID *pLinAddr);
 /*
  * SetMemFlags
  */
+
+#ifndef _MSC_VER // 07 Sep 10 SHL use values defined in DDK dhcalls.h to avoid warnings
+
 #define VMDHS_DECOMMIT    0x01  /* (0000 0001B)
                                  * If set, the address range is decommitted.
                                  * The address range must entirely committed.
@@ -307,6 +320,8 @@ APIRET  APIENTRY KernVMFree (VOID *pLinAddr);
                                  * entirely decommitted, all resident, or all
                                  * swappable.
                                  */
+
+#endif // _MSC_VER // 07 Sep 10 SHL use values defined in DDK dhcalls.h to avoid warnings
 
 APIRET APIENTRY KernVMSetMem (ULONG  VMSetMemFlags,
                               VOID  *pLinAddr,
@@ -413,12 +428,14 @@ typedef unsigned short SELECTOR;
 /*
  * DynAPIFlags
  */
+#ifndef _MSC_VER // 07 Sep 10 SHL use values defined in DDK dhcalls.h to avoid warnings
 #define DYNAPI_CALLGATE32  0x0  /* (0000B)
                                  * 0:32 Call Gate
                                  */
 #define DYNAPI_ROUTINE32   0x0  /* (0000B)
                                  * 0:32 routine address
                                  */
+#endif // _MSC_VER // 07 Sep 10 SHL use values defined in DDK dhcalls.h to avoid warnings
 
 APIRET  APIENTRY KernDynamicAPI (VOID     *RoutineAddress,
                                  ULONG     ParmCount,
@@ -464,6 +481,7 @@ APIRET  APIENTRY KernStrToUcs (PUconvObj  co,
 
 typedef VOID (* APIENTRY PFNCXTHOOK)(ULONG);
 
+// 07 Sep 10 SHL Warning expected
 APIRET APIENTRY KernAllocateContextHook (PFNCXTHOOK pfnHook,
                                          ULONG      Flags,
                                          ULONG     *HookHandle);
@@ -486,9 +504,12 @@ extern PVOID _KernInterruptLevel;
 #define	KernInterruptLevel	*(PULONG)&_KernInterruptLevel
 #define	KernTKSSBase		*(PULONG)&_KernTKSSBase
 
+#ifndef _MSC_VER // 07 Sep 10 SHL use values defined in DDK dhcalls.h to avoid warnings
 void __cdecl KernPrintf (char *, ... );
+#else
+void _cdecl KernPrintf (char *, ... );
+#endif // _MSC_VER // 07 Sep 10 SHL use values defined in DDK dhcalls.h to avoid warnings
 
 #pragma pack()
 
 #endif
-

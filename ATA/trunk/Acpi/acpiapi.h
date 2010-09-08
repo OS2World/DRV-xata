@@ -1,7 +1,7 @@
-/* $Id: 1$ */
 /** @acpi.c
   *
   *  API interface for ACPI
+  *  Modified to support 16-bit eComStation/OS2 drivers (see _MSC_VER)
   *
   * netlabs.org confidential
   *
@@ -52,6 +52,8 @@ typedef struct _LAPICError_
 
 #define MAX_CSTATE  3
 
+#ifndef _MSC_VER
+
 typedef struct _Processor_
 {
     ACPI_IO_ADDRESS         PblkAddress;                   // Address P_BLK
@@ -69,22 +71,13 @@ typedef struct _Processor_
     ACPI_GENERIC_ADDRESS    CxState[MAX_CSTATE];           // C state control register
     UINT32                  State;                         // CPU State Idle/Busy
     UINT32                  Divider;                       // Divider for APIC timer (HLT)
-    UINT32                  TimerValue;                    // How many time in HLT
-    unsigned                InIdle;                        // For skip 1st going to Idle
-    unsigned                NeedCxHLT;                     // Need HLT after Cx
-    UINT32                  CR3Addr;                       // Phys addr of PageDir
-    UINT32                  LastThrtl;                     // Last setting throttling
-    // Statistics
-    UINT64                  IPIGenCount;                   //
     UINT64                  IPICount;                      // Statistics for IPI
-    UINT64                  IPIHLTCount;                   // Statistics for IPI
-    UINT64                  IdleCounter;                   //
-    UINT64                  BusyCounter;                   //
-    //  Filled by APM
-    UINT64                  C1Counter;                     // 
-    UINT64                  C2Counter;                     //
-    UINT64                  C3Counter;                     //
+    UINT32                  TimerValue;                    // How many time in HLT
+    UINT32                  InIdle;                        // For skip 1st going to Idle
+    UINT32                  CR3Addr;                       // Phys addr of PageDir
 } PROCESSOR, *PPROCESSOR;
+
+#endif // _MSC_VER
 
 typedef void   (*EOIFunction)(void);
 typedef void   (*KernelFunction)(void);
@@ -234,10 +227,6 @@ APIRET APIENTRY WaitNotify(ACPI_API_HANDLE *Hdl,ACPI_HANDLE *NotifyHandle,UINT32
 APIRET APIENTRY WaitEmbeddedEvent(ACPI_API_HANDLE *Hdl,ACPI_HANDLE *EmbeddedHandle,UINT32 *EmbeddedNumber,UINT32 TimeOut);
 APIRET APIENTRY AcpiGetPCIDev(ACPI_API_HANDLE *Hdl,PKNOWNDEVICE dev);
 APIRET APIENTRY AcpiRWEmbedded(ACPI_API_HANDLE *Hdl,UINT32 Number,UINT32 Function, ACPI_PHYSICAL_ADDRESS Address, ACPI_INTEGER *Value);
-APIRET APIENTRY AcpiPCIFunction(ACPI_API_HANDLE *Hdl, UINT32 Function, ACPI_PCI_ID *PciId, UINT32 Register, void *Value, UINT32 Width);
-#define PCI_FUNCTION_READ    0
-#define PCI_FUNCTION_WRITE   1
-APIRET APIENTRY AcpiInternalTest(ACPI_API_HANDLE *Hdl,UINT32 Some);
 unsigned char * APIENTRY AcpiStatusToStr(ACPI_STATUS Status);
 void SetCPU ( UINT32 Number);
 

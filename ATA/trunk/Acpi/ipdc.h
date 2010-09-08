@@ -1,8 +1,7 @@
-/* $Id: 1$ */
 /** @ipdc.h
   *
-  *  Inter PSD Device communication module
-  *
+  * Inter PSD Device communication module
+  * Modified to support 16-bit eComStation/OS2 drivers (see _MSC_VER)
   * netlabs.org confidential
   *
   * Copyright (c) 2005 netlabs.org
@@ -48,8 +47,6 @@
 #define WAIT_EMBEDDED_FUNCTION      0x98
 #define FIND_PCI_DEVICE             0x99
 #define GETHANDLE_FUNCTION          0x9A
-#define ACPI_INTERNAL_TEST          0x9B
-#define READ_WRITE_PCI              0x9C          // Direct PCI functions
 // Set event flag
 #define SET_POWERBUTTON_FLAG        0x100
 #define SET_SLEEPBUTTON_FLAG        0x101
@@ -86,16 +83,6 @@ typedef struct _RW_Embedded_
     ACPI_INTEGER            *Value;
     ACPI_STATUS             Status;               
 } RW_EMBEDDED, *PRW_EMBEDDED;
-// Parameters for PCI functions
-typedef struct _PCI_Function_
-{
-    ACPI_PCI_ID             PciId;
-    UINT32                  Register;
-    void                    *Value;
-    UINT32                  Width;
-    UINT32                  Function;           // 0 - read, 1 write
-    ACPI_STATUS             Status;               
-} PCI_FINCTION, *PPCI_FUNCTION;
 // Parameters for AppComm export
 typedef struct _AppCommPar_
 {
@@ -140,6 +127,8 @@ typedef struct _SGIPar_
     ACPI_STATUS             Status;                           // Where returned status from driver call
 } SGIPar, *PSGIPar;
 
+#ifndef _MSC_VER
+
 typedef struct _GHTPar_                                       // AcpiGetTableHeader
 {
     ACPI_STRING             Signature;
@@ -155,6 +144,8 @@ typedef struct _GTPar_                                        // AcpiGetTableHea
     ACPI_TABLE_HEADER       **OutTable;
     ACPI_STATUS             Status;                           // Where returned status from driver call
 } GTPar, *PGTPar;
+
+#endif // _MSC_VER
 
 typedef struct _WNSPar_
 {
@@ -235,18 +226,15 @@ typedef struct _EmbbededPacket_
     ACPI_PHYSICAL_ADDRESS   Address;
     UINT32                  Data;
     UINT32                  Stage;
-    UINT32                  QData;
 } EMBEDDED_PACKET, *PEMBEDDED_PACKET;
 
-#define EMBEDDED_PACKET_STAGE_NONE      0x0
-#define EMBEDDED_PACKET_STAGE_HDR       0x1
-#define EMBEDDED_PACKET_STAGE_ADDR      0x2
-#define EMBEDDED_PACKET_STAGE_DATA      0x3
-#define EMBEDDED_PACKET_STAGE_END       0x4
-#define EMBEDDED_PACKET_STAGE_QUEUE     0x5
-#define EMBEDDED_PACKET_STAGE_BURNON    0x6
-#define EMBEDDED_PACKET_STAGE_BURNOFF   0x7
-#define EMBEDDED_PACKET_STAGE_NOTUSE    0x8
+#define EMBEDDED_PACKET_STAGE_NONE  0x0
+#define EMBEDDED_PACKET_STAGE_HDR   0x1
+#define EMBEDDED_PACKET_STAGE_ADDR  0x2
+#define EMBEDDED_PACKET_STAGE_DATA  0x3
+#define EMBEDDED_PACKET_STAGE_END   0x4
+
+#ifndef _MSC_VER
 
 typedef struct _EmmbeddedController_
 {
@@ -263,15 +251,10 @@ typedef struct _EmmbeddedController_
     UINT8                   *EvalMethod;                      // _Qxx to evaluate
     EMBEDDED_PACKET         Packet;                           // 
     UINT32                  NeedQueue;
-    volatile int            Use;                              // Lock
-    volatile int            QueueUse;                         // Lock
-    ACPI_MUTEX              EC_MTX;
 } EMMBEDDED_CONTROLLER, *PEMMBEDDED_CONTROLLER;
 
-// Method for working with embedded controller
-#define EMMBEDDED_PART                  0x0                   // Partially polling, default
-#define EMMBEDDED_INT                   0x1                   // interrupt driven
-#define EMMBEDDED_POLL                  0x2                   // full polling
+#endif // _MSC_VER
+
 
 typedef struct _EvaluateName_
 {
@@ -356,6 +339,15 @@ UINT32 MicroSecondsToTics(UINT32 MicroSeconds);
 void InternalThrtl(UINT32 ThrtlFlag);
 #define ACPI_INTR_THRTL_ON   1
 #define ACPI_INTR_THRTL_OFF  2
+
+// For PCI_WRITE from acpi.cfg
+typedef struct _PciWrite_
+{
+    UINT32                 Val;
+    UINT32                 Reg;
+    ACPI_PCI_ID            PciId;
+    struct _PciWrite_      *Next;
+} PCI_WRITE, *PPCI_WRITE;
 
 #pragma pack()
 

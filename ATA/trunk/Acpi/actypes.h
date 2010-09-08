@@ -1,6 +1,7 @@
 /******************************************************************************
  *
  * Name: actypes.h - Common data types for the entire ACPI subsystem
+ * Modified to support 16-bit eComStation/OS2 drivers (see _MSC_VER)
  *
  *****************************************************************************/
 
@@ -255,8 +256,14 @@ typedef UINT64                          ACPI_PHYSICAL_ADDRESS;
 
 /*! [Begin] no source code translation (keep the typedefs as-is) */
 
+// 24 Aug 10 SHL Support 16-bit MSC compiler
+#ifndef _MSC_VER
 typedef unsigned int                    UINT32;
 typedef int                             INT32;
+#else
+typedef unsigned long                   UINT32;
+typedef long                            INT32;
+#endif
 
 /*! [End] no source code translation !*/
 
