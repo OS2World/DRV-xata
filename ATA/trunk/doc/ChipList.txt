@@ -1,6 +1,11 @@
 ================================================================================
+                            DANI506.ADD v1.8.7
+================================================================================
 		    Parallel ATA/ATAPI	(PATA/PATAPI)
 ================================================================================
+
+*  Changes to the previous release are denoted by "*" tags.
+
  Vendor
  | Device
  | | Revision			      ATA  LBA48  ATAPI       ATA66  ATA133
@@ -79,6 +84,8 @@
    0x3249	 VT6421  PATA	     x	 x   x	  x   x     x	x   x	x    -
    0x5324	 CX700		     x	 x   x	  x   x     x	x   x	x    -
 
+*  0xC409        VX855/875 PATA      x	 x   x	  x   x     x	x   x	x    -
+
  known bugs:
    - all:  no host side cable type detection.
    - all:  the busmaster 'active' bit doesn't match the actual busmaster state.
@@ -99,6 +106,7 @@
      ==0xC4	 1535D+ 	     x	 x   -	  x   x     x	x   x	-    x
      > 0xC4	 1535D+ 	     x	 x   x	  x   x     x	x   x	x    -
    0x5228 ALi			     x	 x   x	  x   x     x	x   x	x    x
+
 
  known bugs:
    - 1535 and better: varying methods of host side cable type detection.
@@ -297,6 +305,7 @@
    0x0448     nForce-M65	     x	 x   x	  x   x     x	x   x	x    -
    0x0560     nForce-M67	     x	 x   x	  x   x     x	x   x	x    -
    0x056C     nForce-M71	     x	 x   x	  x   x     x	x   x	x    -
+
    0x0759     nForce-M77	     x	 x   x	  x   x     x	x   x	x    -
 
  known bugs:
@@ -316,6 +325,8 @@
  0x1283 ITE
    0x8211 IT8211F		     x	 x   x	  x   x     x	x   x	x    x
    0x8212 IT8212F		     x	 x   x	  x   x     x	x   x	x    x
+
+*  0x8213 ITE8213                    x	 x   x	  x   x     x	x   x	x    ?
 
  known bugs:
    - all: only one set of timing registers per channel -> common transfer modes!
@@ -415,6 +426,18 @@
    0x3A20 ICH10 4p		     x	 x   x	  x   x     x	x	?    x
    0x3A25 ICH10 (AHCI)		     x	 x   x	  x   x     x	x	?    x
    0x3A26 ICH10 2p		     x	 x   x	  x   x     x	x	?    x
+
+*  0x3B20 PCH SATA 4p                x	 x   x	  x   x     x	x	?    x
+*  0x3B21 PCH SATA 2p                x	 x   x	  x   x     x	x	?    x
+*  0x3B24 PCH SATA RAID              x	 x   x	  x   x     x	x	?    x
+*  0x3B25 PCH SATA RAID              x	 x   x	  x   x     x	x	?    x
+*  0x3B26 PCH SATA 2p                x	 x   x	  x   x     x	x	?    x
+*  0x3B28 PCH SATA 4p                x	 x   x	  x   x     x	x	?    x
+*  0x3B2B PCH SATA RAID              x	 x   x	  x   x     x	x	?    x
+*  0x3B2C PCH SATA RAID              x	 x   x	  x   x     x	x	?    x
+*  0x3B2D PCH SATA2 2p               x	 x   x	  x   x     x	x	?    x
+*  0x3B2E PCH SATA2 4p               x	 x   x	  x   x     x	x	?    x
+
    0x5028 Tolapai		     x	 x   x	  x   x     x	x	?    x
    0x502A Tolapai (AHCI)	     x	 x   x	  x   x     x	x	?    x
    0x502B Tolapai (AHCI)	     x	 x   x	  x   x     x	x	?    x
@@ -439,6 +462,11 @@
    0x6287 VT8251   SATA 	     x	 x   x	  x   ?     x	x	x    -
    0x7353 CX/VX800 SATA 	     x	 x   x	  x   -     x	?	x    -
    0x7372 VT8237S  SATA 	     x	 x   x	  x   -     x	x	x    -
+
+*  0x7800 SB900    SATA              x	 x   x	  x   ?     x	x	x    -
+*  0x780c SB900    SATA              x	 x   x	  x   ?     x	x	x    -
+*  0x9000 VT8261   SATA              x	 x   x	  x   ?     x	x	x    -
+*  0x9040 VT8261   SATA              x	 x   x	  x   ?     x	x	x    -
 
  known bugs:
    - 8237: doesn't connect to 3Gb/s device interfaces
@@ -511,6 +539,16 @@
    0x07F1 nForce-M73 SATA 2	     x	 x   x	  x   x     x	x	?    -
    0x07F2 nForce-M73 SATA 3	     x	 x   x	  x   x     x	x	?    -
    0x07F3 nForce-M73 SATA 4	     x	 x   x	  x   x     x	x	?    -
+
+*  0x07F4 nForce7 M73 SATA 5         x	 x   x	  x   x     x	x	?    -
+*  0x07F5 nForce7 M73 SATA 6         x	 x   x	  x   x     x	x	?    -
+*  0x07F6 nForce7 M73 SATA 7         x	 x   x	  x   x     x	x	?    -
+*  0x07F7 nForce7 M73 SATA 8         x	 x   x	  x   x     x	x	?    -
+*  0x07F8 nForce7 M73 SATA 9         x	 x   x	  x   x     x	x	?    -
+*  0x07F9 nForce7 M73 SATA 10        x	 x   x	  x   x     x	x	?    -
+*  0x07FA nForce7 M73 SATA 11        x	 x   x	  x   x     x	x	?    -
+*  0x07FB nForce7 M73 SATA 12        x	 x   x	  x   x     x	x	?    -
+
    0x0AD0 nForce-M77 SATA	     x	 x   x	  x   x     x	x	?    -
    0x0AD1 nForce-M77 SATA 2	     x	 x   x	  x   x     x	x	?    -
    0x0AD2 nForce-M77 SATA 3	     x	 x   x	  x   x     x	x	?    -
@@ -519,6 +557,27 @@
    0x0AB5 nForce-M79 SATA 2	     x	 x   x	  x   x     x	x	?    -
    0x0AB6 nForce-M79 SATA 3	     x	 x   x	  x   x     x	x	?    -
    0x0AB7 nForce-M79 SATA 4	     x	 x   x	  x   x     x	x	?    -
+
+*  0x0AB9 nForce7 M79 SATA4          x	 x   x	  x   x     x	x	?    -
+*  0x0ABA nForce7 M79 SATA4          x	 x   x	  x   x     x	x	?    -
+*  0x0ABB nForce7 M79 SATA4          x	 x   x	  x   x     x	x	?    -
+*  0x0ABC nForce7 M79 SATA4          x	 x   x	  x   x     x	x	?    -
+*  0x0ABD nForce7 M79 SATA4          x	 x   x	  x   x     x	x	?    -
+*  0x0ABE nForce7 M79 SATA4          x	 x   x	  x   x     x	x	?    -
+*  0x0ABF nForce7 M79 SATA4          x	 x   x	  x   x     x	x	?    -
+*  0x0D84 nForce7 M89 SATA           x	 x   x	  x   x     x	x	?    -
+*  0x0D85 nForce7 M89 SATA           x	 x   x	  x   x     x	x	?    -
+*  0x0D86 nForce7 M89 SATA           x	 x   x	  x   x     x	x	?    -
+*  0x0D87 nForce7 M89 SATA           x	 x   x	  x   x     x	x	?    -
+*  0x0D88 nForce7 M89 SATA           x	 x   x	  x   x     x	x	?    -
+*  0x0D89 nForce7 M89 SATA           x	 x   x	  x   x     x	x	?    -
+*  0x0D8A nForce7 M89 SATA           x	 x   x	  x   x     x	x	?    -
+*  0x0D8B nForce7 M89 SATA           x	 x   x	  x   x     x	x	?    -
+*  0x0D8C nForce7 M89 SATA           x	 x   x	  x   x     x	x	?    -
+*  0x0D8D nForce7 M89 SATA           x	 x   x	  x   x     x	x	?    -
+*  0x0D8E nForce7 M89 SATA           x	 x   x	  x   x     x	x	?    -
+*  0x0D8F nForce7 M89 SATA           x	 x   x	  x   x     x	x	?    -
+
 
 --------------------------------------------------------------------------------
  0x1191 AEC/Artop
