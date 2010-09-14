@@ -1046,27 +1046,24 @@ INSTALLATION
      deleting that line or putting a 'rem' statement in front of it.
 
 FILES
-     DaniS506.ADD  The driver itself.
-     DaniS506.DDP  The device driver profile for DDINSTAL
-     DaniS506.DOC  The file you are reading right now :-)
-     DumpIDE.EXE   A utility to dump the current IDE registers
-     DiskInfo.EXE  A utility to show some information about the attached devices
-     PROBLEM.TXT   How to report problems
-     README        Copyright and license notice
-     ChipList.txt  Full listing of supported chipsets
-     DiskInfo.exe  Disk and driver info dump utility
-     DumpIDE.exe   
+     DaniS506.ADD       The driver itself
+     DaniS506.DDP       The device driver profile for DDINSTAL
+     DaniS506.DOC       The file you are reading right now :-)
+     DumpIDE.EXE        A utility to dump the current IDE registers
+     DiskInfo.EXE       A utility to show information about attached devices
+     PROBLEM.TXT        Problem reporting
+     ChipList.txt       Full listing of supported chipsets
+     README             Copyright and license notice
+     COPYING.LESSER     Lesser GPL License
 
      Smart\
        smartctl.exe	S.M.A.R.T. control utility
        smartctl.txt	smartctl.exe User Guide
 
      DiskInfo\
-       DiskInfo.c  Driver and disk info dump utility source code
-       Identify.c  Disk info dump utility
-       HDParm.h	   Header used by DiskInfo.c
-
-     DumpIDE\
+       DiskInfo.c       Driver and disk info dump utility source code
+       Identify.c       Disk info dump utility
+       HDParm.h	        Header used by DiskInfo.c
 
 BUGS
      Hopefully none, but who knows ...
