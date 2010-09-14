@@ -109,7 +109,7 @@ L702:		MOV	[XferCur], ECX
 		MOV	AX, [ppSrcDst + 2]
 		MOV	BX, [ppSrcDst]
 		MOV	SI, [MapSel]
-		MOV	DL, 2EH
+		MOV	DL, 2EH		; PhysToGDTSelector
 		CALL	[_Device_Help]
 		ADD	[ppSrcDst], ECX
 		MOV	EDX, [Port]

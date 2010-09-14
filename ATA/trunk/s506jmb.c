@@ -84,7 +84,7 @@ BOOL NEAR AcceptJMB (NPA npA)
   // check if port is enabled
   if (!(Control & (UCHAR)(1 << (4 * npA->IDEChannel)))) return (FALSE);
 
-  // AHCI mode enabled?
+  // Fail if AHCI mode enabled
   if (BAR5 && (InD (BAR5 | AHCI_GHC) & AHCI_GHC_AHCIENABLED)) return (FALSE);
 
   sprntf (npA->PCIDeviceMsg, JMMsgtxt, MEMBER(npA).Device & 0xFFF);

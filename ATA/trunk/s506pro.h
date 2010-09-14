@@ -4,10 +4,10 @@
  *
  * DESCRIPTIVE NAME =  DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- *
- * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2009
- * distributed under the terms of the GNU Lesser General Public License
+ * COPYRIGHT IBM CORPORATION, 1991, 1992
+ * COPYRIGHT Daniela Engert 1999-2009
+ * Portions Copyright (c) 2010 Steven H. Levine
+ * Distributed under the terms of the GNU Lesser General Public License
  *
  * DESCRIPTION : C Function Prototype statements
  *
@@ -75,11 +75,11 @@ USHORT NEAR FixedInterrupt (NPA npA);
 USHORT NEAR CatchInterrupt (NPA npA);
 
 VOID   NEAR _cdecl LoadFlatGS (void);
-ULONG  NEAR _fastcall saveCLR32 (ULONG *location);
-ULONG  NEAR _fastcall saveGET32 (ULONG *location);
-USHORT NEAR _fastcall saveXCHG (NPUSHORT location, USHORT value);
-UCHAR  NEAR _fastcall saveINC (NPBYTE counter);
-UCHAR  NEAR _fastcall saveDEC (NPBYTE counter);
+ULONG  NEAR _fastcall safeCLR32 (ULONG *location);
+ULONG  NEAR _fastcall safeGET32 (ULONG *location);
+USHORT NEAR _fastcall safeXCHG (NPUSHORT location, USHORT value);
+UCHAR  NEAR _fastcall safeINC (NPBYTE counter);
+UCHAR  NEAR _fastcall safeDEC (NPBYTE counter);
 
 
 /*----------------------------------------------------------------------------*

@@ -1144,7 +1144,7 @@ VOID NEAR LPMEnable (NPU npU, NPIDENTIFYDATA npID)
   }
 }
 
-#if SUPPORT_DRIVETYPE
+#if SUPPORT_DRIVETYPE // 17 Aug 10 SHL fixme to be gone if code will never be used
 
 /*------------------------------------*/
 /*				      */

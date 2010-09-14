@@ -116,8 +116,8 @@ VOID FAR _cdecl S506Str1 (VOID)
 	pRPH->Status &= ~STBUI;
 	DevHelp_ProcRun ((ULONG)pRPH, &AwakeCount); /* run blocked process */
       }
-    ExitIOCtl:
 
+ExitIOCtl:
       ENABLE
       break;
     }
@@ -129,7 +129,8 @@ VOID FAR _cdecl S506Str1 (VOID)
       StatusError (pRPH, STATUS_DONE | STATUS_ERR_UNKCMD);
       break;
 
-    case CMDInitComplete : {
+    case CMDInitComplete :
+    {
       NPA   npA;
       NPU   npU;
       CHAR  Adapter, Unit;
@@ -202,8 +203,8 @@ VOID FAR _cdecl S506Str1 (VOID)
 	p = (PVOID)(((struct SysDev _far *)p)->SDevNext);
       }
 #endif
-      break;
     }
+    break;  // CMDInitComplete
 
     case CMDShutdown : {
       NPA  npA;
@@ -982,7 +983,7 @@ void NEAR DoIOCTLs (PRP_GENIOCTL pRP_IOCTL)
 	}
 	break;
 #endif
-    }
+    } // switch Function
 
 #ifdef ENABLE_SET_TIMINGS
   } else if (pRP_IOCTL->Category == DSKSP_CAT_TEST_CALLS) {

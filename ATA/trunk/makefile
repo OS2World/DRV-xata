@@ -1,19 +1,70 @@
-#/***********************************************************************/
-#/*									*/
-#/* Driver Name: DANIS506.ADD - Adapter Driver for PATA/SATA DASD	*/
-#/*		 ------------------------------------------------	*/
-#/*									*/
-#/* Source File Name: MAKEFILE						*/
-#/*									*/
-#/*---------------------------------------------------------------------*/
-#/*									*/
-#/* Copyright (C) 1999-2009 Daniela Engert				*/
-#/* distributed under the terms of the GNU Lesser General Public License
-#/*									*/
-#/***********************************************************************/
+# danis506 makefile
+# $Id: $
 
+# 19 Mar 09 SHL generalize
+# 07 Jun 10 SHL Clone from older msc build
+# 07 Jun 10 SHL Sync with LGPL sources
+
+#/************************************************************************/
+#/*									 */
+#/* Driver Name: DANIS506.ADD - Adapter Driver for PATA/SATA DASD	 */
+#/*		 ------------------------------------------------	 */
+#/*									 */
+#/* Source File Name: MAKEFILE						 */
+#/*									 */
+#/* Copyright (C) 1999-2009 Daniela Engert				 */
+#/* Portions Copyright (c) 2009, 2010 Steven H. Levine			 */
+#/*									 */
+#/* Distributed under the terms of the GNU Lesser General Public License */
+#/*									 */
+#/************************************************************************/
+
+# Build options that can be set in enviroment or on nmake command line
+
+# Build options that can be set in enviroment or on nmake command line
+#  VERSION - build version (i.e. 1.8) - see makefile for current default
+#  FIXLEVEL - fix level (i.e 7 for 1.8.7) - see makefile for current default
+#  VENDOR - builder (i.e. slainc, defaults to unknown)
+#  BUILDMACH - build machine (i.e. slamain, defaults to unknown)
+#  BUILDTIME - build time (yyyy/mm/dd hh:mm:ss) - make fails if not set
+#  LIBOBJ - points to prebuild runtime .obj file directory (defaults LibObj)
+#  ACPI - points to ACPI toolkit header directory (defaults (ACPI)
+
+# Build options that can be set on nmake command line
+#  icat - generate ICAT symbolic debug data (default is no ICAT data)
+#  notraces - suppress tracing logic - use for compressed build (default includes tracing logic)
+
+# 19 Mar 09 SHL Allow external define
+!ifdef VERSION
+_VERSION = $(VERSION)
+!else
 _VERSION = 1.8
-_FIXLEVEL = 6á
+!endif
+
+# 19 Mar 09 SHL Allow external define
+!ifdef FIXLEVEL
+_FIXLEVEL = $(FIXLEVEL)
+!else
+_FIXLEVEL = 7
+!endif
+
+# Allow override
+!ifdef VENDOR
+_VENDOR = $(VENDOR)
+!else
+_VENDOR = unknown
+!endif
+
+!ifndef BUILDMACH
+BUILDMACH = unknown
+!endif
+
+# Spacing matters to bldlevel
+!ifdef BUILDTIME
+TIMESTAMP = $(BUILDTIME)                  $(BUILDMACH)
+!else
+!error BUILDTIME must be defined as YYYY/MM/YY HH:MM:SS in environment
+!endif
 
 #****************************************************************************
 #  Dot directive definition area (usually just suffixes)
@@ -27,13 +78,9 @@ _FIXLEVEL = 6á
 #  Environment Setup for the component(s).
 #****************************************************************************
 
-#
 # Conditional Setup Area and User Defined Macros
-#
 
-#
 # Compiler Location w/ includes, libs and tools
-#
 
 INC	  = ..\..\..\..\..\inc
 H	  = ..\..\..\..\..\h
@@ -42,9 +89,16 @@ TOOLS	  = ..\..\..\..\..\tools
 DISKH	  = ..\..\diskh
 RMLIB	  = ..\..\..\resource\rmcalls
 APM	  = ..\..\..\thinkpad\dockii\apmcalls
-ACPI	  = Acpi
 
-#
+!ifndef ACPI
+ACPI	  = Acpi
+!endif
+# 19 Mar 09 SHL Point at object library directory
+
+!ifndef LIBOBJ
+LIBOBJ    = LibObj
+!endif
+
 # Since the compiler/linker and other tools use environment
 # variables ( INCLUDE, LIB, etc ) in order to get the location of files,
 # the following line will check the environment for the LIFE of the
@@ -72,17 +126,23 @@ PACK=nelite
 #
 # Set compiler and Linker Options
 #
-#  To create ICAT debug version use:
-#     nmake icat=on
-#
 
 AFLAGS = -MX -T -Z -M
 AINC   = -I. -I$(INC)
-CFLAGS = /c /Zp /G2sr /Answ /nologo /Oi
+
+# /Zp pack 1
+# /G2sr 286, no stack probes, fastcall
+# /Answ near data, small code, ss != ds, ds not reloaded
+# /Oi intrinsics
+# 19 Mar 09 SHL Define __OS2__ because code needs it; undefine MSDOS for safety
+# CFLAGS = /c /Zp /G2sr /Answ /nologo /Oi
+CFLAGS = /c /Zp /G2sr /Answ /nologo /Oi /D__OS2__ /UMSDOS
 LFLAGS = /map /nod /packd /a:2 /far
+
 PACKFLAGS = /P:255 /A:0 /S /E+ /O-
 
 !ifdef icat
+# Generate source level codeview debug data
 CFLAGS = $(CFLAGS) /Zi /Od
 LFLAGS = $(LFLAGS) /co
 !endif
@@ -93,9 +153,12 @@ CFLAGS = $(CFLAGS) /DTRACES=0
 CFLAGS = $(CFLAGS) /DTRACES=1
 !endif
 
+# 16 Aug 10 SHL Generate .cod listing
+# CFLAGS = $(CFLAGS) /Fc
+
+# Define in CL variable to keep command lines shorter
 !if [set CL=$(CFLAGS)]
 !endif
-
 CFLAGS=
 
 LIBS  =  $(APM)\apmcalls.lib $(RMLIB)\rmcalls.lib $(LIB)\libh.lib $(LIB)\os2286p.lib
@@ -124,7 +187,9 @@ OBJ4 =	S506INIT.OBJ CMDPARSE.OBJ S506PRTF.OBJ S506OEMI.OBJ S506GEOM.OBJ S506I13.
 OBJ5 =	S506COMN.OBJ S506PIIX.OBJ S506VIA.OBJ  S506GNRC.OBJ S506ALI.OBJ  S506SIS.OBJ
 OBJ6 =	S506CMD.OBJ  S506PDC.OBJ  S506CX.OBJ   S506HPT.OBJ  S506AEC.OBJ  S506SW.oBJ
 OBJ7 =	S506OPTI.OBJ S506SII.OBJ  S506ITE.OBJ  S506JMB.OBJ  S506NTIO.OBJ ACPI.OBJ
-OBJL =	..\..\LibObj\anfaulsh.obj ..\..\LibObj\anfauldi.obj ..\..\LibObj\anfaulre.obj
+# 19 Mar 09 SHL Use LIBOBJ
+# OBJL =	..\..\LibObj\anfaulsh.obj ..\..\LibObj\anfauldi.obj ..\..\LibObj\anfaulre.obj
+OBJL =	$(LIBOBJ)\anfaulsh.obj $(LIBOBJ)\anfauldi.obj $(LIBOBJ)\anfaulre.obj
 
 OBJS = $(OBJ1) $(OBJ2) $(OBJ3) $(OBJ4) $(OBJ5) $(OBJ6) $(OBJ7)
 
@@ -141,6 +206,7 @@ OBJS = $(OBJ1) $(OBJ2) $(OBJ3) $(OBJ4) $(OBJ5) $(OBJ6) $(OBJ7)
 	$(AS) -l -n $(AFLAGS) $(AINC) $*.asm;
 
 .c.obj:
+	echo CL=%%CL
 	$(CC) $(CFLAGS) $(CINC) $*.c
 
 .c.i:
@@ -156,7 +222,7 @@ OBJS = $(OBJ1) $(OBJ2) $(OBJ3) $(OBJ4) $(OBJ5) $(OBJ6) $(OBJ7)
 #   Target Information
 #****************************************************************************
 
-_VENDOR  = DANI
+# nmake requires #s to be quoted with ^
 FILEVER = @^#$(_VENDOR):$(_VERSION)^#@^#^#1^#^# $(TIMESTAMP)::::$(_FIXLEVEL)::@@
 CFLAGS = $(CFLAGS) /DVERSION=\"$(_VERSION).$(_FIXLEVEL)\"
 
@@ -183,6 +249,8 @@ clean:
 
 DaniS506.add:  $(OBJS) $(LIBS) $(HDR) makefile
 	Rem Create DEF file <<$(@B).def
+; Created by makefile
+
 LIBRARY $(@B)
 
 DESCRIPTION "$(FILEVER)  Adapter Driver for PATA/SATA DASD"
@@ -201,10 +269,10 @@ SEGMENTS
  InitCode	CLASS 'CODE' IOPL
  EndCode	CLASS 'CODE' IOPL
  Messages	CLASS 'MSGS' IOPL SWAPPABLE
- CSCode 	CLASS 'CODE' IOPL
+ CSCode	CLASS 'CODE' IOPL
  ACPICode	CLASS 'CODE' IOPL
  FCode		CLASS 'CODE' IOPL
- RMCode 	CLASS 'CODE' IOPL
+ RMCode	CLASS 'CODE' IOPL
 
 <<keep
 	$(LINK) $(LFLAGS) /NOE @<<$(@B).lnk

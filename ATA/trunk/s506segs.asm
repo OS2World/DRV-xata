@@ -7,8 +7,10 @@
 ;* DESCRIPTIVE NAME = DaniS506.ADD - Adapter Driver for PATA/SATA DASD
 ;*		      CODE/DATA segment declarations.
 ;*
-;* Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
-;*	       COPYRIGHT Daniela Engert, 2000-2009
+;* COPYRIGHT IBM CORPORATION, 1991, 1992
+;* COPYRIGHT Daniela Engert, 2000-2009
+;* Portions Copyright (c) 2010 Steven Levine and Associates, Inc.
+;*
 ;* distributed under the terms of the GNU Lesser General Public License
 ;*
 ;****************************************************************************
@@ -81,40 +83,47 @@ _TEXT		SEGMENT DWORD PUBLIC 'CODE'
 
 		.486p
 
-		PUBLIC	@saveXCHG
-@saveXCHG	PROC	NEAR
+		PUBLIC	@safeXCHG
+@safeXCHG	PROC	NEAR
 		XCHG	[BX], AX
 		RET
-@saveXCHG	ENDP
+@safeXCHG	ENDP
 
-		PUBLIC	@saveGET32
-@saveGET32	PROC	NEAR
+		PUBLIC	@safeGET32
+@safeGET32	PROC	NEAR
 		MOV	EAX, [BX]
 		SHLD	EDX, EAX, 16
 		RET
-@saveGET32	ENDP
+@safeGET32	ENDP
 
-		PUBLIC	@saveCLR32
-@saveCLR32	PROC	NEAR
+		PUBLIC	@safeCLR32
+@safeCLR32	PROC	NEAR
 		XOR	EAX, EAX
 		XCHG	EAX, [BX]
 		RET
-@saveCLR32	ENDP
+@safeCLR32	ENDP
 
-		PUBLIC	@saveDEC
-@saveDEC	PROC	NEAR
+		PUBLIC	@safeDEC
+@safeDEC	PROC	NEAR
 		LOCK DEC BYTE PTR [BX]
 		SETNZ	AL
 		RET
-@saveDEC	ENDP
+@safeDEC	ENDP
 
-		PUBLIC	@saveINC
-@saveINC	PROC	NEAR
+		PUBLIC	@safeINC
+@safeINC	PROC	NEAR
 		MOV	AL, 1
 		LOCK XADD BYTE PTR [BX], AL
 		RET
-@saveINC	ENDP
+@safeINC	ENDP
 
+		; IRQ handler entry points
+		; This strange code avoids cache flushes.
+		; BL gets loaded with the offset into the IHdr table.
+		; SI gets loaded with a don't care value which also
+		; preserves the contents of BL because the value
+		; happens to be the mov bl instruction at the entry
+		; point of the IRQ handler that follows.
 		PUBLIC @FixedIRQ0
 @FixedIRQ0	PROC	NEAR
 		MOV	BL, 0 * 6	; 2 bytes

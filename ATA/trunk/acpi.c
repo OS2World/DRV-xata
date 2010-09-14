@@ -2,10 +2,13 @@
  *
  * SOURCE FILE NAME = ACPI.C
  *
- * DESCRIPTIVE NAME =
+ * DESCRIPTIVE NAME =  DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- * Copyright : COPYRIGHT Daniela Engert 2006-2009
- * distributed under the terms of the GNU Lesser General Public License
+ * COPYRIGHT Daniela Engert 2006-2009
+ * Portions copyright (c) 2009, 2010 Steven H. Levine
+ * Distributed under the terms of the GNU Lesser General Public License
+ *
+ * DESCRIPTION: ACPI.PSD interface
  *
  ****************************************************************************/
 
@@ -28,13 +31,9 @@
 #include "s506ext.h"
 #include "s506pro.h"
 
-#if 1
-#define __OS2_16__
 #include <acpi.h>
 #include <ipdc.h>
-#include <amlresrc.h>
 #include <acpiapi.h>
-#endif
 
 #pragma optimize(OPTIMIZE, on)
 
@@ -45,9 +44,9 @@ BOOL FAR ACPISetup (VOID)
   if (isACPIPresent) return (FALSE);	 /* already initialized */
 
   if (DevHelp_AttachDD (ACPICA_DDName, (NPBYTE)&ACPIIDC))
-    return (1);     /* couldn't find ACPICA IDC entry point */	// 07 Jun 10 SHL was nested
+    return (1);     /* couldn't find ACPICA IDC entry point */	// 07 Jun 10 SHL comment was missing trailing */
 
-  if (!isACPIPresent|| ACPIIDC.ProtIDC_DS == NULL)	// 07 Jun 10 SHL correct syntax error
+  if (!isACPIPresent|| ACPIIDC.ProtIDC_DS == NULL)	// 07 Jun 10 SHL correct syntax error hidden by prior nested comment
     return (1);     /* Bad Entry Point or Data Segment */
 
   APICRewire = 0;
@@ -71,10 +70,11 @@ USHORT FAR ACPIGetPCIIRQs (USHORT PCIAddr)
   Dev.ApicIrq = 0;
 
   CallAcpi (&Dev, sizeof (KNOWNDEVICE), FIND_PCI_DEVICE);
+
   return ((Dev.ApicIrq << 8) | Dev.PicIrq);
 }
 
-#if 0
+#if 0 // 17 Aug 10 SHL fixme to be gone or used
 
 ACPI_STATUS ACPIENTRY AcpiGetType (
   ACPI_HANDLE		Object,
@@ -145,5 +145,5 @@ LIN FAR AcpiPointer (PVOID p) {
   return (void *)(lp);
 }
 
-#endif
+#endif // 17 Aug 10 SHL fixme to be gone or used
 

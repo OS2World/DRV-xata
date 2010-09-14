@@ -7,6 +7,7 @@
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
  *	       COPYRIGHT Daniela Engert 1999-2009
+ *	       Portions Copyright (c) 2009, 2010 Steven H. Levine
  * distributed under the terms of the GNU Lesser General Public License
  *
  * DESCRIPTION : I/O State Machine for ATA Adapter Driver
@@ -18,6 +19,7 @@
  #define INCL_INITRP_ONLY
  #define INCL_DOSINFOSEG
  #include "os2.h"
+
  #include <stddef.h>
  #include "dskinit.h"
 
@@ -43,7 +45,7 @@
 #define PCITRACER 0
 #define TRPORT 0xA80C
 
-#if 0
+#if 0					// 17 Aug 10 SHL fimxe to gone if not useful
 void IBeep (USHORT freq) {
   USHORT i;
   DevHelp_Beep (freq, 10);
@@ -71,7 +73,7 @@ VOID NEAR StartSM (NPA npA)
   outpw (TRPORT, 0xDE60);
 #endif
 
-  if (0 == saveINC (&(npA->UseCount))) {
+  if (0 == safeINC (&(npA->UseCount))) {
     do {
       do {
 	npA->State &= ~ACBS_WAIT;
@@ -101,10 +103,10 @@ VOID NEAR StartSM (NPA npA)
 	    TERR(npA->npU,0xEE)
 	    ErrorState (npA);
 	    break;
-	}
+	} // switch
       } while (!(npA->State & ACBS_WAIT));
-    } while (saveDEC (&(npA->UseCount)));
-  }
+    } while (safeDEC (&(npA->UseCount)));
+  } // if UseCount == 0
 
 #if PCITRACER
   outpw (TRPORT, 0xDE61);
@@ -121,7 +123,7 @@ VOID NEAR StartSM (NPA npA)
 #undef PCITRACER
 #define PCITRACER 0
 
-#if 0
+#if 0			// 17 Aug 10 SHL see s506segs.asm for replacements
 /*---------------------------------------------*/
 /* FixedIRQ0, FixedIRQ1, FixedIRQ0, FixedIRQ1  */
 /* ------------------------------------------  */
@@ -192,7 +194,7 @@ USHORT NEAR FixedInterrupt (NPA npA)
   } else {
     USHORT TimerHandle;
 
-    TimerHandle = saveXCHG (&(npA->IRQTimerHandle), 0);
+    TimerHandle = safeXCHG (&(npA->IRQTimerHandle), 0);
     DevHelp_EOI (npA->IRQLevel);
 
     if (TimerHandle) {
@@ -343,7 +345,7 @@ VOID NEAR StartIO (NPA npA)
 #endif
   npU = (NPU)npA->npU;
 
-  saveCLR32 (&(npA->ElapsedTime));
+  safeCLR32 (&(npA->ElapsedTime));
 
   if (npU->Flags & UCBF_NOTPRESENT) {
     Error (npA, IOERR_UNIT_NOT_READY);
@@ -797,7 +799,8 @@ USHORT NEAR StartOtherIO (NPA npA)
     npA->ReqMask	= ACBR_GETMEDIASTAT;
     npA->MediaStatusMask= FX_NM | FX_MCR | FX_MC | FX_WP;
 
-  } else if (ReqFlags & ACBR_NONDATA) {  // indicates any other non-r/w operation
+  } else if (ReqFlags & ACBR_NONDATA) {
+    // any other non-r/w operation
     UCHAR Cmd;
 
     npA->ReqMask	= ACBR_NONDATA;
@@ -1394,7 +1397,7 @@ VOID NEAR ErrorState (NPA npA)
   UCHAR  Reset = 0;
   USHORT TimerHandle;
 
-  TimerHandle = saveXCHG (&(npA->IRQTimerHandle), 0);
+  TimerHandle = safeXCHG (&(npA->IRQTimerHandle), 0);
   if (TimerHandle) {
     ADD_CancelTimer (TimerHandle);
     npA->Flags &= ~ACBF_MULTIPLEMODE;
@@ -1461,34 +1464,36 @@ VOID NEAR ErrorState (NPA npA)
 
     } else
     if ((npA->DataErrorCnt == 1) && (npA->IORBError == IOERR_DEVICE_ULTRA_CRC)) {
+      /* First CRC error */
       /**********************************************/
       /* Retry the Ultra DMA operation one (1) time */
       /**********************************************/
 #if PCITRACER
-  outpw (TRPORT, 0xDCCC);
+      outpw (TRPORT, 0xDCCC);
 #endif
       if ((Beeps > 0) && (npA->HardwareType != ALi)) {
 	DevHelp_Beep (3000, 10);
 #if BEEB
-  outpw (TRPORT+1, 0xBEEB);
+	outpw (TRPORT+1, 0xBEEB);
 #endif
       }
     } else {
+      /* Some other error */
       /* the VIA BM state machine is lying on us here sometimes */
       /* so, since the machine should have stopped here anyway, */
-      /* it's save to stop it again                             */
+      /* it's safe to stop it again                             */
 
       METHOD(npA).StopDMA (npA);  /* controller is locked, Clear Active bit */
       METHOD(npA).ErrorDMA (npA);
 
       if (Beeps > 0) {
 	DevHelp_Beep (1000, 10);
-  #if PCITRACER
-    outpw (TRPORT, 0xDCCE);
-  #endif
-  #if BEEB
-    outpw (TRPORT+1, 0xBEEB);
-  #endif
+#if PCITRACER
+	outpw (TRPORT, 0xDCCE);
+#endif
+#if BEEB
+	outpw (TRPORT+1, 0xBEEB);
+#endif
       }
 
       /*******************************************************/
@@ -1505,8 +1510,8 @@ VOID NEAR ErrorState (NPA npA)
 
       npA->ReqFlags |= ACBR_SETMULTIPLE | ACBR_BM_DMA_FORCEPIO;
       npA->ReqFlags &= ~ACBR_DMAIO;	    /* clear DMA IO flag */
-    }
-  }
+    } // if !Ali
+  } // if DMA
 
   npA->TimerFlags = 0;
 
@@ -1517,7 +1522,7 @@ VOID NEAR ErrorState (NPA npA)
       return;
     } else if (Beeps > 0) {
 #if BEEB
-  outpw (TRPORT+1, 0xBEEB);
+      outpw (TRPORT+1, 0xBEEB);
 #endif
       DevHelp_Beep (300, 10);
     }
@@ -1562,7 +1567,7 @@ VOID NEAR SetRetryState(NPA npA)
   /*  - Max elapsed time expired     */
   /*  - The unit failed after reset  */
   /*---------------------------------*/
-  ElapsedTime = saveGET32 (&(npA->ElapsedTime));
+  ElapsedTime = safeGET32 (&(npA->ElapsedTime));
 
   if (npA->Flags & ACBF_DISABLERETRY	      ||
       ElapsedTime > npA->TimeOut	      ||
@@ -1757,12 +1762,12 @@ UCHAR NEAR SendCmdPacket (NPA npA)
 {
   NPU npU = npA->npU;
 
-#if PCITRACER
+# if PCITRACER
   outpw (TRPORT, 0xDEB6);
   outpw (TRPORT+2, npA->IOPendingMask);
-#endif
+# endif
   if (npA->IOPendingMask & FM_PDRHD) {
-    if (npU->Flags & UCBF_PCMCIA) DRVHD &= ~0x10;
+    if (npU->Flags & UCBF_PCMCIA) DRVHD &= ~0x10;	// 17 Aug 10 SHL fixme to be symbolic
     outpdelay (DRVHDREG, DRVHD);
 
     if (npU->Flags & UCBF_ATAPIDEVICE) {
@@ -1783,6 +1788,7 @@ UCHAR NEAR SendCmdPacket (NPA npA)
   ** HW re-interrupting before the driver and kernel have done
   ** the RETI.
   */
+  // 17 Aug 10 SHL fixme to know if this can happen
   if (npA->atInterrupt > 0) DISABLE;
 
   METHOD(npA).SetTF (npA, npA->IOPendingMask);

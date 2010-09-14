@@ -8,7 +8,7 @@
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
  *	       COPYRIGHT Daniela Engert 1999-2009
  * distributed under the terms of the GNU Lesser General Public License
-*
+ *
  * DESCRIPTION : Adapter Driver initialization routines.
  *
  *****************************************************************************/
@@ -132,8 +132,9 @@ USHORT NEAR TestChannel (NPA npA, UCHAR UnitId)
   Data0 = InBdms (STATUSREG);
   ENABLE
 
-TS("%02X:",Data1);
-TS("%02X",Data0);
+  TS("%02X:",Data1);
+  TS("%02X",Data0);
+
   if (Data0 & FX_DRQ) { // probably remains from write to non-existent unit
     for (Stop = 1; Stop <= 4096; Stop++) {
       InWdms (DATAREG);
@@ -656,11 +657,11 @@ void ScanForUnits (void) {
       AssignAdapterResources (npA);
     }
 
-#if TRACES
-  if (Debug & 1) TraceStr ("S:%d[%d/%d]", npA->Status, npA->cUnits, cUnits);
-  TWRITE(1)
-#endif
-  }
+#   if TRACES
+    if (Debug & 1) TraceStr ("S:%d[%d/%d]", npA->Status, npA->cUnits, cUnits);
+    TWRITE(1)
+#   endif
+  } // for
 }
 
 void AssignSGList (void) {
@@ -695,7 +696,7 @@ void VerifyInitPost (void) {
   UCHAR i;
 
   for (i = 0; i < cAdapters; i++) {
-T('V') T('[')
+    T('V') T('[')
     npA = ACBPtrs[i];
     RehookIRQ (npA);
 
@@ -715,11 +716,12 @@ TTIME
 					     : IRQ_TIMEOUT_INTERVAL;
 
   SelectUnit ((npA->UnitCB[0].Flags & UCBF_NOTPRESENT) ? npA->UnitCB + 1 : npA->UnitCB);
-T(']')
+  T(']')
   }
 }
 
-VOID NEAR ConfigureACB (NPA npA) {
+VOID NEAR ConfigureACB (NPA npA)
+{
   UCHAR i;
   NPU	npU;
 
@@ -841,7 +843,7 @@ USHORT NEAR ConfigureController (NPA npA)
   UCHAR  Unit, *pC;
   NPIDENTIFYDATA npID;
 
-TS("CF:%X[",npA->FlagsT)
+  TS("CF:%X[",npA->FlagsT)
 
   counted = 0xFC;
 
@@ -923,14 +925,14 @@ TSTR("F:%X/%X", npA->Flags, npA->FlagsT);
   for (npU = npA->UnitCB; npU < (npA->UnitCB + npA->maxUnits); npU++) {
     npID = ((NPIDENTIFYDATA)ScratchBuf) + npU->UnitIndex;
 
-TSTR("u%X/%lX", npU->FlagsT, npU->Flags);
+    TSTR("u%X/%lX", npU->FlagsT, npU->Flags);
 
     if (npU->Flags & UCBF_NOTPRESENT) continue;
     IdentifyDevice (npU, npID);
 
-TS("H:%X,", npID->HardwareTestResult)
-T('i')
-TTIME
+    TS("H:%X,", npID->HardwareTestResult)
+    T('i')
+    TTIME
   }
 
   if (METHOD(npA).EnableInterrupts) METHOD(npA).EnableInterrupts (npA);
@@ -942,10 +944,10 @@ ConfigureControllerExit:
     RehookIRQ (npA);
   if ((npA->Status) && !(npA->FlagsT & ATBF_FORCE)) {
     DeallocAdapterResources (npA);
-T('h')
+    T('h')
   }
-T(']')
-TTIME
+  T(']')
+  TTIME
   return (npA->Status);
 }
 
@@ -957,9 +959,9 @@ TTIME
 /*------------------------------------*/
 USHORT ConfigureUnit (NPU npU)
 {
-TTIME
-T('U') T('(')
-//  if ((npU->Flags & (UCBF_FORCE | UCBF_ATAPIDEVICE)) == UCBF_FORCE) { // ATA only
+  TTIME
+  T('U') T('(')
+  //  if ((npU->Flags & (UCBF_FORCE | UCBF_ATAPIDEVICE)) == UCBF_FORCE) { // ATA only
   if (npU->Flags & UCBF_FORCE) {
     npU->Flags |= UCBF_REMOVABLE;
     if (npU->Flags & UCBF_PCMCIA) npU->Flags |= UCBF_CFA;
@@ -1084,11 +1086,14 @@ USHORT FAR ScanForOtherADDs()
 VOID NEAR SetOption (NPU npU, NPA npA, USHORT Ofs, USHORT Value)
 {
   if (npU) {
+    // Apply to specific unit
     *(NPUSHORT)((NPCH)npU + Ofs) |= Value;
   } else if (npA) {
+    // Apply to all units on specific adapter
     *(NPUSHORT)((NPCH)(npA->UnitCB + 0) + Ofs) |= Value;
     *(NPUSHORT)((NPCH)(npA->UnitCB + 1) + Ofs) |= Value;
   } else {
+    // Apply to all units on all adapters
     for (npA = AdapterTable; npA < (AdapterTable + MAX_ADAPTERS); npA++) {
       *(NPUSHORT)((NPCH)(npA->UnitCB + 0) + Ofs) |= Value;
       *(NPUSHORT)((NPCH)(npA->UnitCB + 1) + Ofs) |= Value;

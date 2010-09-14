@@ -124,7 +124,7 @@ BOOL NEAR CheckWellknown (NPPCI_INFO npPCIInfo) {
     if (ChipID.Vendor == q->Ident.Vendor) {
       for (p = q->ChipListCompatible; (Id = *p) != 0; p += 2) {
 	if (Id == ChipID.Device) {
-	  ChipID.Device = p[1];
+	  ChipID.Device = p[1];		// Got compatible
 	  break;
 	}
       }
@@ -134,12 +134,12 @@ BOOL NEAR CheckWellknown (NPPCI_INFO npPCIInfo) {
       for (p = q->ChipListFamily, j = 0; (Id = *p) != 0; p++, j++) {
 	if (Id == ChipID.Device) {
 	  npPCIInfo->Ident.Index = i;
-	  npPCIInfo->Level	 = j;
+	  npPCIInfo->Level	 = j;	// Got family for compatible device id
 	  return (TRUE);
 	}
-      }
-    }
-  }
+      } // for family
+    } // if vendor
+  } // for device
   return (FALSE);
 }
 

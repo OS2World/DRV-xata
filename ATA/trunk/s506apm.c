@@ -500,16 +500,19 @@ VOID NEAR _fastcall CardInsertionDeferred (VOID) {
 
     if (npA->FlagsT & ATBF_BAY) {
       OutB (DEVCTLREG, DEVCTL = FX_DCRRes);
-    Reconfigure:
+Reconfigure:
       if (ReConfigureUnit (npU)) METHOD(npA).Setup (npA);
+
 #if PCITRACER
-  OutD (TRPORT-2, npU->Flags);
+      OutD (TRPORT-2, npU->Flags);
 #endif
+
       npU->LongTimeout = 1;
       ReInitUnit (npU);
       IssueOneByte (npU, FX_IDLEIMM);
+
 #if PCITRACER
-  outpw (TRPORT, 0xDF0F);
+      outpw (TRPORT, 0xDF0F);
 #endif
 
       if (npU->Flags & UCBF_FORCE) NotifyFLT (npU, TRUE);
@@ -525,7 +528,7 @@ VOID NEAR _fastcall CardInsertionDeferred (VOID) {
 	DevHelp_Beep (3000, 50);
 	goto Reconfigure;
       } else {
-	Fail:
+Fail:
 	DevHelp_Beep (300, 50);
 	DevHelp_ProcBlock ((ULONG)(PVOID)&CardInsertionDeferred, 100UL, 0);
 	DevHelp_Beep (300, 50);

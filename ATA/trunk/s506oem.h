@@ -4,12 +4,12 @@
  *
  * DESCRIPTIVE NAME =  DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
  *	       COPYRIGHT Daniela Engert 1999-2009
  * distributed under the terms of the GNU Lesser General Public License
  *
  * DESCRIPTION : Locally defined equates.
+ *
  *****************************************************************************/
 
 #define  BUS_PCMCIA	 3
@@ -83,10 +83,34 @@
 
 typedef enum {
   undetermined = 0,
-  Cmd640, RZ1000, Intel, Via, ALi, SiS, CMD64x, Promise, Cyrix,
-  HPT36x, HPT37x, AEC, ServerWorks, Opti, AMD, NVidia, PromiseTX,
-  SiI68x, ITE, NetCell, ATI, SiISata, JMicron, PromiseMIO, Marvell, Initio,
-  AHCI, BcmSata,
+  Cmd640,
+  RZ1000,
+  Intel,
+  Via,
+  ALi,
+  SiS,
+  CMD64x,
+  Promise,
+  Cyrix,
+  HPT36x,
+  HPT37x,
+  AEC,
+  ServerWorks,
+  Opti,
+  AMD,
+  NVidia,
+  PromiseTX,
+  SiI68x,
+  ITE,
+  NetCell,
+  ATI,
+  SiISata,
+  JMicron,
+  PromiseMIO,
+  Marvell,
+  Initio,
+  AHCI,
+  BcmSata,
   generic = -1
 } tHardwareType;
 
@@ -125,7 +149,7 @@ typedef enum {
 #define PCID_IntelSCH	   28  /* Intel SCH "Atom" */
 #define PCID_ITE8213	   29  /* ITE8213 (ICH8M-lookalike)*/
 #define PCID_VIASB	   30  /* VIA SBxxx (ATI IXP-lookalike)*/
-#define PCID_Generic	   31  /* Generic IDE */
+#define PCID_Generic	   31  /* Generic IDE - must be last in list */
 
 #define MAX_PCI_DEVICE_DESCRIPT  PCID_Generic+1
 

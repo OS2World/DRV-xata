@@ -4,7 +4,6 @@
  *
  * DESCRIPTIVE NAME =  DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
  *	       COPYRIGHT Daniela Engert 1999-2009
  * distributed under the terms of the GNU Lesser General Public License
@@ -103,7 +102,7 @@
 #define FX_SMART_STATUS 	   0xDA
 #define FX_SMART_AUTO_OFFLINE	   0xDB
 
-/* Status bits */
+/* Status Register bits */
 
 #define FX_BUSY      0x80	  /* Status port busy bit		     */
 #define FX_DRDY      0x40	  /* Status port ready bit		     */
@@ -175,6 +174,8 @@
 #define FI_PERR     12		   /* error register			      */
 #define FI_PSTAT    13		   /* status register			      */
 
+// IOMask flags - used to indicate if register exists for specific chipset
+
 #define FM_PDAT    (1 << FI_PDAT ) /* read/write data		      */
 #define FM_PFEAT   (1 << FI_PFEAT) /* features register 	      */
 #define FM_PSCNT   (1 << FI_PSCNT) /* sector count register	      */
@@ -193,6 +194,7 @@
 #define FM_LOW	   (FM_PFEAT | FM_PSCNT | FM_LBA0 | FM_LBA1 | FM_LBA2 | FM_PCMD)
 #define FM_HIGH    (FM_HFEAT | FM_HSCNT | FM_LBA3 | FM_LBA4 | FM_LBA5)
 
+// Register addressing macros
 
 #define DATAREG     (npA->IOPorts[FI_PDAT])
 #define DEVCTL	    (npA->IORegs[FI_RFDR])
@@ -228,6 +230,7 @@
 #define STATUSREG   (npA->IOPorts[FI_PCMD])
 #define ERROR	    (npA->IORegs[FI_PERR])
 #define ERRORREG    (npA->IOPorts[FI_PFEAT])
+
 #define BMSTATUS    (npA->BMSta)
 #define BMSTATUSREG (npA->BMISTA)
 #define BMCMDREG    (npA->BMICOM)
@@ -236,12 +239,16 @@
 
 #define ISRPORT     (npA->ISRPort)
 
+// SATA register addressing macros
+
 #define SSTATUS     (npU->SStatus)
 #define SERROR	    (npU->SError)
 #define SCONTROL    (npU->SControl)
 
 #define TESTBUSY (InB (STATUSREG) & FX_BUSY)
 #define TESTDRDY ((InB (STATUSREG) & (FX_BUSY | FX_DRDY)) != FX_DRDY)
+
+// SATA Status and Control bits
 
 #define SSTAT_DET	    0x000F
 #define SSTAT_DEV_OK	    0x1

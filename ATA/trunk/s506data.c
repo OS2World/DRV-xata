@@ -4,7 +4,6 @@
  *
  * DESCRIPTIVE NAME = DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
  *	       COPYRIGHT Daniela Engert, 1999-2009
  * distributed under the terms of the GNU Lesser General Public License
@@ -15,6 +14,7 @@
  #define INCL_NO_SCB
  #define INCL_DOSINFOSEG
  #include "os2.h"
+
  #include "dskinit.h"
 
  #include "iorb.h"
@@ -31,10 +31,10 @@
  #include "s506ext.h"
  #include "s506pro.h"
 
-#define YEAR  2009
-#define MONTH 5
-#define DAY   25
-#define PCMCIAVERSION 0x186
+#define YEAR  2010			// Update to match release date
+#define MONTH 9
+#define DAY   13
+#define PCMCIAVERSION 0x187		// Update to match driver version
 
 /*-------------------------------------------------------------------*/
 /*								     */
@@ -67,12 +67,12 @@ UCHAR	       cAdapters	      = 0;
 UCHAR	       cUnits		      = 0;
 UCHAR	       cSockets 	      = 0;
 UCHAR	       DriveId		      = 0;
-UCHAR	       InitActive	      = 0;
+UCHAR	       InitActive	      = 0;		// 0..2
 UCHAR	       InitIOComplete	      = 0;
-UCHAR	       InitComplete	      = 0;
-UCHAR	       BIOSActive	      = 1;
-UCHAR	       BIOSInt13	      = 1;
-UCHAR	       EzDrivePresent	      = 0;
+UCHAR	       InitComplete	      = 0;		// Set by CMDInitComplete
+UCHAR	       BIOSActive	      = 1;		// Cleared by CompleteInit
+UCHAR	       BIOSInt13	      = 1;		// !BIOS switch
+UCHAR	       EzDrivePresent	      = 0;		// May be unused
 PGINFOSEG      pGlobal		      = 0;
 volatile SHORT _far *msTimer	      = 0;
 struct DevClassTableStruc _far *pDriverTable = NULL;
@@ -1102,7 +1102,7 @@ struct CI_Info CIInfo = {
   offsetof (struct CI_Info, CI_Name), sizeof (CIInfo.CI_Name),
   offsetof (struct CI_Info, CI_Vendor), sizeof (CIInfo.CI_Vendor),
   "DaniS506 EIDE Driver",
-  "Copyright Daniela Engert 2009, all rights reserved"
+  "Copyright Daniela Engert 2010, all rights reserved"
 };
 
 CCB	       ChipTable[MAX_ADAPTERS] = { 0 };

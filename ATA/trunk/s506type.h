@@ -78,7 +78,7 @@ typedef struct _BAR {
 
 typedef struct _C
 {
-  NPA		npA[MAX_CHANNELS];
+  NPA		npA[MAX_CHANNELS];		// 4
   USHORT	Cap;
   tBAR		BAR[6];
   UCHAR 	IrqPIC;
@@ -119,9 +119,9 @@ typedef struct _U
   UCHAR 	UltraDMAMode;			/* Ultra DMA Mode   */ // 70
   CHAR		LongTimeout;					       // 11
 
-  ULONG 	SStatus;		    /* SATA Status	    */
-  ULONG 	SError; 		    /* SATA Error	    */
-  ULONG 	SControl;		    /* SATA Control	    */
+  ULONG 	SStatus;		    /* SATA Status register address	*/
+  ULONG 	SError; 		    /* SATA Error register address	*/
+  ULONG 	SControl;		    /* SATA Control register address	*/
 
   /*------------------------------------------*/
   /* Physical/Logical Geometry for this drive */
@@ -155,10 +155,10 @@ typedef struct _U
   GEO		IDEPhysGeom;					       // 15
   GEO		IDELogGeom;					       // 11
 
-  ULONG 	CmdSupported;					       // 12
+  ULONG 	CmdSupported;		// Supported command features  // 12
   ULONG 	CmdEnabled;					       //  8
-  USHORT	SATACmdSupported;
-  USHORT	SATACmdEnabled;
+  USHORT	SATACmdSupported;	// Supported SATA features
+  USHORT	SATACmdEnabled;		// Enabled SATA features
 
   /*------------------------------------------*/
   /* Replacement UNITINFO from Filter ADD     */

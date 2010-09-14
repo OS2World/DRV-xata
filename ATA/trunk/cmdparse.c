@@ -4,16 +4,16 @@
  *
  * DESCRIPTIVE NAME =  DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
- * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
- *	       COPYRIGHT Daniela Engert 1999-2009
- * distributed under the terms of the GNU Lesser General Public License
+ * COPYRIGHT IBM CORPORATION, 1991, 1992
+ * COPYRIGHT Daniela Engert 1999-2009
+ * Portions Copyright (c) 2009, 2010 Steven H. Levine
+ * Distributed under the terms of the GNU Lesser General Public License
  *
- * DESCRIPTION : ADD CONFIG.SYS Command Line Parser Helper Routine
+ * DESCRIPTION: CONFIG.SYS Command Line Parser Helper Routines
  *
  * Purpose: This module consists of the Command_Parser Function and
  *	    its associated local routines.  For detailed description
- *	    of the Command_Parser interface refer to the CMDPARSE.H
- *	    file.
+ *	    of the Command_Parser interface refer to the CMDPARSE.H file.
  *
  ****************************************************************************/
 
@@ -301,7 +301,7 @@ STATIC VOID NEAR Skip_Over_Blanks()
 *					end of string char		       *
 *									       *
 *******************************************************************************/
-#if 0
+#if 0 // 17 Aug 10 SHL fixme to be gone if code will never be used
 STATIC VOID NEAR  char_parser()
 {
   char c;
@@ -313,7 +313,7 @@ STATIC VOID NEAR  char_parser()
   }
   return;
 }
-#endif
+#endif // 17 Aug 10 SHL fixme to be gone if code will never be used
 
 /*******************************************************************************
 *									       *

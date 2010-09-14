@@ -90,13 +90,13 @@ USHORT MYENTRY DevHelp_CreateInt13VDM (PBYTE VDMInt13CtrlBlk) {
   }
 }
 
-USHORT MYENTRY DevHelp_SetIRQ (NPFN   IRQHandler,
-			       USHORT IRQLevel,
-			       USHORT SharedFlag) {
+USHORT MYENTRY DevHelp_SetIRQ (NPFN   IRQHandler,		/* bx */
+			       USHORT IRQLevel,			/* ax */
+			       USHORT SharedFlag) {		/* dx */
   _asm {
-    XCHG AX, BX
-    MOV  DH, DL
-    MOV  DL, 0x1B
+    XCHG AX, BX			// AX = pfn, BX = IRQ
+    MOV  DH, DL			// DH = Shared
+    MOV  DL, 0x1B		// DL = SetIRQ
     MOV  DS, CS:[DSSel]
     CALL [Device_Help]
     SBB  DX, DX

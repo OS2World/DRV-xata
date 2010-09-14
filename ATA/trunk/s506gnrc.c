@@ -143,7 +143,7 @@ BOOL NEAR AcceptAHCI (NPA npA)
   ULONG BAR5	= npC->BAR[5].Addr;
   UCHAR havePhy = 0;
 
-  // AHCI mode enabled?
+  // Fail if AHCI mode enabled
   if (BAR5 && (InD (BAR5 | AHCI_GHC) & AHCI_GHC_AHCIENABLED)) return (FALSE);
 
   npA->maxUnits = 2;
