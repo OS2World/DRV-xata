@@ -3,9 +3,11 @@
 		      ----------------------------------
 
 NAME
+
      DaniS506.ADD  -  replacement for IBM1S506.ADD
 
 SYNOPSIS
+
      EIDE driver with support for Intel, VIA, ALi, SiS, CMD, Promise, Cyrix,
      HighPoint, AMD, Artop, SMSC, ServerWorks, Opti, Nvidia, National Semiconduc-
      tor, SiliconImage, ITE, Adaptec, ATI, Broadcom, JMicron, Marvell chipsets,
@@ -29,6 +31,7 @@ SYNOPSIS
 ***  Changes to the previous release are denoted by "***" tags.
 
 DESCRIPTION
+
      Since the original IBM1S506.ADD doesn't support the IDE controller
      found in the VIA 82C586(/A/B) south bridge beyond the basic features,
      I wasn't very happy with the performance of my 10Gig DTTA-351010 drive.
@@ -132,12 +135,14 @@ DESCRIPTION
 	      inter-driver interface changes!
 
 COMMAND LINE OPTIONS
+
      This driver supports most switches and options that IBM1S506 supports. For
      an explanation of these look into the OS/2 online help (by picking
      'OS/2 Commands by name'/ 'BASEDEV...'/'IDE...' or by "help ibm1s506"
      from the command line).
 
 COMMAND LINE OVERVIEW
+
      Gerald Eischer did us the favour of creating a syntax diagram and a
      short overview of the command line options implemented in the driver
 
@@ -340,6 +345,7 @@ COMMAND LINE OVERVIEW
      /DEBUG
 
 COMMAND LINE DETAILS
+
      Beginning with release 1.0.8, this includes the undocumented switch
      /!SHUTDOWN found in the latest IBM1S506.ADD. At system shutdown, this
      IBM1S506 issues shutdown commands to each attached device. This behaviour
@@ -1026,6 +1032,7 @@ COMMAND LINE DETAILS
      5) if you like you may add the disk to the BIOS settings again
 
 INSTALLATION
+
      For an upgrade from a previously installed IDE driver (most likely
      IBM1S506.ADD) just copy DaniS506.ADD to bootdrive:\OS2\BOOT and rename
      IBM1S506.ADD (or the name of the previous IDE driver) to DaniS506.ADD in
@@ -1046,6 +1053,7 @@ INSTALLATION
      deleting that line or putting a 'rem' statement in front of it.
 
 FILES
+
      DaniS506.ADD       The driver itself
      DaniS506.DDP       The device driver profile for DDINSTAL
      DaniS506.DOC       The file you are reading right now :-)
@@ -1066,6 +1074,7 @@ FILES
        HDParm.h	        Header used by DiskInfo.c
 
 BUGS
+
      Hopefully none, but who knows ...
 
      To report a bug, see PROBLEM.TXT
@@ -1091,6 +1100,7 @@ BUGS
      the VIA 586 chipset created by myself.
 
 SOME WORDS OF WISDOM
+
      Much EIDE hardware you can buy (or already have bought) has *very*
      little design margins and is *very* susceptable to even the slightest
      signal distortion on the cables. Unlike SCSI, the EIDE bus has no
@@ -1253,6 +1263,7 @@ QUESTIONS & ANSWERS
      units (/A:x /U:x /!BM).
 
 CREDITS
+
      I'd like to express my thanks to some outstanding people who made this
      piece of code a better one:
 
@@ -1270,20 +1281,24 @@ CREDITS
      Gerald Eischer   for creating the command line options diagram and table
 
 TO DO
+
      Still left is to persuade IBM to incorporate these features
      in their distribution.
      done! IBM has officially taken the v1.6.6 sources.
 
 COPYRIGHT
+
      DaniS506 - Copyright (c) 1999-2008 Daniela Engert. All rights reserved.
      Portions Copyright (c) 2008, 2010 Steven Levine and Associates, Inc. All rights reserved.
      Portions Copyright (c) 2010 Mensys B.V., Inc. All rights reserved.
 
 STATUS OF PROGRAM
+
      DaniS506 is freeware distributed under the terms of the GNU Lesser
      General Public License.
 
 DISCLAIMER
+
      YOU ARE USING THIS PROGRAM AT YOUR OWN RISK! I don't take any
      responsibillity for damages, problems, custodies, marital dis-
      putes, etc. resulting from use, inability to use, misuse, pos-
@@ -1314,22 +1329,23 @@ DISCLAIMER
      owners and the like ...
 
 ORIGINAL AUTHOR
+
      Daniela Engert
      Internet: "Daniela Engert" <dani at ngrt dot de>
 
 SUPPORT
-    
-     This NIC driver is supported for eComStation by Mensys BV.
+
      To request support, please enter a support ticket at
 
          http://svn.netlabs.org/xata/newticket
 
      You need a Netlabs login id to submit tickets.  See
 
-         http://svn.netlabs.org/xata/xata
+         http://svn.netlabs.org/xata
 
      for instruction on how to obtain a login id.
 
 EPILOGUE
+
      Suggestions and bug-reports are always welcome. Well ... bug-reports
      are perhaps not *that* welcome ... ;)
