@@ -1,0 +1,107 @@
+
+		      Daniela's S506 ADD - Release 1.8.7
+		      ----------------------------------
+
+== How to report problems ==
+============================
+
+// Daniela has this to say...
+// To those people who still don't understand the meaning of REQUIRED:
+// Do not ask if the info is, simply generate it - even if you think you
+// can't do that - and attach it  -  UNCONDITIONALLY, ALWAYS, WITHOUT ASKING!
+
+// Before sending the report.* files, check if they contain data! The first line
+// of report.trc and report.atapi shows the version of the loaded
+// driver and the options given. The first line of report.dumpide shows the build
+// date of the DumpIDE utility
+
+You must attach the required data to EACH bug or problem report:
+
+Make sure that you are running the STANDARD version of DaniS506.ADD.
+
+Make sure you are running the most recent GA version of Danis506.ADD and
+DaniATAPI.FLT, unless specifically instructed otherwise.
+
+If you are not sure what version you are running, check it before you submit a
+ticket.
+
+Many people refer to driver revisions by file dates. Don't try to do this for
+these reasons:
+
+  - We don't keep track of file dates
+  - We may build several drivers almost each day
+  - File dates can easly be changed
+  - There are many different calendars in this world
+
+The only valid reference is the driver's version number. It is shown on
+boot up if the /V or /W switch is given. If you can boot to a command line
+the output of "COPY IBMS506$ anyfile" will list the driver version in
+the first line. If you cannot boot, then run "BLDLEVEL DaniS506.ADD" which
+will output something like this:
+
+     Signature:       @#DANI:1.8#@##1## 4.7.2000 10:45:10 ....
+     Vendor:	      DANI
+     Revision:	      1.02
+     Date/Time:       4.7.2000 10:45:10
+     Build Machine:   Nachtigall
+     File Version:    1.2.5   <------------------------------+
+     Description:     Adapter Driver for ST506/IDE DASD      |
+							     |
+     This is the full version number  -----------------------+
+
+To collect data for a support ticket, add the option /DEBUG:-31 to the 
+DaniS506.ADD line in CONFIG.SYS, and reboot.  Open up a command line session 
+and enter the following commands
+
+  copy IBMS506$ report.trc
+
+and
+
+  DiskInfo cviI > report.diskinfo
+
+and
+
+  DumpIDE b > report.dumpide
+
+If the "Total errors" lines of report.diskinfo are not all zero, enter the follow command
+
+ SmartCtl -a DiskID > report.smart
+
+where 'DiskID' is the id of the disk with errors.  For example, use '0m' if DiskInfo shows
+errors for unit '0/m'.
+
+Attach all the reports to the ticket.
+
+If you are experiencing problems related to any kind of ATAPI unit (CD, DVD,
+burners, ...), then enter the command
+
+  COPY ATAPI$ report.atapi
+
+and attach report.atapi to the ticket.
+
+If you cannot boot from the hard disk using DaniS506.ADD, try the above from a
+bootable floppy, CD or ZIP.
+
+If this fails as well, edit config.sys and add the options 
+
+  /FORCEGBM /!BM
+
+to the DANIS506.ADD BASEDEV statment and try again.
+
+If all of the above fails, but a boot with IBM1S506.ADD works, then grab
+at least
+
+ - the output from "DumpIDE b > report.dumpide"
+ - the output from "BldLevel DaniS506.ADD > report.bldlevel"
+
+== Where to report problems ==
+==============================
+
+Once you have captured the above information, create a TRAC ticket at
+
+  http:svn.netlabs.org/xata
+
+The home page explains how to submit a ticket.  See
+
+  http://svn.netlabs.org/xata/wiki/WikiStart#SubmittingTickets
+

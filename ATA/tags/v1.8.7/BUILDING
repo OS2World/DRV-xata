@@ -1,0 +1,63 @@
+How to build danis506.add
+
+== Toolchain ==
+
+  Microsoft C compiler for OS/2 (from IBM DDK)
+  Borland tasm (from wherever you can get it)
+  nmake (from IBM DDK)
+  nelite (from Hobbes)
+  4OS2 (from Hobbes)
+    if using make.cmd
+
+== Prerequisites ==
+
+  DANIS506 Sources
+
+    Sources must live in DDK tree for now
+    This was the IBM DDK way of doing things
+    Eventually the makefile will be updated to be more flexible
+
+    Create a working directory at same level in the DDK source tree as ibm1s506
+    (i.e. \ddk\base\src\dev\dasd\yourname\danis506)
+
+    Checkout the sources with
+
+      cd \ddk\base\src\dev\dasd\yourname\danis506
+      svn checkout http://svn.netlabs.org/repos/xata/ATA/trunk .
+
+  ACPI toolkit
+
+    Danis506 currently uses a private, 16-bit compatible
+    version of the ACPI toolkit.
+    This will eventually be deprecated by a 16-bit ACPI toolkit
+    maintained as part of the ACPI project.
+
+  LIBOBJ
+
+    LIBOBJ is a set of object file extracted from the MSC runtime libraries.
+    The makefile ensure that these get included into the binary by the linker.
+    This method ensures not the linker does not include unexpected runtime
+    library routines
+
+    Checkout the LibObj subdirectory with
+
+      svn checkout http://svn.netlabs.org/repos/xata/LibObj/trunk LibObj
+
+    or point LIBOBJ environment variable at an existing copy
+
+== First Time Setup ==
+
+  - Checkout danis506 sources
+
+  - Populate LIBOBJ subdirectory
+
+  - Set environment variables - see makefile
+
+== Building ==
+
+  - If using 4OS2, run make.cmd
+
+  - Otherwise, set environment variables and run nmake directly
+
+$Id: $
+
