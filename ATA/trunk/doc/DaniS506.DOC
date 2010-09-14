@@ -1,5 +1,5 @@
 
-		      Daniela's S506 ADD - Release 1.8.5
+		      Daniela's S506 ADD - Release 1.8.7
 		      ----------------------------------
 
 NAME
@@ -13,9 +13,11 @@ SYNOPSIS
 
      This covers virtually *any* EIDE controller built/sold in the past few
      years and even some just about to be released in the near future. Don't be
-     confused by the generic chip names below! If you are uncertain about your
+     confused by the generic chip names below! If you are uncertain about the
      actual controller to be supported, run the DumpIDE utility - it will tell
      you.
+
+     See ChipList.txt for a full list of supported chipsets.
 
 ###  note:
 ###  This driver is *not* compatible to any of the software RAID setups offered
@@ -45,8 +47,9 @@ DESCRIPTION
      - supports the Intel ICH/ICH0/ICH2/ICH3/ICH4/C-ICH/ICH5/ICH6/ICH7/ICH8
        PATA controllers
      - supports the Intel ICH5/ICH6/ICH7/ICH8/ICH9/ICH10 SATA controllers
+***  - supports the Intel PCH SATA controllers
      - supports the Intel Management Engine IDE redirection controllers
-***  - supports the Intel SCH PATA controller ("Atom") (experimental)
+     - supports the Intel SCH PATA controller ("Atom") (experimental)
      - supports the VIA PATA controllers
      - supports the VIA PATA/SATA RAID controllers (see note ###)
      - supports the ALi PATA controllers
@@ -64,14 +67,14 @@ DESCRIPTION
      - supports the SMSC SLC90E66 PATA controller (PIIX4 look-alike) (exp.)
      - supports the ServerWorks/Broadcom PATA controllers
      - supports the Opti PATA controllers
-     - supports the Nvidia nForce/2/3/4/500/600/700 PATA controllers
+***  - supports the Nvidia nForce/2/3/4/500/600/700 PATA controllers
        important fix for broken BIOSes which cause system hangs
-     - supports the Nvidia nForce2/3/4/500/600/700 SATA controllers
+     - supports the Nvidia nForce2/3/4/500/600/700/M73/M79/M89 SATA controllers
      - supports the National Semiconductor Geode SCx200 PATA controller
      - supports the Silicon Image 680 PATA controller
      - supports the Silicon Image 3112/3114/3512 SATA controller
        (this includes OEMs like Adaptec)
-     - supports the ITE 8211/8212 PATA controller (see note ###)
+***  - supports the ITE 8211/8212/8213 PATA controllers (see note ###)
      - supports the ATI IXP200/300/400/600/700 PATA controllers
      - supports the ATI IXP300/400/600/700/800 SATA controllers
      - supports the NetCell/Revolution SyncRAID PATA/SATA Hardware-RAID
@@ -121,6 +124,7 @@ DESCRIPTION
        touched for some time after completion of a couple of commands
      - support for high interrupts (IRQ16 and above) in APIC interrupt mode
        this requires ACPI.PSD v3 or later!
+     - supports AHCI controllers in SATA legacy mode, when available
 
 ###  Caution: users of DaniBoot v1.0 need to upgrade to version 1.0.2!
 ###  Caution: users of DaniATAPI v0.3.x need to upgrade to version 0.4.0!
@@ -132,7 +136,6 @@ COMMAND LINE OPTIONS
      an explanation of these look into the OS/2 online help (by picking
      'OS/2 Commands by name'/ 'BASEDEV...'/'IDE...' or by "help ibm1s506"
      from the command line).
-
 
 COMMAND LINE OVERVIEW
      Gerald Eischer did us the favour of creating a syntax diagram and a
@@ -179,7 +182,6 @@ COMMAND LINE OVERVIEW
 			     +--- /APM:n --------+
 			     +--- /LPM:n --------+
 
-
      In most cases, options prefaced with ! can be used with the ! modifier to
      explicitly disable the option.  Options are valid both with and without
      the ! modifer.
@@ -188,7 +190,6 @@ COMMAND LINE OVERVIEW
      present.
 
      Options may be prefixed by "-" instead of "/" as well.
-
 
      General options
      ---------------
@@ -302,14 +303,19 @@ COMMAND LINE OVERVIEW
 	SATA Link Power Management Level (DECIMAL)
 	0 (max. power saving) ... 3 (disabled, max. performance)
 
-
      Deprecated options
      ------------------
+
+     These options are no longer supported.  If used, DANIS506 will silently
+     ignore the option.
 
 ***  /!RMV
 
      Obsolete options
      ----------------
+
+     These options are no longer supported. DANIS506 will report an
+     error if these are used.
 
      /GEO
      /LBA
@@ -332,7 +338,6 @@ COMMAND LINE OVERVIEW
      /LAT
      /FIXES
      /DEBUG
-
 
 COMMAND LINE DETAILS
      Beginning with release 1.0.8, this includes the undocumented switch
@@ -931,7 +936,6 @@ COMMAND LINE DETAILS
       | 	 unused 	      |        unused	      |  (1)  |
       +---+---+---+---+---+---+---+---+---+---+---+---+---+---+-------+
 
-
       1) Register access delay:
 	 0 : 1000 ns  (default, fixed for all non-PCI systems)
 	 1 :  500 ns
@@ -1021,7 +1025,6 @@ COMMAND LINE DETAILS
      4) reboot
      5) if you like you may add the disk to the BIOS settings again
 
-
 INSTALLATION
      For an upgrade from a previously installed IDE driver (most likely
      IBM1S506.ADD) just copy DaniS506.ADD to bootdrive:\OS2\BOOT and rename
@@ -1048,50 +1051,27 @@ FILES
      DaniS506.DOC  The file you are reading right now :-)
      DumpIDE.EXE   A utility to dump the current IDE registers
      DiskInfo.EXE  A utility to show some information about the attached devices
+     PROBLEM.TXT   How to report problems
+     README        Copyright and license notice
+     ChipList.txt  Full listing of supported chipsets
+     DiskInfo.exe  Disk and driver info dump utility
+     DumpIDE.exe   
 
-     \nodebug\DaniS506.ADD
-		   A smaller driver version without debug traces
+     Smart\
+       smartctl.exe	S.M.A.R.T. control utility
+       smartctl.txt	smartctl.exe User Guide
 
-     \nodebug\cmprssd\DaniS506.ADD
-		   The same as above, but LXlite compressed. This one is *not*
-		   guaranteed to work on every system.
+     DiskInfo\
+       DiskInfo.c  Driver and disk info dump utility source code
+       Identify.c  Disk info dump utility
+       HDParm.h	   Header used by DiskInfo.c
 
-     \source\DiskInfo.c
-		   Guess ;-)
+     DumpIDE\
 
 BUGS
      Hopefully none, but who knows ...
-!!!  Bug reports without IDE configuration and transfer modes involved, and
-!!!  without the output from the dump utility, are pretty useless. You should
-!!!  create these outputs in a running *and* the faulty system. The easiest way
-!!!  to do this is to redirect the screen output from the dump utility to a file
-     like this:
 
-     DumpIDE > Good.dmp   or   DumpIDE > Bad.dmp
-
-     Many people refer to driver revisions by file dates. Don't do that for
-     these reasons:
-
-     - I don't keep track of file dates
-     - I build several drivers almost each day
-     - file dates can easly be changed
-     - there are many different calendars in this world
-
-     The only valid reference is the driver's version number. It is shown on
-     boot up if the /V or /W switch is given. If you can boot to a command line
-!!!  the output of "COPY IBMS506$ anyfile" will list the driver version in
-!!!  the first line. If you cannot boot, then run "BLDLEVEL DaniS506.ADD" which
-     will output something like this:
-
-     Signature:       @#DANI:1.2#@##1## 4.7.2000 10:45:10 ....
-     Vendor:	      DANI
-     Revision:	      1.02
-     Date/Time:       4.7.2000 10:45:10
-     Build Machine:   Nachtigall
-     File Version:    1.2.5   <------------------------------+
-     Description:     Adapter Driver for ST506/IDE DASD      |
-							     |
-     This is the full version number  -----------------------+
+     To report a bug, see PROBLEM.TXT
 
      I have no means to identify traps occuring outside this driver (module name
      different from 'IBMS506$' or not present). If a trap occurs within this
@@ -1221,7 +1201,6 @@ SOME WORDS OF WISDOM
      the 'T' key. This way, you always have a working default boot system
      and a independent test system to play with.
 
-
 QUESTIONS & ANSWERS
 
   1) Both my EIDE controller and my harddisc is ATA/66 (or ATA/100) capable,
@@ -1276,7 +1255,6 @@ QUESTIONS & ANSWERS
      fail running on DMA, so you have to disable DMA busmastering for these
      units (/A:x /U:x /!BM).
 
-
 CREDITS
      I'd like to express my thanks to some outstanding people who made this
      piece of code a better one:
@@ -1301,9 +1279,12 @@ TO DO
 
 COPYRIGHT
      DaniS506 - Copyright (c) 1999-2008 Daniela Engert. All rights reserved.
+     Portions Copyright (c) 2008, 2010 Steven Levine and Associates, Inc. All rights reserved.
+     Portions Copyright (c) 2010 Mensys B.V., Inc. All rights reserved.
 
 STATUS OF PROGRAM
-     DaniS506 is freeware.
+     DaniS506 is freeware distributed under the terms of the GNU Lesser
+     General Public License.
 
 DISCLAIMER
      YOU ARE USING THIS PROGRAM AT YOUR OWN RISK! I don't take any
@@ -1335,11 +1316,23 @@ DISCLAIMER
      All trademarks mentioned anywhere around here are property of their
      owners and the like ...
 
-AUTHOR
+ORIGINAL AUTHOR
      Daniela Engert
-     Internet: "Daniela Engert" <dani@ngrt.de>
+     Internet: "Daniela Engert" <dani at ngrt dot de>
+
+SUPPORT
+    
+     This NIC driver is supported for eComStation by Mensys BV.
+     To request support, please enter a support ticket at
+
+         http://svn.netlabs.org/xata/newticket
+
+     You need a Netlabs login id to submit tickets.  See
+
+         http://svn.netlabs.org/xata/xata
+
+     for instruction on how to obtain a login id.
 
 EPILOGUE
      Suggestions and bug-reports are always welcome. Well ... bug-reports
      are perhaps not *that* welcome ... ;)
-

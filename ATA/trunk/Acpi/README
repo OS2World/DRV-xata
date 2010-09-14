@@ -1,11 +1,11 @@
-Danis506 ACPI interface notes
-07 Sep 2010
+Danis506 ACPI interface header notes
+2010-09-13 SHL
 
 The standard ACPI headers no longer support 16-bit platforms or 16-bit
 compilers.
 
-This directory tree contains a modified, minimal subset of ACPI PSD headers
-as of ACPI svn changeset 292.  See src/acpi/common/include.
+This directory tree contains a modified, minimal subset of ACPI PSD interface
+headers	as of ACPI svn changeset 292.  See src/acpi/common/include.
 
 These headers have been modified to recognize the MSC compiler and generate
 definitions that are correctly packed and sized.
@@ -25,3 +25,5 @@ The following warning is expected
 
 Acpi\bsekee.h(485) : warning C4040: memory attribute on 'pfnHook' ignored
 
+Eventually these headers will be replaces by a set of headers maintained as
+part of the ACPI project.

@@ -1,129 +1,107 @@
-[ Deutsche öbersetzung folgt unten ]
 
-// to those people who still don't understand the meaning of REQUIRED:
-// Do not ask if I need this info, simply generate it - even if you think you
+		      Daniela's S506 ADD - Release 1.8.7
+		      ----------------------------------
+
+== How to report problems ==
+============================
+
+// Daniela has this to say...
+// To those people who still don't understand the meaning of REQUIRED:
+// Do not ask if the info is, simply generate it - even if you think you
 // can't do that - and attach it  -  UNCONDITIONALLY, ALWAYS, WITHOUT ASKING!
 
 // Before sending the report.* files, check if they contain data! The first line
-// of report.trc and report.atapi shows the version of the actually loaded
-// driver and the options given. The first line of report.dmp shows the build
+// of report.trc and report.atapi shows the version of the loaded
+// driver and the options given. The first line of report.dumpide shows the build
 // date of the DumpIDE utility
 
-*******************************************************************************
-* If the report.* files are missing without COMPELLING reason I'll simply     *
-* ignore the whole problem report without notice.			      *
-*******************************************************************************
+You must attach the required data to EACH bug or problem report:
 
-I REQUIRE you to attach the following data to EACH bug or problem report:
+Make sure that you are running the STANDARD version of DaniS506.ADD.
 
-Make sure that you run the STANDARD version of DaniS506.ADD rather than the ones
-from the /nodebug or /nodebug/cmprssed paths in the distribution archives! The
-latter two are unsupported and meant to be used on severely space constrained
-boot media only. I've included them for your convenience only and it's up to YOU
-to take possible risks doing so.
+Make sure you are running the most recent GA version of Danis506.ADD and
+DaniATAPI.FLT, unless specifically instructed otherwise.
 
-Add the option /DEBUG:-31 to the DaniS506.ADD line in CONFIG.SYS, and reboot.
-Then grab
+If you are not sure what version you are running, check it before you submit a
+ticket.
 
- - the output from "COPY IBMS506$ report.trc"
- - the output from "DiskInfo cviI > report.txt"
- - the output from "DumpIDE b > report.dmp"
+Many people refer to driver revisions by file dates. Don't try to do this for
+these reasons:
 
-If there are non-zero numbers in the "Total errors" lines of the output from
-"DiskInfo cv", run and grab
+  - We don't keep track of file dates
+  - We may build several drivers almost each day
+  - File dates can easly be changed
+  - There are many different calendars in this world
 
- - the output from "SmartCtl -a DiskID > report.smart"
+The only valid reference is the driver's version number. It is shown on
+boot up if the /V or /W switch is given. If you can boot to a command line
+the output of "COPY IBMS506$ anyfile" will list the driver version in
+the first line. If you cannot boot, then run "BLDLEVEL DaniS506.ADD" which
+will output something like this:
 
-where 'DiskID' is the id of the disk with errors, f.e. '0m' if DiskInfo shows
+     Signature:       @#DANI:1.8#@##1## 4.7.2000 10:45:10 ....
+     Vendor:	      DANI
+     Revision:	      1.02
+     Date/Time:       4.7.2000 10:45:10
+     Build Machine:   Nachtigall
+     File Version:    1.2.5   <------------------------------+
+     Description:     Adapter Driver for ST506/IDE DASD      |
+							     |
+     This is the full version number  -----------------------+
+
+To collect data for a support ticket, add the option /DEBUG:-31 to the 
+DaniS506.ADD line in CONFIG.SYS, and reboot.  Open up a command line session 
+and enter the following commands
+
+  copy IBMS506$ report.trc
+
+and
+
+  DiskInfo cviI > report.diskinfo
+
+and
+
+  DumpIDE b > report.dumpide
+
+If the "Total errors" lines of report.diskinfo are not all zero, enter the follow command
+
+ SmartCtl -a DiskID > report.smart
+
+where 'DiskID' is the id of the disk with errors.  For example, use '0m' if DiskInfo shows
 errors for unit '0/m'.
 
+Attach all the reports to the ticket.
+
 If you are experiencing problems related to any kind of ATAPI unit (CD, DVD,
-burners, ...), then grab
+burners, ...), then enter the command
 
- - the output from "COPY ATAPI$ report.atapi"
+  COPY ATAPI$ report.atapi
 
-If you cannot boot from disk using DaniS506.ADD, try the above from a
+and attach report.atapi to the ticket.
+
+If you cannot boot from the hard disk using DaniS506.ADD, try the above from a
 bootable floppy, CD or ZIP.
 
-If this fails as well, try again with the additional option /FORCEGBM /!BM
+If this fails as well, edit config.sys and add the options 
+
+  /FORCEGBM /!BM
+
+to the DANIS506.ADD BASEDEV statment and try again.
 
 If all of the above fails, but a boot with IBM1S506.ADD works, then grab
 at least
 
- - the output from "DumpIDE b > report.dmp"
- - the output from "BldLevel DaniS506.ADD > report.bld"
+ - the output from "DumpIDE b > report.dumpide"
+ - the output from "BldLevel DaniS506.ADD > report.bldlevel"
 
-Send the info to "Daniela Engert" <dani@ngrt.de> please. Don't forget to provide
-a valid "reply-to" field in the header of your email, I won't edit it by hand!
+== Where to report problems ==
+==============================
 
-If you are experiencing problems with CD burning try disabling busmaster DMA
-(/A:x /U:y /!BM) first; some writers have problems with DMA mode.
+Once you have captured the above information, create a TRAC ticket at
 
-------------------------------------------------------------------------------
+  http:svn.netlabs.org/xata
 
-// An diejenigen, die die Bedeutung von FORDERN nicht kennen:
-// Nicht erst fragen, ob ich die Info benîtige, sondern einfach erzeugen wie
-// beschrieben - auch wenn man nicht glaubt, da· das geht - und als Anhang
-// mitschicken - AUF JEDEN FALL, IMMER, OHNE FRAGEN!
+The home page explains how to submit a ticket.  See
 
-// Bevor Sie die Dateien abschicken, vergewissern Sie sich, da· da auch Inhalt
-// drin ist! In der ersten Zeile von report.trc und report.atapi steht die
-// Versionsnummer des tatsÑchlich geladenen Treibers und die angewÑhlten
-// Optionen. In der ersten Zeile von report.dmp steht das Build-Datum des
-// DumpIDE Utility.
-
-******************************************************************************
-* Wenn die genannten Dateien ohne ZWINGENDEN Grund fehlen, ignoriere ich den *
-* gesamten Problemreport ohne weitere RÅckmeldung.			     *
-******************************************************************************
-
-Ich FORDERE, da· JEDER Problem- oder Fehlerbeschreibung die folgenden Dateien
-beiliegen:
-
-Stellen Sie sicher, da· Sie die STANDARD-Version von DaniS506 benutzen und nicht
-diejenigen aus den Verzeichnissen /nodebug/ oder /nodebug/cmprssd im Distribu-
-tionsarchiv! Diese letzteren beiden sind nicht von mir unterstÅtzt und sind nur
-zum Einsatz auf Bootmedien mit Ñu·erst geringem Platzangebot gedacht. Ich habe
-diese Versionen nur zu Ihrer Erleichterung beigepackt und es liegt alleine an
-IHNEN die daraus mîglicherweise entstehenden Probleme zu lîsen.
-
-ErgÑnzen Sie die Zeile mit DaniS506.ADD in CONFIG.SYS um die Option /DEBUG:-31
-und booten Sie neu. Danach besorgen Sie sich
-
- - die Ausgabe von "COPY IBMS506$ report.trc"
- - die Ausgabe von "DiskInfo cviI > report.txt"
- - die Ausgabe von "DumpIDE b > report.dmp"
-
-Falls in der Ausgabe von "DiskInfo cv" in den Zeilen "Total errors" Werte
-ungleich 0 auftauchen, besorgen Sie sich zusÑtzlich
-
- - die Ausgabe von "SmartCtl -a DiskID > report.smart"
-
-wobei 'DiskID' die Bezeichnung fÅr die Platte mit Fehlern ist, z.B. '0m' falls
-"DiskInfo cv" Fehler fÅr die Platte '0/m' anzeigt.
-
-Falls Probleme im Zusammenhang mit irgendwelchen ATAPI-GerÑten (CD, DVD, Brenner,
-...) auftauchen sollten, besorgen Sie zusÑtzlich
-
- - die Ausgabe von "COPY ATAPI$ report.atapi"
-
-Falls ein Boot von der Festplatte mittels DaniS506.ADD fehlschlÑgt, versuchen
-Sie es von einer bootfÑhigen Floppy, CD oder ZIP.
-
-Falls das auch nicht klappt, probieren Sie das Ganze mit den zusÑtzlichen
-Optionen /FORCEGBM /!BM.
-
-Falls alles nicht funktioniert, aber ein Boot mit IBM1S506.ADD mîglich ist, dann
-besorgen Sie zumindest
-
- - die Ausgabe von "DumpIDE b > report.dmp"
- - die Ausgabe von "BldLevel DaniS506.ADD > report.bld"
-
-Senden Sie die Infos bitte an "Daniela Engert" <dani@ngrt.de>. Vergessen Sie
-bitte auch nicht, eine gÅltige Email-Adresse fÅr die RÅckantwort im "reply-to"
-Feld des Email-Kopfes anzugeben, ich werde sie nicht von Hand editieren!
-
-Falls die Probleme beim CD-Brennen haben, versuchen Sie es erst einmal mit dem
-Abschalten des Busmaster DMA Modus (/A:x /U:y /!BM); einige Brenner haben
-Probleme mit dem DMA Modus.
+  http://svn.netlabs.org/xata/wiki/WikiStart#SubmittingTickets
 
