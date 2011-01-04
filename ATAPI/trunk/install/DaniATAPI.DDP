@@ -1,0 +1,12 @@
+*
+* A DDP for DaniATAPI.FLT
+*
+
+:TITLE
+Daniela's generic ATAPI filter
+
+:CONFIG
+BASEDEV=DaniATAPI.FLT
+
+:FILES
+DaniATAPI.FLT \OS2\BOOT\DaniATAPI.FLT

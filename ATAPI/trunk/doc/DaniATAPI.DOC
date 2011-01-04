@@ -1,0 +1,425 @@
+
+		  Daniela's generic ATAPI Filter - Release 0.4.0
+		  -----------------------------------------------
+
+
+NAME
+     DaniATAPI.FLT  -  replacement for IBMIDECD.FLT, IBMATAPI.FLT, DaniADsk.FLT
+		       and all other ATAPI related filters.
+
+SYNOPSIS
+     This filter driver supports all types of ATAPI devices. It is a superset
+     of IBMIDECD.FLT, IBMATAPI.FLT and DaniADsk.FLT, and supports all devices
+     that the mentioned drivers do.
+     Additionally, all ATAPI devices can be accessed through the OS/2 ASPI
+     software interface. Each EIDE channel shows up as a SCSI channel, and
+     each ATAPI device as a SCSI device (master = SCSI ID 0, slave = SCSI ID 1).
+
+DESCRIPTION
+     This release of my ATAPI filter driver is based on the IBMATAPI.FLT and
+     IBMIDECD.FLT sources.
+
+     My enhancements are:
+
+     - can deal with the ATAPI ZIP-250 and ZIP-750
+     - improved ZIP performance (up to factor 4 on ZIP-250)
+     - supports arbitrary swapping of 100MB, 250MB and 750MB media
+     - reflects the current media capacity up to FDISK, DISKIO or the like
+     - OS/2 boot from ZIP is possible
+     - faster 32bit PIO in conjunction with DANIS506.ADD (rel. 1.1.1 or later)
+     - Busmaster DMA mode works and is tested with Intel, VIA, AMD, HPT, SiS,
+       CMD, SiliconImage, ServerWorks, Promise, Nvidia and ACARD chipsets until
+       now.
+       Busmaster DMA is available now for ALi as well (CD/DVD-ROM is safe, but
+       some chip revisions fail on DMA write operations!). Due to hardware
+       limitations there is no 32bit PIO and no busmaster DMA possible for ATAPI
+       devices attached to a Promise Ultra (non-TX2) controller.
+     - ATAPI devices appear to the rest of the system as regular SCSI-2 devices
+       if used with DANIS506.ADD (rel. 1.1.5 or later). This may be disabled
+       globally or individually.
+     - advanced "warm-swap" support if used with DANIS506.ADD (rel. 1.1.9 or
+       later)
+     - support for PCCard (formerly: PCMCIA) ATAPI devices (like the Iomega
+       PCMCIA ZIP-250 or the Iomega Click!40)
+     - support for PCCard CD writers (CDRecord, RSJ)
+     - the translation of old-style 6-byte SCSI commands into their more
+       modern 10-byte counterparts is no longer hardcoded. The device is
+       sensed now to check if it requires this translation.
+     - like DaniS506.ADD, this driver stores boot messages internally for
+       later readout. To view them, issue "copy ATAPI$ con:", to dump them
+       into a file, issue "copy ATAPI$ anyfile".
+     - automatic media unload on shutdown if desired
+     - supports up to eight IDE channels
+     - supports ATAPI MO drives (tested with Fujitsu 1.3GB and 2.3GB drives)
+     - supports ATAPI units with more than one logical unit (LUN) built in.
+       Examples are the Panasonic/IBM PD drive (tested) or some CD-ROM changers.
+     - fix compatibility issues with the increasing number of devices that
+       bluntly violate the ATAPI specs.
+     - fix some hangs at driver initialization due to SCSI MODE_SENSE size
+       problems with particular ATAPI units.
+     - fix a hang at driver initialization due to slow recover from IDENTIFY
+       commands seen with some ATAPI units.
+***  - support for high interrupts (IRQ16 and higher)
+
+###  Caution: this release doesn't work with DaniS506 v1.7.x or older!
+	      it is meant to be used with DaniS506 v1.8.0 only.
+
+     This means, all freeware utilites designed to work with SCSI devices
+     are supposed to work with ATAPI devices as well:
+
+       CDRecord, CDDA2WAV, TAR, ...
+
+COMMAND LINE OPTIONS
+     This driver supports all switches and options that IBMATAPI.FLT supports.
+
+     Syntax Diagram
+     --------------
+						       +------- /I --------+
+			    +------------------+       | +---------------+ |
+			    V		       |       | V		 | V
+     BASEDEV=DaniATAPI.FLT --+----------------++- /A:n +--+-------------+--+->
+			     +--- /!V --------+ 	  +- /EJ -------+
+			     +--- /EJ --------+ 	  +- /!SCSI ----+
+			     +--- /ZA --------+ 	  +- /RSJ ------+
+			     +--- /!SCSI -----+
+			     +--- /RSJ -------+
+
+       >----------+-------------------------------------+------------------|
+		  |	  +----------- /I ----------+	|
+		  |	  | +---------------------+ |	|
+		  |	  | V			  | V	|
+		  +- /U:n +--+-------------------+--+---+
+			      +- /EJ ------------+
+			      +- /!SCSI ---------+
+			      +- /TYPE:x --------+
+			      +- /RSJ -----------+
+
+
+     In most cases, options prefaced with ! can be used with the ! modifier to
+     explicitly disable the option.  Options are valid both with and without
+     the ! modifer.
+
+     The values in parentheses are the default values if the option is not
+     present.
+
+     Options may be prefixed by "-" instead of "/" as well.
+
+
+     Generic options
+     ---------------
+
+     /!V						    (quiet)
+	(not) Verbose mode
+     /EJ						    (don't eject)
+	eject medium at shutdown
+     /ZA						    (default mapping)
+	map ZIP drive to A:
+     /!SCSI						    (export all)
+	don't export any ATAPI devices as SCSI devices
+     /RSJ						    (off)
+	RSJ CDROM backdoor
+
+     Adapter options
+     ---------------
+
+     /A:n						    (n/a)
+	Adapter number (0, 1, .. 7)
+     /I 						    (off)
+	Ignore adapter
+     /EJ						    (don't eject)
+	eject medium at shutdown
+     /!SCSI						    (export all)
+	(don't) export ATAPI devices as SCSI devices
+     /RSJ						    (off)
+	RSJ CDROM backdoor
+
+     Unit options
+     ------------
+
+     /U:n						    (n/a)
+	Unit number (0, 1)
+     /UNIT:n
+	same as /U
+     /I 						    (off)
+	Ignore unit
+     /EJ						    (don't eject)
+	eject medium at shutdown
+     /!SCSI						    (export)
+	(don't) export ATAPI devices as SCSI devices
+     /TYPE:x						    (none)
+	type definition of swappable units
+     /RSJ						    (off)
+	RSJ CDROM backdoor
+
+
+     The export of ATAPI devices as SCSI-2 device can be enabled and/or disabled
+     globally, per adapter channel, or per individual unit by adding the options
+     /SCSI or /!SCSI. If these options are in front of any /A: option, they
+     apply globally. If they come after an /A:x option but before any /U:
+     option, they apply to adapter channel x and override the global setting. If
+     they come after any /U:y option, then they apply to the single unit y only
+     and override both the global and the adapter setting. Default is a global
+     visibility of all ATAPI devices as SCSI devices.
+
+     The export is globally disabled also and cannot be overridden if the driver
+     is renamed to any name beginning with IBM (case insensitive). This avoids
+     confusion of the OS/2 installer if you replace IBMIDECD.FLT on installation
+     disk #1 by a renamed version of DaniATAPI.FLT.
+
+
+     To enable booting OS/2 from an ATAPI ZIP drive, I introduced the new
+     /ZA switch ('map ZIP to A:'). It takes effect only if the BIOS has mapped
+     the ZIP to drive letter A: in order to boot from it; in all other cases
+     the /ZA option is a no-op.
+
+     If there are floppy disk drives in your system, then - as a side effect -
+     /ZA remaps floppy drive A: to B:, and floppy drive B: (if present) is
+     no longer accessable. Due to limitations in OS2DASD.DMD (?) floppy
+     reads and writes are a little 'rocky' in this case.
+
+     A boot from ZIP automatically locks the boot medium in the drive, media
+     swapping is no longer possible! This lock is imposed automatically by
+     OS2DASD. If you insist to eject the locked medium by the 'eject' command,
+     this command obviously is routed into nirvana and causes a kernel trap.
+
+
+     Some people (like me) don't like media left in removable media devices
+     (especially ZIP drives) on system shutdown, but tend to forget to eject
+     them before powering down the system. The new /EJ option fills the void. If
+     /EJ appears in front of all /A:n options, it acts globally on all devices
+     controlled by DANIATAPI.FLT; if /EJ comes after an /A:n but before
+     accompanied /U:m options, it acts on all units of that adapter channel; if
+     it comes after an /U:m option, /EJ acts only on that particular unit. In
+     any case, all units marked by /EJ receive a command to eject inserted media
+     on shutdown right after file systems are closed.
+
+
+     Units marked as "warm-swappable" on DANIS506.ADD's command line (by
+     /A:x /BAY) need the new option /TYPE: to advice DaniATAPI.FLT to report
+     appropriate device types to the device managers.
+     The same applies to PCCard adapter channels (found by /PCS on
+     DANIS506.ADD's command line). This is done by additional characters
+     designating the supported device types:
+
+       'z' or 'Z': all ZIP drives
+       'l' or 'L': the LS-120 drive
+       'c' or 'C': all CD-ROM like devices (CD-ROM, CD-R/W, DVD-ROM, DVD-RAM)
+       'w' or 'W': all CD writer like devices (CD-R/W, DVD-RAM)
+
+     'W' includes 'C' but additionally enables the features required for proper
+     operation of the RSJ CDWriter software even if there is no CD writer unit
+     attached at boot time.
+
+     There may be more in the future. Some examples on how to use this option:
+
+     1) You have an IBM ThinkPad 600 and intend to plug a floppy drive, a
+	CD-ROM, and a ZIP-100 into its UltraBay. The TPs have got the UltraBay
+	connected to the secondary EIDE port. Then you need
+
+	BASEDEV=DaniS506.ADD [other options] /A:1 /BAY
+	BASEDEV=IBM1FLPY.ADD /A:0 /FORCE:1 /U:0 /F:1.44MB
+	BASEDEV=DaniATAPI.FLT /A:1 /U:0 /TYPE:ZC
+
+	(the adapter numbers above are correct!)
+
+	This is tested on Dell Inspiron 4150 and should work on other notebooks
+	as well.
+
+     2) You have notebook which can be equipped with either a LS-120 drive,
+	a DVD-ROM, or a CD writer. Then you need
+
+	BASEDEV=DaniATAPI.FLT /A:x /U:y /TYPE:WL
+
+     To pick the correct values for /A and /U have a look at the boot messages.
+
+INSTALLATION
+     Just copy DaniATAPI.FLT to bootdrive:\OS2\BOOT and add the line
+
+     BASEDEV=DaniATAPI.FLT
+
+     Make sure that all other ATAPI related drivers are inactive or come
+     after DaniATAPI.FLT in your CONFIG.SYS.
+     If you prefer chasing icons, you can do the copy using DDINSTAL; you
+     still have to tidy up CONFIG.SYS!
+
+     If you intend to run the BootOS utility or to install this filter driver
+     on a 8.3-only filesystem, I recommend to rename the driver to DaniATAP.FLT.
+
+INTEROPERABILITY TIPS
+     This version of DaniATAPI.FLT works with DaniS506 v1.8.0 only. Due to
+     changes in the inter device driver interface, this version of DaniS506
+     no longer works with other ATAPI-related filter drivers. Thus there are
+     no interoperability issues with them.
+
+     Unfortunately, many people don't bother to read docs carefully enough or
+     at all. So I state it here explicitely once again:
+
+     To make SCSI or ATAPI devices visible to programs which use the ASPI API,
+     you'll need the following two lines to be present in CONFIG.SYS!
+
+     BASEDEV=OS2ASPI.DMD /ALL	    (/ALL makes all devices accessible)
+     DEVICE=[path]\ASPIROUT.SYS or [path]\ASPINKK.SYS
+
+
+     CDRecord:
+
+     There are no further options required if you like to run CDRecord/2, but
+     not RSJ with your CD writer. The writer is visible to CDRecord as a
+     regular SCSI CD writer by default. Just run "CDRecord -scanbus" to locate
+     the CD writer on one of the SCSI buses and memorize its address
+     (bus,unit,lun).
+
+
+     RSJ:
+
+     DaniATAPI.FLT is fully compatible to the RSJ cdwriter filesystem and its
+     accompanied utilities. In fact, if you run DaniATAPI.FLT instead of
+     RSJIDECD.FLT you can take advantage of the improved data transfer modes
+     (32bit PIO and busmaster DMA) on all supported chipsets (RSJIDECD.FLT is
+     derived from IBMIDECD.FLT and thus supports busmaster DMA on Intel chipsets
+     only). If your CD writer model is listed cddrv.inf you don't even need
+     LOCKCDR.FLT; DaniATAPI.FLT reorders its SCSI unit mapping if it finds
+     a CD writer unit so that RSJ is happy.
+
+     So there are several choices available (listed in order of preference)
+
+     1) BASEDEV=DaniATAPI.FLT <other options> /A:x /U:y /RSJ   or
+					      /A:x /RSJ        or
+					      /RSJ
+	BASEDEV=LOCKCDR.FLT
+
+	Both RSJ and CDRecord may use the writer. If your CD writer model isn't
+	listed in cddrv.inf, LOCKCDR.FLT from RSJ 3.x will autodetect and
+	autoconfigure it. DaniATAPI will install an additional backdoor to
+	re-enable regular CD ROM operation via OS2CDROM.DMD (or replacements)
+	even if it is hidden by LOCKCDR.FLT. You better prevent DaniATAPI.FLT
+	from exporting the CD writer as SCSI device by applying one of the
+	/!SCSI options, because it will be exported by LOCKCDR.FLT now (too).
+
+	RSJ and UDF peacefully coexist now.
+
+     2) BASEDEV=DaniATAPI.FLT
+
+	This enables full use of the CD writer unit as regular CD ROM device,
+	RSJ writer device, and CDRecord writer device. If your particular model
+	isn't listed in RSJ's cddrv.inf, then you need to paste the LOCKCDR.FLT
+	autodetection info from the RSJ control panel.
+
+     3) BASEDEV=DaniATAPI.FLT </!SCSI> or </A:x /!SCSI> or </A:x /U:y /!SCSI>
+	BASEDEV=LOCKCDR.FLT
+
+	This disables using the CD writer unit as a regular CD ROM drive. You
+	better prevent DaniATAPI.FLT from exporting the CD writer as SCSI device
+	by applying one of the /!SCSI options, because it will be exported by
+	LOCKCDR.FLT now (too). Both RSJ and CDRecord may use the writer. If your
+	CD writer model isn't listed in cddrv.inf, LOCKCDR.FLT from RSJ 3.x and
+	above will autodetect and autoconfigure it.
+
+     4) BASEDEV=DaniATAPI.FLT
+	BASEDEV=LOCKCDR.FLT
+	DEVICE=JJSCDROM.DMD /W
+
+	This is similar to the section above, but DaniATAPI will not install
+	the additional backdoor; with the /W option JJSCDROM will grab the
+	WORM unit exported by LOCKCDR.FLT.
+
+
+     BackAgain/2K:
+
+     The vendor supplied ATAPI tape driver (f.e. CDSEIDE.FLT,BTSEIDE.FLT)
+     doesn't work with DaniS506 v1.8.0.
+
+
+     SANE:
+
+     SANE users may find that the SCSI bus number, for their scanner, will
+     change when DaniATAPI.FLT is used. You may need to run FIND-SCANNER.EXE,
+     and edit the scanner address in the *.CONF file, to correct the address.
+     This should be a one time change, unless you switch back to the IBM
+     supplied drivers.
+
+
+     UDF:
+
+     Lots of UDF failures can be attributed to flaws with particular versions of
+     OS2CDROM.DMD or JJSCDROM.DMD. Best results with UDF 2.1.2 were seen with
+     OS2CDROM.DMD build level 10.127.
+
+     If you see UDF formatting failing like this
+
+       [d:\]format w: /FS:UDF /F
+       The type of file system for the disk is CDFS.
+       WARNING: Formatting will erase ALL data on this disk.
+       Continue (Yes or No)? Y
+       Formatting is in progress...Format failed.
+       Internal error
+
+     then you probably have to blank the CD-RW before. CDRecord is recommended:
+
+       [d:\]cdrecord blank=fast -eject -speed 10
+
+
+     FUJITSU MO drivers
+
+     these are obsolete now, everything is handled by DaniATAPI.FLT and the
+     DASD manager (both large floppy and partitioned media).
+
+FILES
+     DaniATAPI.FLT  The driver itself.
+     DaniATAPI.DDP  The device driver profile for DDINSTAL
+     DaniATAPI.DOC  The file you are reading right now :-)
+
+     cmprssd\DaniATAPI.FLT
+		   The same as above, but LXlite compressed. This one is *not*
+		   guaranteed to work on every system.
+BUGS
+     Hopefully none, but who knows ...
+
+TO DO
+     - merge with the base S506 driver
+
+COPYRIGHT
+     DaniATAPI - Copyright (c) 2001-2007 Daniela Engert. All rights reserved.
+
+STATUS OF PROGRAM
+     DaniAATAPI is freeware.
+
+DISCLAIMER
+     YOU ARE USING THIS PROGRAM AT YOUR OWN RISK! I don't take any
+     responsibillity for damages, problems, custodies, marital dis-
+     putes, etc. resulting from use, inability to use, misuse, pos-
+     session or non-possession of this program directly or indirectly.
+     I also don't give any warranty for bug-free operation, fitness for
+     a particular purpose or the appropriate behaviour of the program
+     concerning animals, programers and little children.
+
+     THE SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+     IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+     WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+     PURPOSE. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE
+     PROGRAM IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU
+     ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
+
+     Or, in a few words:
+     If its good, I am responsible.
+     If its bad, its all your fault. ;)
+
+     Permission is granted to redistribute this program free of charge,
+     provided it is distributed in the full archive with unmodified
+     contents and no profit beyond the price of the media on which it
+     is distributed is made. Exception to the last rule: It may be
+     included on freeware/shareware collections on CD-ROM, as well as
+     on magazine cover CD-ROMs.
+
+     All trademarks mentioned anywhere around here are property of their
+     owners and the like ...
+
+AUTHOR
+     Daniela Engert
+
+     Internet: "Daniela Engert" <dani@ngrt.de>
+
+EPILOGUE
+     Suggestions and bug-reports are always welcome. Well ... bug-reports
+     are perhaps not *that* welcome ... ;)
+
