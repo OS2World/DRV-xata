@@ -1,9 +1,10 @@
 # danis506 makefile
-# $Id: $
+# $Id$
 
-# 19 Mar 09 SHL generalize
-# 07 Jun 10 SHL Clone from older msc build
-# 07 Jun 10 SHL Sync with LGPL sources
+# 2009-03-19 SHL generalize
+# 2010-06-07 SHL Clone from older msc build
+# 2010-06-07 SHL Sync with LGPL sources
+# 2011-03-04 SHL Comments and bldlevel tweaks
 
 #/************************************************************************/
 #/*									 */
@@ -20,28 +21,26 @@
 #/************************************************************************/
 
 # Build options that can be set in enviroment or on nmake command line
-
-# Build options that can be set in enviroment or on nmake command line
 #  VERSION - build version (i.e. 1.8) - see makefile for current default
 #  FIXLEVEL - fix level (i.e 7 for 1.8.7) - see makefile for current default
 #  VENDOR - builder (i.e. slainc, defaults to unknown)
 #  BUILDMACH - build machine (i.e. slamain, defaults to unknown)
 #  BUILDTIME - build time (yyyy/mm/dd hh:mm:ss) - make fails if not set
-#  LIBOBJ - points to prebuild runtime .obj file directory (defaults LibObj)
-#  ACPI - points to ACPI toolkit header directory (defaults (ACPI)
+#  LIBOBJ - points to prebuild runtime .obj file directory (defaults to LibObj)
+#  ACPI - points to ACPI toolkit header directory (defaults to ACPI)
 
 # Build options that can be set on nmake command line
 #  icat - generate ICAT symbolic debug data (default is no ICAT data)
 #  notraces - suppress tracing logic - use for compressed build (default includes tracing logic)
 
-# 19 Mar 09 SHL Allow external define
+# Allow external define
 !ifdef VERSION
 _VERSION = $(VERSION)
 !else
 _VERSION = 1.8
 !endif
 
-# 19 Mar 09 SHL Allow external define
+# Allow external define
 !ifdef FIXLEVEL
 _FIXLEVEL = $(FIXLEVEL)
 !else
@@ -59,11 +58,14 @@ _VENDOR = unknown
 BUILDMACH = unknown
 !endif
 
-# Spacing matters to bldlevel
+# Spacing and width matters to bldlevel
+# Define BUILDTIME as YYYY/MM/DD HH:MM:SS
+# Bldlevel requires TIMESTAMP and trailing spaces to be exactly 25 characters
+# BUILDTIME is 19 characters so we use 6 spaces here
 !ifdef BUILDTIME
-TIMESTAMP = $(BUILDTIME)                  $(BUILDMACH)
+TIMESTAMP = $(BUILDTIME)      $(BUILDMACH)
 !else
-!error BUILDTIME must be defined as YYYY/MM/YY HH:MM:SS in environment
+!error BUILDTIME must be defined as YYYY/MM/DD HH:MM:SS in environment
 !endif
 
 #****************************************************************************
@@ -93,8 +95,8 @@ APM	  = ..\..\..\thinkpad\dockii\apmcalls
 !ifndef ACPI
 ACPI	  = Acpi
 !endif
-# 19 Mar 09 SHL Point at object library directory
 
+# Point at assumed object library directory unless defined externally
 !ifndef LIBOBJ
 LIBOBJ    = LibObj
 !endif
@@ -105,12 +107,10 @@ LIBOBJ    = LibObj
 # makefile and will be specific to this set of instructions. All MAKEFILES
 # are requested to use this format to insure that they are using the correct
 # level of files and tools.
-#
 
 !if [set INCLUDE=.;$(H);$(DISKH);$(ACPI)] || \
     [set PATH=$(TOOLS);$(PATH)]
 !endif
-
 
 #
 # Compiler/tools Macros
@@ -134,7 +134,7 @@ AINC   = -I. -I$(INC)
 # /G2sr 286, no stack probes, fastcall
 # /Answ near data, small code, ss != ds, ds not reloaded
 # /Oi intrinsics
-# 19 Mar 09 SHL Define __OS2__ because code needs it; undefine MSDOS for safety
+# Define __OS2__ because code needs it; undefine MSDOS for safety
 # CFLAGS = /c /Zp /G2sr /Answ /nologo /Oi
 CFLAGS = /c /Zp /G2sr /Answ /nologo /Oi /D__OS2__ /UMSDOS
 LFLAGS = /map /nod /packd /a:2 /far
@@ -153,7 +153,7 @@ CFLAGS = $(CFLAGS) /DTRACES=0
 CFLAGS = $(CFLAGS) /DTRACES=1
 !endif
 
-# 16 Aug 10 SHL Generate .cod listing
+# Enable this to generate .cod listing
 # CFLAGS = $(CFLAGS) /Fc
 
 # Define in CL variable to keep command lines shorter
@@ -171,7 +171,7 @@ LIBS  =  $(APM)\apmcalls.lib $(RMLIB)\rmcalls.lib $(LIB)\libh.lib $(LIB)\os2286p
 #
 # H files
 #
-#
+
 HDR = cmdparse.h cmdpdefs.h cmdphdr.h cmdproto.h cs.h cs_help.h \
       s506cons.h s506ext.h s506oem.h s506pro.h s506regs.h s506type.h \
       dhcalls.h iorb.h addcalls.h apmcalls.h ata.h pcmcia.h trace.h
@@ -179,7 +179,7 @@ HDR = cmdparse.h cmdpdefs.h cmdphdr.h cmdproto.h cs.h cs_help.h \
 #
 # OBJ files
 #
-#
+
 OBJ1 =	S506SEGS.OBJ S506DH.OBJ   ADDSERVA.OBJ S506PIO.OBJ  S506DMA.OBJ  S506IO.OBJ
 OBJ2 =	S506DATA.OBJ S506RTE.OBJ  S506SM.OBJ   S506IORB.OBJ S506APM.OBJ  CS_HELP.OBJ
 OBJ3 =	S506TIMR.OBJ S506CSUB.OBJ S506OSM2.OBJ S506OEM.OBJ  S506MATH.OBJ S506MPIF.OBJ CS.OBJ
@@ -187,8 +187,6 @@ OBJ4 =	S506INIT.OBJ CMDPARSE.OBJ S506PRTF.OBJ S506OEMI.OBJ S506GEOM.OBJ S506I13.
 OBJ5 =	S506COMN.OBJ S506PIIX.OBJ S506VIA.OBJ  S506GNRC.OBJ S506ALI.OBJ  S506SIS.OBJ
 OBJ6 =	S506CMD.OBJ  S506PDC.OBJ  S506CX.OBJ   S506HPT.OBJ  S506AEC.OBJ  S506SW.oBJ
 OBJ7 =	S506OPTI.OBJ S506SII.OBJ  S506ITE.OBJ  S506JMB.OBJ  S506NTIO.OBJ ACPI.OBJ
-# 19 Mar 09 SHL Use LIBOBJ
-# OBJL =	..\..\LibObj\anfaulsh.obj ..\..\LibObj\anfauldi.obj ..\..\LibObj\anfaulre.obj
 OBJL =	$(LIBOBJ)\anfaulsh.obj $(LIBOBJ)\anfauldi.obj $(LIBOBJ)\anfaulre.obj
 
 OBJS = $(OBJ1) $(OBJ2) $(OBJ3) $(OBJ4) $(OBJ5) $(OBJ6) $(OBJ7)
@@ -197,7 +195,6 @@ OBJS = $(OBJ1) $(OBJ2) $(OBJ3) $(OBJ4) $(OBJ5) $(OBJ6) $(OBJ7)
 #   Setup the inference rules for compiling and assembling source code to
 #   obejct code.
 #****************************************************************************
-
 
 .asm.obj:
 	$(AS) $(AFLAGS) $(AINC) $*.asm;
@@ -216,7 +213,6 @@ OBJS = $(OBJ1) $(OBJ2) $(OBJ3) $(OBJ4) $(OBJ5) $(OBJ6) $(OBJ7)
 	$(CC) $(CFLAGS) /Fc $(CINC) $*.c
 	copy $*.cod $*.lst
 	del $*.cod
-
 
 #****************************************************************************
 #   Target Information
@@ -242,7 +238,6 @@ clean:
 	if exist *.def	del *.def
 	if exist *.mak	del *.mak
 
-
 #*****************************************************************************
 #   Specific Description Block Information
 #*****************************************************************************
@@ -253,7 +248,7 @@ DaniS506.add:  $(OBJS) $(LIBS) $(HDR) makefile
 
 LIBRARY $(@B)
 
-DESCRIPTION "$(FILEVER)  Adapter Driver for PATA/SATA DASD"
+DESCRIPTION "$(FILEVER)Adapter Driver for PATA/SATA DASD"
 
 PROTMODE
 
@@ -308,4 +303,3 @@ dephold:
 	touch $@
 
 $(OBJS): $(HDR)
-
