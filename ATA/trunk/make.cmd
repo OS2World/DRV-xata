@@ -1,5 +1,6 @@
 @echo off
 :: make.cmd - nmake wrapper
+:: $Id$
 
 :: 2010-09-13 SHL Ensure 4OS2; switch to ISO dates; switch to BUILDTIME BUILDMACH
 
