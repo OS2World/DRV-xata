@@ -51,7 +51,7 @@ How to build danis506.add
 
   - Populate LIBOBJ subdirectory
 
-  - Set environment variables - see makefile
+  - Set environment variables - see makefile and make.cmd
 
 == Building ==
 
@@ -59,5 +59,5 @@ How to build danis506.add
 
   - Otherwise, set environment variables and run nmake directly
 
-$Id: $
+$Id$
 
