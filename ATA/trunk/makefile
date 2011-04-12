@@ -21,8 +21,8 @@
 #/************************************************************************/
 
 # Build options that can be set in enviroment or on nmake command line
-#  VERSION - build version (i.e. 1.8) - see makefile for current default
-#  FIXLEVEL - fix level (i.e 7 for 1.8.7) - see makefile for current default
+#  VERSION - build version (i.e. 1.8.9) - see makefile for current default
+#  FIXLEVEL - fix level (i.e 9 for 1.8.9) - see makefile for current default
 #  VENDOR - builder (i.e. slainc, defaults to unknown)
 #  BUILDMACH - build machine (i.e. slamain, defaults to unknown)
 #  BUILDTIME - build time (yyyy/mm/dd hh:mm:ss) - make fails if not set
@@ -37,14 +37,14 @@
 !ifdef VERSION
 _VERSION = $(VERSION)
 !else
-_VERSION = 1.8
+_VERSION = 1.8.9
 !endif
 
 # Allow external define
 !ifdef FIXLEVEL
 _FIXLEVEL = $(FIXLEVEL)
 !else
-_FIXLEVEL = 7
+_FIXLEVEL = 9
 !endif
 
 # Allow override
@@ -243,7 +243,7 @@ clean:
 #*****************************************************************************
 
 DaniS506.add:  $(OBJS) $(LIBS) $(HDR) makefile
-	Rem Create DEF file <<$(@B).def
+	@echo Creating DaniS506.def <<$(@B).def
 ; Created by makefile
 
 LIBRARY $(@B)
@@ -270,6 +270,7 @@ SEGMENTS
  RMCode	CLASS 'CODE' IOPL
 
 <<keep
+	@echo Linking DaniS506.add
 	$(LINK) $(LFLAGS) /NOE @<<$(@B).lnk
 $(OBJ1) +
 $(OBJ2) +

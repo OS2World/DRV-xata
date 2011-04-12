@@ -1,9 +1,9 @@
 /**************************************************************************
  *
  * SOURCE FILE NAME = S506INIT.C
+ * $Id$
  *
  * DESCRIPTIVE NAME = DaniS506.ADD - Adapter Driver for PATA/SATA DASD
- *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
  *	       COPYRIGHT Daniela Engert 1999-2009
@@ -242,7 +242,7 @@ T('R') T('(')
   rc = !(npA->Controller[0]);
 
   if (npA->FlagsT & (ATBF_PCMCIA | ATBF_BAY)) {
-//    npA->Controller[1] = CtATA;
+    //npA->Controller[1] = CtATA;
   } else {
     if (npA->maxUnits >= 2) {
       if (!(npA->UnitCB[1].FlagsT & UTBF_DISABLED)) TestChannel (npA, 1);
@@ -824,17 +824,15 @@ VOID FAR CollectPorts (NPA npA)
   }
 }
 
-/*----------------------------------------------------------------*/
-/*								  */
-/*  ConfigureController()					  */
-/*								  */
-/*  Activate the this controller's ACB:                           */
-/*    - Move any initialization data required to persist from	  */
-/*	the Adapter Table (npA) to the Adapter Control Block	  */
-/*	(npA).							  */
-/*    - Hook the IRQ.						  */
-/*								  */
-/*----------------------------------------------------------------*/
+/**
+ * Configure controller
+ *
+ *  Activate this controller's ACB:
+ *  - Move any initialization data required to persist from
+ *   the Adapter Table (npA) to the Adapter Control Block (npA).
+ *  - Hook the IRQ.
+ * @return 0 if OK else error code
+ */
 
 USHORT NEAR ConfigureController (NPA npA)
 {
@@ -850,7 +848,12 @@ USHORT NEAR ConfigureController (NPA npA)
   if (npA->FlagsT & ATBF_PCMCIA) ConfigurePCCard (npA);
   if (!STATUSREG) CollectPorts (npA);
 
-  AllocAdapterResources (npA);
+  if (AllocAdapterResources (npA)) {
+    /* Adapter probably controlled by another ADD */
+    npA->FlagsT |= ATBF_DISABLED;
+    npA->Status = ATS_NOT_PRESENT;
+    goto ConfigureControllerExit;
+  }
 
   ConfigureACB (npA);
   if (npA->Status != ATS_OK)
@@ -1116,11 +1119,13 @@ VOID NEAR SetOption (NPU npU, NPA npA, USHORT Ofs, USHORT Value)
 #define PCF_CLEAR_ADAPTER (PCF_UNIT0  | PCF_UNIT1)
 #define CHKFLG(x) // if (Flags&x){rc=1;break;}else{Flags|=x;}
 
-/*------------------------------------*/
-/*				      */
-/* ParseCmdLine()		      */
-/*				      */
-/*------------------------------------*/
+/**
+ * Parse commaond line
+ * @param pCmdLine points to nul terminated command line argument string
+ * @return 0 if OK or error code
+ * @note C4203 warning is expected
+ */
+
 USHORT FAR ParseCmdLine (PSZ pCmdLine)
 {
   CC	cc;
@@ -1294,7 +1299,7 @@ USHORT FAR ParseCmdLine (PSZ pCmdLine)
 
 
 	/*-------------------------------------------*/
-	/* PCI location - /LOC: 		     */
+	/* PCI location - /LOC:			     */
 	/*					     */
 	/*-------------------------------------------*/
 
@@ -1941,21 +1946,21 @@ NPHRESOURCE NEAR AllocResource (NPHRESOURCE nphRes, ULONG Addr, USHORT Len, UCHA
   return (nphRes);
 }
 
-/*-------------------------------*/
-/* AllocAdapterResources()	 */
-/*				 */
-/*-------------------------------*/
+/**
+ * Allocate adapter resources
+ * @param npA points to adapter descriptor
+ * @return 0 if allocate OK else error code
+ */
 
-VOID FAR AllocAdapterResources (NPA npA)
+USHORT FAR AllocAdapterResources (NPA npA)
 {
-  USHORT	 rc = 0;
   RESOURCESTRUCT Resource;
   NPHRESOURCE	 nphRes;
-  UCHAR 	 IRQ;
+  UCHAR		 IRQ;
 
-#define npResourceList ((NPAHRESOURCE)(npA->ResourceBuf))
+# define npResourceList ((NPAHRESOURCE)(npA->ResourceBuf))
 
-  if (npA->FlagsT & ATBF_PCMCIA) return;
+  if (npA->FlagsT & ATBF_PCMCIA) return 0;		// Nothing to allocate
 
   clrmem (npResourceList, sizeof (npA->ResourceBuf));
   nphRes = &(npResourceList->hResource[0]);
@@ -1967,7 +1972,7 @@ VOID FAR AllocAdapterResources (NPA npA)
   IRQ  = APICRewire ? npA->npC->IrqAPIC : 0;
   if (!IRQ) IRQ = npA->IRQLevel;
 
-  Resource.ResourceType 	 = RS_TYPE_IRQ;
+  Resource.ResourceType		 = RS_TYPE_IRQ;
   Resource.IRQResource.IRQLevel  = IRQ;
   Resource.IRQResource.PCIIrqPin = npA->FlagsT & ATBF_INTSHARED ?
 				     RS_PCI_INT_A : RS_PCI_INT_NONE;
@@ -1983,6 +1988,13 @@ VOID FAR AllocAdapterResources (NPA npA)
   nphRes = AllocResource (nphRes, PortToPhys (npA->ExtraPort, npA), npA->ExtraSize, TRUE);
 
   npResourceList->NumResource = nphRes - &(npResourceList->hResource[0]);
+
+  /*************************************************/
+  /* Check at least two resources registered       */
+  /* (one for the IRQ and at least one I/O port)   */
+  /* otherwise return error code                   */
+  /*************************************************/
+  return (npResourceList->NumResource >= 2 ? 0 : 1);
 }
 
 /*-------------------------------*/
@@ -2237,7 +2249,7 @@ UCHAR CountBits (USHORT x) {
 
 /*-------------------------------*/
 /*				 */
-/* GetDeviceULTRAMode() 	 */
+/* GetDeviceULTRAMode()		 */
 /*				 */
 /* For ATA or ATAPI devices	 */
 /*				 */

@@ -1,6 +1,7 @@
 /**************************************************************************
  *
  * SOURCE FILE NAME =  S506PRO.H
+ * $Id$
  *
  * DESCRIPTIVE NAME =  DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
@@ -194,7 +195,7 @@ VOID   NEAR PrintAdapterInfo (NPA Buf);
 VOID   FAR  SaveMsg (PSZ Buf);
 VOID   FAR  TTYWrite (UCHAR Level, NPSZ Buf);
 NPHRESOURCE NEAR AllocResource (NPHRESOURCE nphRes, ULONG Addr, USHORT Len, UCHAR shared);
-VOID   FAR  AllocAdapterResources (NPA npA);
+USHORT FAR  AllocAdapterResources (NPA npA);
 VOID   FAR  DeallocAdapterResources (NPA npA);
 VOID   FAR  AssignAdapterResources (NPA npA);
 NPA    FAR  LocateATEntry (USHORT BasePort, USHORT PCIAddr, UCHAR Channel);

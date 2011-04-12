@@ -1,6 +1,7 @@
 /**************************************************************************
  *
  * SOURCE FILE NAME =  S506REGS.H
+ * $Id$
  *
  * DESCRIPTIVE NAME =  DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
@@ -268,6 +269,21 @@
 #define SCTRL_IPM_NO_PARTL  0x1
 #define SCTRL_IPM_NO_SLMBR  0x2
 #define SCTRL_IPM_NONE	    0x3
+
+//
+// AHCI Generic Control Registers
+//
+
+#define AHCI_CAP	0
+#define AHCI_GHC	4		// Global PCH Control Register
+#define AHCI_PI		0xc		// Ports Implemented
+
+// AHCI Port registers
+#define AHCI_PORTREG_OFFSET	0x100	// Port 0 register bank offset from ABAR base
+#define AHCI_PORTREG_BYTES	0x80	// 0x80 bytes per register bank
+#define AHCI_SSTS		0x28	// Port 0 SATA status (P0SSTS) - fixme to have correct offset?
+
+#define AHCI_GHC_AHCIENABLED 1
 
 //
 // Boot Record Partiton Table Entry

@@ -1,6 +1,7 @@
 /**************************************************************************
  *
  * SOURCE FILE NAME = S506GNRC.C
+ * $Id$
  *
  * DESCRIPTIVE NAME = DANIS506.ADD - Adapter Driver for PATA/SATA DASD
  *
@@ -91,15 +92,6 @@ USHORT NEAR GetNetCellPio (NPA npA, UCHAR Unit) {
   if (npU->FoundUDMAMode >= 8) npA->Cap |= CHIPCAP_SATA;
   return (GetGenericPio (npA, Unit));
 }
-
-// ---------------------------------------------------------------
-
-#define AHCI_CAP     0
-#define AHCI_GHC     4
-#define AHCI_PI     12
-#define AHCI_SSTS 0x28
-
-#define AHCI_GHC_AHCIENABLED 1
 
 // ---------------------------------------------------------------
 
@@ -421,6 +413,6 @@ ULONG NEAR GetAHCISCR (NPA npA, USHORT Port)
     if (PI && !((PI >> Port) & 1)) return 0;
   }
 
-  return (BAR5 + (0x100 + AHCI_SSTS + (Port * 0x80)));
+  return (BAR5 + (AHCI_PORTREG_OFFSET + AHCI_SSTS + (Port * AHCI_PORTREG_BYTES)));
 }
 

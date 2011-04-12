@@ -1,5 +1,6 @@
 /**************************************************************************
  *
+ * $Id$
  * SOURCE FILE NAME = S506DATA.C
  *
  * DESCRIPTIVE NAME = DaniS506.ADD - Adapter Driver for PATA/SATA DASD
@@ -31,10 +32,10 @@
  #include "s506ext.h"
  #include "s506pro.h"
 
-#define YEAR  2010			// Update to match release date
-#define MONTH 9
-#define DAY   13
-#define PCMCIAVERSION 0x187		// Update to match driver version
+#define YEAR  2011			// Update to match release date
+#define MONTH 4
+#define DAY   11
+#define PCMCIAVERSION 0x188		// Update to match driver version
 
 /*-------------------------------------------------------------------*/
 /*								     */
@@ -433,6 +434,10 @@ USHORT CListCIntel[] = {
 	0x3B2C, 0x3A00,     // PCH SATA RAID-> ICH10 SATA 4p
 	0x3B2D, 0x3A06,     // PCH SATA2 2p -> ICH10 SATA 2p
 	0x3B2E, 0x3A00,     // PCH SATA2 4p -> ICH10 SATA 4p
+
+#if 0 // 2011-04-11 SHL	fixme to be gone or used
+	0x1300, 0x3A00,     // PCH SATA2 4p -> ICH10 SATA 4p (Paul's GA-P67A-UD3R-B3, Cougar Point 4 port SATA IDE Controller)
+#endif
 		0 };
 USHORT CListFIntel[] = {
 		0x1230,     // PIIX	  82371FB

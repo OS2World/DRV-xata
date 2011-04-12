@@ -1,10 +1,10 @@
 
-		      Daniela's S506 ADD - Release 1.8.7
+		      Daniela's S506 ADD - Release 1.8.9
 		      ----------------------------------
 
 NAME
 
-     DaniS506.ADD  -  replacement for IBM1S506.ADD
+     DaniS506.ADD - replacement for IBM1S506.ADD
 
 SYNOPSIS
 
@@ -14,7 +14,7 @@ SYNOPSIS
      and generic busmaster support for all SFF-8038i compliant chips.
 
      This covers virtually *any* EIDE controller built/sold in the past few
-     years and even some just about to be released in the near future. Don't be
+     years and even some just about to be released in the near future.  Don't be
      confused by the generic chip names below! If you are uncertain about the
      actual controller to be supported, run the DumpIDE utility - it will tell
      you.
@@ -24,7 +24,7 @@ SYNOPSIS
 ###  note:
 ###  This driver is *not* compatible to any of the software RAID setups offered
 ###  by some so called IDE RAID or SATA RAID controllers (f.e. HPT, Promise
-###  FastTrack, AMI, VIA, Intel, SiS, you name it). None of these "fake RAIDs"
+###  FastTrack, AMI, VIA, Intel, SiS, you name it).  None of these "fake RAIDs"
 ###  have any hardware RAID features built in!
 ###  Of course, you may run these chips in non-RAID BIOS setups (i.e. JBOD).
 
@@ -37,10 +37,10 @@ DESCRIPTION
      I wasn't very happy with the performance of my 10Gig DTTA-351010 drive.
      The driver from VIA itself was no solution because it doesn't support
      all the advanced features found in todays hardware and locked up my
-     system completely. So I sat down....
+     system completely.  So I sat down....
 
      This release of my S506 driver is no longer based on the sources
-     provided by IBM on their DDK site. It has the latest feature set
+     provided by IBM on their DDK site.  It has the latest feature set
      as found in the current fixpacks and fixes later than these.
 
      My enhancements are:
@@ -50,7 +50,7 @@ DESCRIPTION
      - supports the Intel ICH/ICH0/ICH2/ICH3/ICH4/C-ICH/ICH5/ICH6/ICH7/ICH8
        PATA controllers
      - supports the Intel ICH5/ICH6/ICH7/ICH8/ICH9/ICH10 SATA controllers
-***  - supports the Intel PCH SATA controllers
+     - supports the Intel PCH SATA controllers
      - supports the Intel Management Engine IDE redirection controllers
      - supports the Intel SCH PATA controller ("Atom") (experimental)
      - supports the VIA PATA controllers
@@ -70,14 +70,14 @@ DESCRIPTION
      - supports the SMSC SLC90E66 PATA controller (PIIX4 look-alike) (exp.)
      - supports the ServerWorks/Broadcom PATA controllers
      - supports the Opti PATA controllers
-***  - supports the Nvidia nForce/2/3/4/500/600/700 PATA controllers
+     - supports the Nvidia nForce/2/3/4/500/600/700 PATA controllers
        important fix for broken BIOSes which cause system hangs
      - supports the Nvidia nForce2/3/4/500/600/700/M73/M79/M89 SATA controllers
      - supports the National Semiconductor Geode SCx200 PATA controller
      - supports the Silicon Image 680 PATA controller
      - supports the Silicon Image 3112/3114/3512 SATA controller
        (this includes OEMs like Adaptec)
-***  - supports the ITE 8211/8212/8213 PATA controllers (see note ###)
+     - supports the ITE 8211/8212/8213 PATA controllers (see note ###)
      - supports the ATI IXP200/300/400/600/700 PATA controllers
      - supports the ATI IXP300/400/600/700/800 SATA controllers
      - supports the NetCell/Revolution SyncRAID PATA/SATA Hardware-RAID
@@ -128,6 +128,7 @@ DESCRIPTION
      - support for high interrupts (IRQ16 and above) in APIC interrupt mode
        this requires ACPI.PSD v3 or later!
      - supports AHCI controllers in SATA legacy mode, when available
+***  - coexists with drivers that acquire controllers known to Danis506
 
 ###  Caution: users of DaniBoot v1.0 need to upgrade to version 1.0.2!
 ###  Caution: users of DaniATAPI v0.3.x need to upgrade to version 0.4.0!
@@ -136,7 +137,7 @@ DESCRIPTION
 
 COMMAND LINE OPTIONS
 
-     This driver supports most switches and options that IBM1S506 supports. For
+     This driver supports most switches and options that IBM1S506 supports.  For
      an explanation of these look into the OS/2 online help (by picking
      'OS/2 Commands by name'/ 'BASEDEV...'/'IDE...' or by "help ibm1s506"
      from the command line).
@@ -146,7 +147,7 @@ COMMAND LINE OVERVIEW
      Gerald Eischer did us the favour of creating a syntax diagram and a
      short overview of the command line options implemented in the driver
 
-***  Syntax Diagram
+     Syntax Diagram
      --------------
 
 			   +------------------+ +-- /I --+  +---------------+
@@ -311,15 +312,15 @@ COMMAND LINE OVERVIEW
      Deprecated options
      ------------------
 
-     These options are no longer supported.  If used, DANIS506 will silently
+     These options are no longer supported.  If used, Danis506 will silently
      ignore the option.
 
-***  /!RMV
+     /!RMV
 
      Obsolete options
      ----------------
 
-     These options are no longer supported. DANIS506 will report an
+     These options are no longer supported.  Danis506 will report an
      error if these are used.
 
      /GEO
@@ -347,18 +348,18 @@ COMMAND LINE OVERVIEW
 COMMAND LINE DETAILS
 
      Beginning with release 1.0.8, this includes the undocumented switch
-     /!SHUTDOWN found in the latest IBM1S506.ADD. At system shutdown, this
-     IBM1S506 issues shutdown commands to each attached device. This behaviour
+     /!SHUTDOWN found in the latest IBM1S506.ADD.  At system shutdown, this
+     IBM1S506 issues shutdown commands to each attached device.  This behaviour
      is different from earlier releases.
 
-     I've seen many reports about problems when the drives are shutdown. So I
-     decided to no longer be compatible with IBM1S506 here. DANIS506 *tolerates*
-     the option /!SHUTDOWN on the commandline, but it does nothing. If you want
+     I've seen many reports about problems when the drives are shutdown.  So I
+     decided to no longer be compatible with IBM1S506 here.  Danis506 *tolerates*
+     the option /!SHUTDOWN on the command line, but it does nothing.  If you want
      this new shutdown behaviour (on notebooks perhaps), then add the new option
      /SHUTDOWN.
 
      Rule of thumb: if your system doesn't suffer from any (possibly unknown)
-     flaws, not a single command line option is required. The driver adapts
+     flaws, not a single command line option is required.  The driver adapts
      itself to the environment and runs at maximum performance.
 
      In some situations, you may need some of the following options to achieve
@@ -366,7 +367,7 @@ COMMAND LINE DETAILS
 
      - ATAPI devices are initialized to PIO mode only if they appear to support
        only very early ATAPI specifications; the same is true if the IDE chip is
-       known not to support PCI busmastering with ATAPI devices. In the former
+       known not to support PCI busmastering with ATAPI devices.  In the former
        case you may try to run particular ATAPI devices using busmaster DMA by
        applying the proper /A:x /U:y /BM options.
 
@@ -381,7 +382,7 @@ COMMAND LINE DETAILS
 
      For all of us who get the impression today's computers are way too fast to
      keep up with, IBM did us the favour of adding another switch, /W (available
-     for more than one year now). This switch replaces the /V switch, and just
+     for more than one year now).  This switch replaces the /V switch, and just
      like /V, /W shows some very useful info about the EIDE system at boot time.
      But instead of throwing all of this stuff onto the screen and scrolling it
      off, /W writes it to the display in reasonable chunks and then *waits* for
@@ -392,9 +393,9 @@ COMMAND LINE DETAILS
      all.
 
      To reduce screen clutter and avoid possible SYS2068 messages, some lines
-     of the boot message may be suppressed by /VL (/WL) instead of /V (/W). If
+     of the boot message may be suppressed by /VL (/WL) instead of /V (/W).  If
      you prefer even less info at boot time, /VLL (/WLL) will print out the
-     most basic messages only. Here is an example:
+     most basic messages only.  Here is an example:
 
      With /V or /W it looks like this:
 
@@ -485,7 +486,7 @@ COMMAND LINE DETAILS
      *all* messages are stored internally for later retrieval!
 
      Beginning with beta 7, the driver saves all messages possibly shown at
-     boot-up internally. Users may redisplay these messages, or store them into
+     boot-up internally.  Users may redisplay these messages, or store them into
      a file later with commands like these:
 
      COPY IBMS506$ con:     or
@@ -494,19 +495,19 @@ COMMAND LINE DETAILS
      Please, check the spelling!
 
      Some time ago, IBM decided to enable /SMS by default on most controller
-     hardware. The /!SMS switch then disables this controller based default. But
-     if the harddisk reports to be SMS capable, SMS is enabled regardless of the
-     /!SMS switch. Since this might cause sporadic failures on some hardware as
+     hardware.  The /!SMS switch then disables this controller based default.  But
+     if the hard disk reports to be SMS capable, SMS is enabled regardless of the
+     /!SMS switch.  Since this might cause sporadic failures on some hardware as
      a few users reported, I changed the behaviour of the /!SMS switch to a full
      override which is honoured in any case.
 
      Sometimes it's not necessary to disable SMS mode, but just to limit the
-     number of sectors transferred in one run to a lower amount. To implement
+     number of sectors transferred in one run to a lower amount.  To implement
      this feature, the /SMS option is changed into /SMS:n, where n is the
-     maximum number of sectors in one run. If n is 0 or 1, this is equivalent
-     to /!SMS. Every harddisk has a maximum SMS run length defined by the
-     manufacturer specific to each model. You cannot set a value above this
-     individual maximum SMS run length. The driver sets up the actual SMS run
+     maximum number of sectors in one run.  If n is 0 or 1, this is equivalent
+     to /!SMS.  Every hard disk has a maximum SMS run length defined by the
+     manufacturer specific to each model.  You cannot set a value above this
+     individual maximum SMS run length.  The driver sets up the actual SMS run
      length for a specific drive to the minimum of the user supplied value n
      and the maximum value reported by the drive.
 
@@ -526,16 +527,16 @@ COMMAND LINE DETAILS
      # some chipset manufacturers still don't assign dedicated pins to enable
        the detection of the cable type installed, and therefore don't define a
        standard procedure for driver writers to acquire this *vital*
-       information. Any motherboard with a VIA596B, VIA686, or AMD756 south
+       information.  Any motherboard with a VIA596B, VIA686, or AMD756 south
        bridge is affected by that: the ATA-66 features aren't enabled by default
        in the driver because it has no way to detect the presence of a 80-wire
-       cable reliably. In this case add /80WIRE to the *adapter* options if
-       there is a 80-wire cable installed on that particular EIDE channel. This
-       decision is completely up to *you*. Don't blame me for lost or corrupted
+       cable reliably.  In this case add /80WIRE to the *adapter* options if
+       there is a 80-wire cable installed on that particular EIDE channel.  This
+       decision is completely up to *you*.  Don't blame me for lost or corrupted
        data if you are wrong!
        As a workaround to solve this inconvenience with the chips mentioned,
        beginning with release 1.3.0, the driver checks the controller setup as
-       done by the BIOS. If it finds a particular channel initialized to ATA-66
+       done by the BIOS.  If it finds a particular channel initialized to ATA-66
        operation it assumes the BIOS positively checked for the presence of a
        80 wire cable.
 
@@ -548,10 +549,10 @@ COMMAND LINE DETAILS
      Support for drive bays and PCCard slots
 
      Many notebooks/laptops have so called drive bays built in to swap different
-     devices (floppy, disc, CD/DVD, etc.) while powered on state. The option
-     /BAY prepares the related IDE adapter for such a hot-swap. To make this
+     devices (floppy, disk, CD/DVD, etc.) while powered on state.  The option
+     /BAY prepares the related IDE adapter for such a hot-swap.  To make this
      safely work on OS/2, the support for APM (by means of DEVICE=APM.SYS) has
-     to be installed. During APM suspend the device in the drive bay may be
+     to be installed.  During APM suspend the device in the drive bay may be
      swapped The floppy driver and the different ATAPI filters made by IBM check
      the presence of appropriate devices after APM resume and operate
      accordingly.
@@ -559,7 +560,7 @@ COMMAND LINE DETAILS
      Beginning with release 1.1.9, DaniS506.ADD improves this hot-swap support.
      After APM resume the driver inspects these "special" adapters and
      reconfigures both the device and the controller exactly as it does at boot
-     time. It then reports its findings to interested filter drivers controlling
+     time.  It then reports its findings to interested filter drivers controlling
      the units so that the filter driver can reconfigure itself appropriately.
      At present, only DaniATAPI.FLT supports this advanced reconfiguration
      protocol.
@@ -567,7 +568,7 @@ COMMAND LINE DETAILS
      Example:
 
      A notebook has got a drive bay with a swappable floppy drive, disk, ZIP,
-     and DVD-CDR/W. The following lines in CONFIG.SYS make all these devices
+     and DVD-CDR/W.  The following lines in CONFIG.SYS make all these devices
      swappable and operational without powering down:
 
      BASEDEV=IBM1FLPY.ADD /A:0 /FORCE:1 /U:0 /F:1.44MB
@@ -577,84 +578,84 @@ COMMAND LINE DETAILS
      note #: this assumes the secondary channel to be connected to the drive bay
 
      The ZIP drive and the hard disk show up as removable media unit in the
-     drives folder after a "refresh removable media" command. Important: before
+     drives folder after a "refresh removable media" command.  Important: before
      swapping the units there *must* be an eject of the media (either by the
      "EJECT x:" command from the command line or fro the context menu of the
      drive icon)! Forgetting to do that may cause data loss because the file
-     system caches may not yet be written back to the media. With some luck the
+     system caches may not yet be written back to the media.  With some luck the
      command "ChkDsk x: /F" will repairs such damage without data loss.
 
      Beginning with release 1.3.0, the driver supports PCCard slots as well.
-     This support will be enabled by means of the options /PCS or /PCS:n. With
+     This support will be enabled by means of the options /PCS or /PCS:n.  With
      /PCS the driver checks how many PCCard slots are available from the socket
-     services driver and creates the same number of "virtual" IDE adapters. If
+     services driver and creates the same number of "virtual" IDE adapters.  If
      less IDE adapters for PCCards shall be created, then the required amount n
-     may be set by the option /PCS:n. At most the corresponding number of
+     may be set by the option /PCS:n.  At most the corresponding number of
      PCCards with IDE units attached may be inserted into the PCCard slots at
      the same time.
 
      A "virtual" PCCard IDE adapter is implemented by a PCCard (the actual IDE
-     controller) which is inserted into any one of the PCCard slots. Each
-     supported PCCard inserted *concurrently* counts as one IDE channel. The
+     controller) which is inserted into any one of the PCCard slots.  Each
+     supported PCCard inserted *concurrently* counts as one IDE channel.  The
      driver attaches to OS/2's PCMCIA subsystem and takes over all PCCards with
      a function id of 4 (disk) and function extension 1 (ATA interface); this
      includes PCCard ATAPI devices as well (like the PCMCIA ZIP-250 or the
-     Click!40 drives). Beginning with release 1.3.10 both ATA and ATAPI devices
-     are supported (if DaniATAPI.FLT rev 0.3.0 or later is installed). PCCards
-     may be arbitrarily inserted to and removed from any PCCard socket. The only
-     prerequisite is a functional socket services driver and PCMCIA.SYS. Beware:
+     Click!40 drives).  Beginning with release 1.3.10 both ATA and ATAPI devices
+     are supported (if DaniATAPI.FLT rev 0.3.0 or later is installed).  PCCards
+     may be arbitrarily inserted to and removed from any PCCard socket.  The only
+     prerequisite is a functional socket services driver and PCMCIA.SYS.  Beware:
      older revisions of IBM's PCMCIA subsystem have defects which may cause
      failures to configure cards on sockets other than the first one.
 
      After inserting a PCCard into the slot, you'll likely hear some noises from
-     the PCCard or its attached unit. Shortly after that you should hear a high
-     pitched beep. This beep indicates that the driver has accepted the PCCard,
+     the PCCard or its attached unit.  Shortly after that you should hear a high
+     pitched beep.  This beep indicates that the driver has accepted the PCCard,
      has successfully assigned resource to it and initialized it, and was
-     successful communicating with the attached unit. If you don't hear this
-     beep, try reinserting the PCCard. A failed initialization will result in a
+     successful communicating with the attached unit.  If you don't hear this
+     beep, try reinserting the PCCard.  A failed initialization will result in a
      two times low pitched beep.
 
      If you intend to remove a PCCard, don't forget to close the file system
      on the attached device by issuing "EJECT x:" from the command line or the
-     drive's context menu. Failing to do so will leave the file system in an
+     drive's context menu.  Failing to do so will leave the file system in an
      inconsistent "dirty" state which most likely needs to be corrected by
-     CHKDSK to make the medium accessable again before the next use. "Eject"
+     CHKDSK to make the medium accessible again before the next use.  "Eject"
      doesn't necessarily unload the medium (f.e. in case of the Click! drive),
-     so don't be confused. Some drive activity will indicate the flushing of
-     still unwritten file system cache contents back to the medium. The end
-     of the flush operation is indicated by a middle pitched beep. Afterwards
+     so don't be confused.  Some drive activity will indicate the flushing of
+     still unwritten file system cache contents back to the medium.  The end
+     of the flush operation is indicated by a middle pitched beep.  Afterwards
      it is safe to remove the PCCard from the socket or swap the medium.
 
      Beginning with version 1.6.0 the driver handles PCCards from which the
-     system ist going to be booted from and which are already initialized by the
+     system sit going to be booted from and which are already initialized by the
      BIOS (for example the Sony Vaio Crusoe subnotebook with a bootable external
-     CD-Rom). To do that some technical prerequisites must apply (the PCCard
+     CD-ROM).  To do that some technical prerequisites must apply (the PCCard
      slot needs to be ExCA register compliant) and there must be no socket
      services driver loaded; the latter one is needed only because of errors in
      the socket services drivers which make booting from a BIOS initialized
      PCCard impossible.
 
-     /BAY on SATA channels enables SATA and SATAPI device hotplugging. This
+     /BAY on SATA channels enables SATA and SATAPI device hotplugging.  This
      is particularly useful with hot-swap disk enclosures.
 
      -------------------------------------------------------------------------
 
-     Modern disks have multiple ways to save power. At times of inactivity,
+     Modern disks have multiple ways to save power.  At times of inactivity,
      internal circuits may be temporarily suspended or motors switched off on
-     demand. These functions are summarized by the term "Advanced Power
-     Management" (APM). The balance between disk access speed and power-saving
+     demand.  These functions are summarized by the term "Advanced Power
+     Management" (APM).  The balance between disk access speed and power-saving
      is controllable.
 
      For this purpose, the driver implements the option /APM:n which may apply
-     to single, multiple or all disks implementing the APM function. The valid
+     to single, multiple or all disks implementing the APM function.  The valid
      range of the value 'n' is 1 to 255; increasing values mean better
      performance, and the value 255 switches off all power-saving functions.
-     The meaning of any given value is on the manufacturer's discretion. Users
+     The meaning of any given value is on the manufacturer's discretion.  Users
      have to look-up disk datasheets for this information by themselves, I won't
      reply to any questions regarding this topic!
 
      Rule of thumb: just try the value 128: it allows all power-saving tricks
-     except for switching-off the disk's spindle motor. Because of that, the
+     except for switching-off the disk's spindle motor.  Because of that, the
      performance impact on the very first access after some time of inactivity
      is minimal.
 
@@ -677,11 +678,11 @@ COMMAND LINE DETAILS
      ----------------------------------------------------------------------
 
      The SATA specification describes an optional feature to control the power
-     consumption of a SATA link. The more circuits in the SATA link hardware are
-     switched-off to save power the longer it takes to reactivate them. There is
+     consumption of a SATA link.  The more circuits in the SATA link hardware are
+     switched-off to save power the longer it takes to reactivate them.  There is
      no generally available means to control the power mode of a SATA link from
      the controller side, but modern SATA disks often implement the feature to
-     enable link power-saving modes at times of inactivity. The option /LPM:n
+     enable link power-saving modes at times of inactivity.  The option /LPM:n
      (Link Power Management) enables this function for single, multiple or all
      disks which implement this feature and are connected to a SATA port which
      also has this feature implemented and enabled.
@@ -694,8 +695,8 @@ COMMAND LINE DETAILS
        3: all power-saving switched off, maximum link performance
 
      Depending on the disk-controller combination, some values may exhibit
-     failures or may have no effect. In general, the value zero is the best
-     option. It's up to users not to use this function in case of problems. The
+     failures or may have no effect.  In general, the value zero is the best
+     option.  It's up to users not to use this function in case of problems.  The
      driver can't do anything about that if this part of the SATA specification
      isn't correctly implemented in the given hardware.
 
@@ -730,8 +731,8 @@ COMMAND LINE DETAILS
      -------------------------------------------------------------------------
 
      To use the inactivity timer feature simply add /IT:x to the *unit*
-     parameters. x is the timeout value in minutes. A 0 disables the spin down
-     completely. If you leave out this option, some devices will still
+     parameters.  x is the timeout value in minutes.  A 0 disables the spin down
+     completely.  If you leave out this option, some devices will still
      spin down after a certain default inactivity time.
 
      For proper driver operation of this function, all of the following
@@ -743,7 +744,7 @@ COMMAND LINE DETAILS
        (in other words: OS/2 APM support must be installed)
 
      If these prerequisites are true, the driver can keep track of disk power
-     down even in case of intermittant system APM suspends. This ensures quick
+     down even in case of intermittant system APM suspends.  This ensures quick
      error recovery by short command timeouts, but sufficiently long timeouts
      for drive spin-ups.
 
@@ -755,7 +756,7 @@ COMMAND LINE DETAILS
      -------------------------------------------------------------------------
 
      To limit the data rate a device communicates at, add /MR:udp to the *unit*
-     parameters. Choose the values for u, d, and p from this table:
+     parameters.  Choose the values for u, d, and p from this table:
 
      u: Ultra DMA
 	0  -  disable  Ultra DMA
@@ -780,13 +781,13 @@ COMMAND LINE DETAILS
 	4  -  limit to PIO mode 4 (with flow control)
 
      If you set u and d to 0 at the same time, this effectively disables
-     busmastering on this device since no DMA mode is left to use. Leading
+     busmastering on this device since no DMA mode is left to use.  Leading
      zeroes may be left out.
 
      Many EIDE controllers don't have the capability to select PIO modes and
-     multiword DMA modes independantly because theses mode share the same timing
-     registers. This is for historic reasons and the similarity of cycle
-     timings. This applies to all controller chips mentioned above except for
+     multiword DMA modes independently because theses mode share the same timing
+     registers.  This is for historic reasons and the similarity of cycle
+     timings.  This applies to all controller chips mentioned above except for
      Promise Ultra and Cyrix MediaGX.
 
      Note: this applies to mixing transfer modes for the *same* device! The
@@ -794,7 +795,7 @@ COMMAND LINE DETAILS
      transfer modes (except for Intel 82371FB).
 
      To deal with this situation the driver selects the slower cycle time from
-     the proposed PIO and MW-DMA modes. The net result can be seen from the
+     the proposed PIO and MW-DMA modes.  The net result can be seen from the
      table below:
 
 	   | no DMA    MW-DMA 1       MW-DMA 2	    Ultra-DMA x
@@ -812,15 +813,15 @@ COMMAND LINE DETAILS
      -------------------------------------------------------------------------
 
      Some users are forced (or feel themselves forced ;-) to run the PCI bus on
-     their motherboards at speeds other than the optimum 33MHz. For example,
+     their motherboards at speeds other than the optimum 33MHz.  For example,
      many Cyrix processors need very uncommon front side bus speeds which cannot
-     be easily divided into 33MHz. This leads to either too slow EIDE timings or
-     too fast ones. The former case may be disappointing, but the latter
-     overclocks the EIDE interfaces and my introduce data distortions. If you
+     be easily divided into 33MHz.  This leads to either too slow EIDE timings or
+     too fast ones.  The former case may be disappointing, but the latter
+     overclocks the EIDE interfaces and my introduce data distortions.  If you
      know the actual PCI clock of your motherboard, you may add an additional
-     driver option /PCLK:x (x is the PCI clock in MHz). The user supplied PCI
+     driver option /PCLK:x (x is the PCI clock in MHz).  The user supplied PCI
      clock is then sorted into one of four speed classes (25MHz, 33MHz, 37MHz,
-     and 41MHz) which is reported at boot time. For each of these speed classes,
+     and 41MHz) which is reported at boot time.  For each of these speed classes,
      the driver *tries* to select the optimum chip timings, but due to chipset
      limitations this is not possible in all cases.
 
@@ -832,22 +833,22 @@ COMMAND LINE DETAILS
      The so called Front Side Bus (FSB) is the bus the CPU communicates with the
      north bridge (which contains the memory controller, the cache controller,
      the AGP bridge, the PCI arbiter, the PCI bridge, and optionally some more
-     devices). Depending on the design of the north bridge, the PCI clock is
+     devices).  Depending on the design of the north bridge, the PCI clock is
      derived from the FSB clock by dividing this clock (synchronous design) by
      either an integral number (2, 3), or a fractional number (2, 2.5, 3), or
      it is derived from an independent clock source (asynchronous design, very
-     uncommon). The PCI 2.1 spec (without its extensions) allows for 33MHz max.
+     uncommon).  The PCI 2.1 spec (without its extensions) allows for 33MHz max.
      PCI clock.
 
      The VIA, the ALi, and most likely the SiS chipsets are capable of
-     fractional dividers. The Intel chipsets are not.
+     fractional dividers.  The Intel chipsets are not.
 
      If you know, your PCI bus runs at the typical 33MHz clock (true for most of
      the mobo/CPU combinations sold today), don't apply this switch.
 
      If you know the PCI clock in advance (or like to tune the EIDE timings
      for some reason), you apply the /PCLK:n switch where n is the known PCI
-     clock. The driver then selects the speed class from this value in the
+     clock.  The driver then selects the speed class from this value in the
      same way as from an autodetected value.
 
      These speed classes are the result of the typical FSB clocks and dividers:
@@ -867,9 +868,9 @@ COMMAND LINE DETAILS
      124MHz    /   3	 ->  41.3MHz  -> 41MHz
 
      For the chosen speed class, the driver tries to select EIDE controller
-     register values which don't exceed the PIO/DMA/Ultra ratings. My former
+     register values which don't exceed the PIO/DMA/Ultra ratings.  My former
      driver revisions and IBM1S506 only know the proper register values for the
-     33MHz class. This runs the EIDE interface slower than possible in case of a
+     33MHz class.  This runs the EIDE interface slower than possible in case of a
      25MHz PCI clock, but exceeds the allowed timings in the 37MHz/41MHz cases.
      The former one is uncritical, but the latter one may cause failure of
      operation (better) or data corruption (worse).
@@ -881,7 +882,7 @@ COMMAND LINE DETAILS
      This shows some info at boot time, limits the data rates to communicate
      with the primary slave to UDMA1/MWDMA1/PIO3 and stops the spindle motor
      after 5 minutes of inactivity on this device (which happens to be the
-     IBM-DTTA351010 drive). It tells the driver also not to touch the secondary
+     IBM-DTTA351010 drive).  It tells the driver also not to touch the secondary
      channel (adapter 1).
 
      -------------------------------------------------------------------------
@@ -889,36 +890,36 @@ COMMAND LINE DETAILS
      The /GBM option enables the scan for busmaster capable PCI EIDE controllers
      if none of the 'well-known' chipsets (currently INTEL, VIA, ALi, SiS, CMD,
      Promise, HighPoint, AMD, SMSC, Artop, ServerWorks, CMD640, and RZ1000, the
-     latter two are not busmaster capable!) is found. Before a chip is accepted
+     latter two are not busmaster capable!) is found.  Before a chip is accepted
      by the driver to be operated in generic busmaster mode, it has to pass some
-     sanity checks. Some BIOSes simply fail to initialize the controller appro-
-     priately (seen on a board with an UMC8886BF). A rule of thumb: if Linux
+     sanity checks.  Some BIOSes simply fail to initialize the controller appro-
+     priately (seen on a board with an UMC8886BF).  A rule of thumb: if Linux
      doesn't run a chip in DMA mode, it is not generic busmaster compatible.
 
      At present, EIDE controllers not supported by any S506 ADD run attached
      devices in PIO mode only, and with timings setup by the BIOS (most probably
-     PIO0 if the device is hidden from the BIOS). The generic busmaster option
+     PIO0 if the device is hidden from the BIOS).  The generic busmaster option
      enables usage of the busmaster machinery and device DMA modes, thus
-     reducing CPU load by a large amount. In this mode, the ADD doesn't touch
+     reducing CPU load by a large amount.  In this mode, the ADD doesn't touch
      any chip registers other than the standard PCI command register (to enable
      PCI busmastering) and the registers associated with the busmaster engine.
      It has *no* way to enable Ultra-DMA modes in hardware if not done by
      the BIOS.
 
      If you think this should be the default behaviour of my driver, then
-     simply change the /GBM option into the /FORCEGBM option. Then, *every*
-     EIDE chip is treated as if it's not a 'well-known' chip. All programming
+     simply change the /GBM option into the /FORCEGBM option.  Then, *every*
+     EIDE chip is treated as if it's not a 'well-known' chip.  All programming
      of device timings in the EIDE controller has to be done by the BIOS.
      /FORCEGBM comes in two flavours, as a global option, and as an adapter
-     option. If /FORCEGBM preeceds all /A:x options, it applies to all adapters;
+     option.  If /FORCEGBM precedes all /A:x options, it applies to all adapters;
      if it follows an /A:x option, it applies to adapter x only.
 
      In some cases, /FORCEGBM can help to overcome stability problems because
      of the spec-conforming timings that the driver programs into the controller
-     registers. In the recent past, some batches of boards popped up which are
-     "tuned-down" by their BIOS to work reliably. In these cases, the "correct"
+     registers.  In the recent past, some batches of boards popped up which are
+     "tuned-down" by their BIOS to work reliably.  In these cases, the "correct"
      timings are too fast and the boot process fails if these timings are set up
-     by DaniS506.ADD. Adding /FORCEGBM prevents the driver from adjusting the
+     by DaniS506.ADD.  Adding /FORCEGBM prevents the driver from adjusting the
      timings so that the "special" BIOS timings are used instead.
 
      Examples:
@@ -929,8 +930,8 @@ COMMAND LINE DETAILS
      -------------------------------------------------------------------------
 
      There is a new option /PF:xxxx which may be applied to an adapter or
-     individual units. This option is meant to fine-tune register access timings
-     and enable chipset-performance features. The option value is a bit field,
+     individual units.  This option is meant to fine-tune register access timings
+     and enable chipset-performance features.  The option value is a bit field,
      whose individual bits need to be put together into the final option value.
      Bits 0-7 are meant for all PCI chipsets, bits 8-15 are chipset specific.
 
@@ -955,20 +956,20 @@ COMMAND LINE DETAILS
 
      If there is no slave device, then no register access delays are incurred
      because the individual unit setting /PF:3 overrides the adapter setting
-     /PF:2. But if there is an additional slave device, this unit inherits the
-     adapter option /PF:2. The largest delay of both units is the resulting one
+     /PF:2.  But if there is an additional slave device, this unit inherits the
+     adapter option /PF:2.  The largest delay of both units is the resulting one
      and thus each register access is delayed by 250ns.
 
      -------------------------------------------------------------------------
 
      Modern ATA spec 6 compatible drives may support the so called acoustic
-     management feature set. Using this you can trade off performance vs. noise
-     (mostly noticable during quick sequences of random seeks). The new unit
+     management feature set.  Using this you can trade off performance vs. noise
+     (mostly noticable during quick sequences of random seeks).  The new unit
      option /NL:n allows you to control this feature: the value n may be set to
      0 ... 126, where '0' selects the faintest noise level with the biggest
      performance impact, while '126' selects best performance at the expense of
-     noisiest operation. Drives are not required to support any value in
-     between, but to select the next supported one. Drives store the latest
+     noisiest operation.  Drives are not required to support any value in
+     between, but to select the next supported one.  Drives store the latest
      programmed value internally and preserve it over power outages and resets.
 
      The driver will tell the current value read from the drive if you don't
@@ -977,17 +978,17 @@ COMMAND LINE DETAILS
      -------------------------------------------------------------------------
 
      One user reported a boot failure in a particular situation which involved
-     SCSI and ATA/ATAPI units. The solution was to avoid BIOS INT13 calls. The
-     driver asks the BIOS about the geometry properties of the ATA drives. In
-     general, this information is not required because the most authorative
+     SCSI and ATA/ATAPI units.  The solution was to avoid BIOS INT13 calls.  The
+     driver asks the BIOS about the geometry properties of the ATA drives.  In
+     general, this information is not required because the most authoritative
      source of the geometry info is the drive itself (by inspecting the MBR and
-     BPBs). This implies that no BIOS INT13 calls are required in almost any
-     scenario. The only exception is if your disk is completely blank, and you
+     BPBs).  This implies that no BIOS INT13 calls are required in almost any
+     scenario.  The only exception is if your disk is completely blank, and you
      want to partition this blank disk by OS/2 FDISK with a geometry compatible
      to the BIOS one.
 
      So, if you prefer to deny the driver calling the BIOS, add the option
-     /!BIOS. When doing so, the "strange" VDM seen with some process management
+     /!BIOS.  When doing so, the "strange" VDM seen with some process management
      utilities is gone as well.
 
      -------------------------------------------------------------------------
@@ -995,7 +996,7 @@ COMMAND LINE DETAILS
      Later versions of FDISK and LVM tend to overwrite bootmanagers other than
      OS/2 BootManager on every write operation to the partition/LVM tables.
      In such cases it might be appropriate to write protect track zero of the
-     boot drive (which contains the bootmanager code). This is possible either
+     boot drive (which contains the bootmanager code).  This is possible either
      at bootup using the unit option /A:x /U:y /PROT0 ("PROT zero"), or later
      by means of the DiskInfo utility:
 
@@ -1008,19 +1009,19 @@ COMMAND LINE DETAILS
 
      Todays large disk drives often don't work properly with older BIOSes.
      Either the BIOS detects the wrong disk capacity, or sometimes the PC
-     doesn't boot at all. In such cases, the cure of the problem is either to
+     doesn't boot at all.  In such cases, the cure of the problem is either to
      set a jumper at the disk or reprogram the disk such that it reports a
-     smaller, troublefree capacity to the BIOS.
+     smaller, trouble free capacity to the BIOS.
 
      Beginning with version 1.3.8 the driver is able to use the full disk
-     capacity even if the disk is programmed to report a smaller capacity. This
+     capacity even if the disk is programmed to report a smaller capacity.  This
      is done automatically; if you don't like that then you have to prevent the
      unlocking of the full capacity by means of the unit option /A:x /U:y
      /!SETMAX.
 
      To program a disk to report a smaller capacity, I recommend this process:
 
-     1) remove the disk from the BIOS setting. The PC will no langer hang.
+     1) remove the disk from the BIOS setting.  The PC will no longer hang.
      2) boot from an OS/2 boot disk (or the like).
      3) program a smaller disk capacity by means of the Diskinfo utility:
 
@@ -1043,12 +1044,12 @@ INSTALLATION
 
        BASEDEV=DaniS506.ADD
 
-     In this case your boot device probably is SCSI. To avoid confusion make
+     In this case your boot device probably is SCSI.  To avoid confusion make
      sure to move the mentioned line *below* the SCSI driver.
 
      If you prefer chasing icons, you can do the copy and the modification of
      CONFIG.SYS using DDINSTAL ("OS/2 System"/"System Setup"/"Install/Remove"
-     /"Device Driver"). Due to limits in DDINSTAL you have to disable the
+     /"Device Driver").  Due to limits in DDINSTAL you have to disable the
      previously installed S506 base driver in CONFIG.SYS manually, either by
      deleting that line or putting a 'rem' statement in front of it.
 
@@ -1079,9 +1080,9 @@ BUGS
 
      To report a bug, see PROBLEM.TXT
 
-     I have no means to identify traps occuring outside this driver (module name
-     different from 'IBMS506$' or not present). If a trap occurs within this
-     driver, I need the following information: CS:EIP, EAX-EDI, DS and ES. My
+     I have no means to identify traps occurring outside this driver (module name
+     different from 'IBMS506$' or not present).  If a trap occurs within this
+     driver, I need the following information: CS:EIP, EAX-EDI, DS and ES.  My
      test systems at home (VIA and ALi) and a couple of other machines at work
      (different INTEL chips) run flawlessly with this driver, so I have
      virtually no chance to reproduce errors.
@@ -1093,7 +1094,7 @@ BUGS
      If you experience problems with your hard disks after OS2DASD.DMD has been
      loaded (to be seen by pressing ALT-F2 when the white box appears on the
      screen), read the following section *very carefully*, it applies to you.
-     I cannot solve your hardware problems with software. If you think your
+     I cannot solve your hardware problems with software.  If you think your
      problems arise from bugs in the EIDE controller chip, you may contact me
      after gathering detailed info about this bug and its software solution.
      At present, I have a recent chip bug list from ALi and another one for
@@ -1102,21 +1103,21 @@ BUGS
 SOME WORDS OF WISDOM
 
      Much EIDE hardware you can buy (or already have bought) has *very*
-     little design margins and is *very* susceptable to even the slightest
-     signal distortion on the cables. Unlike SCSI, the EIDE bus has no
+     little design margins and is *very* susceptible to even the slightest
+     signal distortion on the cables.  Unlike SCSI, the EIDE bus has no
      termination resistors on both ends of the cable to reduce ringing or
-     other signal reflections. Noise and crosstalk are other sources for
+     other signal reflections.  Noise and crosstalk are other sources for
      bit errors during data transmission; careful grounding (both the data and
      the power connection) is paramount if you intend more than simple PIO
-     speed. Power supplies are not uncommon for inducing noise!
+     speed.  Power supplies are not uncommon for inducing noise!
 
      A very patient user found another source of data distortions after some
      very long and tedious reliability tests: the cache subsystem of his
-     motherboard. He experienced bit errors which vanished after some fiddling
+     motherboard.  He experienced bit errors which vanished after some fiddling
      within the BIOS settings of the cache timings (pipelining was the culprit
-     in this case). This isn't something magic! Consider, a busmaster -
+     in this case).  This isn't something magic! Consider, a busmaster -
      especially when running at high transfer rates - puts an additional heavy
-     burden on the cache logic in the chipset and the cache RAMs. Many random
+     burden on the cache logic in the chipset and the cache RAMs.  Many random
      failures of OS/2 systems - even without busmastering of EIDE or SCSI
      controllers - have their origin here.
 
@@ -1126,16 +1127,16 @@ SOME WORDS OF WISDOM
      I made a lot of changes to IBM's source code in the driver initialization
      portion to support ALi, SiS, VIA, CMD, and Promise chipsets, and program
      spindown timers in the devices, and to select data transfer rates other
-     than the fastest ones. Some of these changes could lead to traps during
-     bootup depending on the actual parameter values used. I hope to have them
-     fixed. These traps (identifiable by the module name 'IBMS506$') cannot
+     than the fastest ones.  Some of these changes could lead to traps during
+     bootup depending on the actual parameter values used.  I hope to have them
+     fixed.  These traps (identifiable by the module name 'IBMS506$') cannot
      corrupt any of the data because they happen before any write operation is
-     issued to any drive. I'm sorry if you happen to have such an inconvenience.
+     issued to any drive.  I'm sorry if you happen to have such an inconvenience.
      BUT: the code to carry out read and write requests either by PIO or
-     busmaster assisted DMA is *unchanged*. In fact, all data transfers from the
+     busmaster assisted DMA is *unchanged*.  In fact, all data transfers from the
      device into host memory or vice-versa are done 100% by the drive
      electronics and the chipset hardware on your motherboard (or 99% plus *one*
-     CPU instruction in case of PIO). Driver code only steps in when any part of
+     CPU instruction in case of PIO).  Driver code only steps in when any part of
      this hardware reports an error or wasn't able to fulfill the request.
 
      Keep in mind: PIO and MWDMA transfer modes have no means of detecting bit
@@ -1144,15 +1145,15 @@ SOME WORDS OF WISDOM
 
      So, instead of rushing to the fastest data transfer modes possible, limit
      the negotiated data transfer speed to the slowest available in each
-     category (/MR:120). Using PIO4 on other than rock solid hardware which
-     passed reliability tests is *very* dangerous. Since large portions of the
+     category (/MR:120).  Using PIO4 on other than rock solid hardware which
+     passed reliability tests is *very* dangerous.  Since large portions of the
      OS2*.INI files cannot be flushed to disk at shutdown with error-checked
-     Ultra-DMA, the ADD has to revert to the error-prone PIO mode. I consider
+     Ultra-DMA, the ADD has to revert to the error-prone PIO mode.  I consider
      this an OS/2 design flaw.
 
      If you run SYSBench or DISKIO, and experience unstable or rather low
      performance figures in the maximum data transfer rate test, you are seeing
-     the effects of retries and interface resets. This is an indication of bit
+     the effects of retries and interface resets.  This is an indication of bit
      errors!
 
      As a reference, in the DISKIO 'Drive cache/bus transfer rate' test you
@@ -1167,19 +1168,19 @@ SOME WORDS OF WISDOM
      MW-DMA mode 2    : 11MB/s or more
      MW-DMA mode 1    :  9MB/s or more
 
-     SYSBench is based on the DISKIO code with some modifications. DISKIO does
+     SYSBench is based on the DISKIO code with some modifications.  DISKIO does
      the worst case test on the last cylinder (falsely called track in both
-     programs) using forward reads, SYSBench uses backward reads. Remember,
+     programs) using forward reads, SYSBench uses backward reads.  Remember,
      different drives have different cache strategies built in, and reading
      backwards is a pretty uncommon access strategy with file system caches, so
      some drives are fooled in this test and the result is overly pessimistic.
 
      If you like to tune the data transfer speed on the cables to your drive,
      then run DISKIO or SYSBench without DMA rate limitation and look at the
-     results reported for cylinder (track) 0. This is the maximum data transfer
-     rate your drive is able to read off the media surface. Then select a
-     transfer mode which matches this speed. I recommend Ultra DMA modes over
-     MW-DMA modes. If the drive is DMA capable, select PIO mode 0 as non-DMA
+     results reported for cylinder (track) 0.  This is the maximum data transfer
+     rate your drive is able to read off the media surface.  Then select a
+     transfer mode which matches this speed.  I recommend Ultra DMA modes over
+     MW-DMA modes.  If the drive is DMA capable, select PIO mode 0 as non-DMA
      mode (for the rare cases where busmaster DMA cannot be used).
 
      If you see false device detects or even lockups at boot time, don't
@@ -1187,50 +1188,50 @@ SOME WORDS OF WISDOM
 
      In any case, if you think you are experiencing data corruption, look at the
      output generated by the /W or /V switch, and then look for the data
-     transfer modes used with your device. The first remedy to try will be
+     transfer modes used with your device.  The first remedy to try will be
      disabling all fast transfer modes (by /!BM and/or /MR:).
 
      If you hear short beeps, then the data transfer state-machine encountered
      an exception: a high beep indicates a UDMA CRC failure, a low beep an error
      reported by the hardware which leads to a interface reset eventually,
      and a middle beep indicates a command timeout (usually caused by a
-     spun-down harddisk). So, if your hardware works 'flawlessly' you will hear
-     *no* sounds from the driver (except for spin-down events of course). With
-     'flawlessly' I mean 'without errors detectable by any instance'. If you
+     spun-down hard disk).  So, if your hardware works 'flawlessly' you will hear
+     *no* sounds from the driver (except for spin-down events of course).  With
+     'flawlessly' I mean 'without errors detectable by any instance'.  If you
      prefer to ignore hardware errors indicated by these beeps, add the
      /!AA (no audible alerts) option.
 
      To protect the current working desktop from corruption, consider creating
      test copies of the x:\Desktop directory tree and the OS2*.INI files
      and pointing to these in a modified copy of your CONFIG.SYS located
-     in x:\OS2\BOOT. For example, rename this copy to CONFIG.T and select
+     in x:\OS2\BOOT.  For example, rename this copy to CONFIG.T and select
      this test configuration within the recovery choices screen by hitting
-     the 'T' key. This way, you always have a working default boot system
+     the 'T' key.  This way, you always have a working default boot system
      and a independent test system to play with.
 
 QUESTIONS & ANSWERS
 
-  1) Both my EIDE controller and my harddisc is ATA/66 (or ATA/100) capable,
-     and a 80wire cable is installed. No matter what I am trying to do (reading
+  1) Both my EIDE controller and my hard disk is ATA/66 (or ATA/100) capable,
+     and a 80wire cable is installed.  No matter what I am trying to do (reading
      the docs, applying the /80WIRE override switch), the driver allows no more
-     than UltraDMA mode 2. What's wrong ?
+     than UltraDMA mode 2.  What's wrong ?
 
-     Most likely, your harddisk is setup to hide its ATA/66 (or ATA/100)
-     capabilities. Some models are delivered with such a factory setup to
-     prevent confusion of older BIOSes or controllers. Run "DiskInfo i" and look
-     at word 88/058 reported from the disk in question. If it it something like
+     Most likely, your hard disk is setup to hide its ATA/66 (or ATA/100)
+     capabilities.  Some models are delivered with such a factory setup to
+     prevent confusion of older BIOSes or controllers.  Run "DiskInfo i" and look
+     at word 88/058 reported from the disk in question.  If it it something like
      xx07, the disk reports ATA/33 capability; if it is xx1F, it can do ATA/66,
-     and if it is xx3F, then ATA/100 is available. If the reported capability is
+     and if it is xx3F, then ATA/100 is available.  If the reported capability is
      less than advertised, contact the disk manufacturer for a utility to enable
      the missing capabilities (often to be found on their web sites).
 
-  2) I experience random failures after wakeup from suspend. What can I do ?
+  2) I experience random failures after wakeup from suspend.  What can I do ?
 
-     Toggle the "Delayed Transaction" setting at the PCI page in the BIOS. Some
+     Toggle the "Delayed Transaction" setting at the PCI page in the BIOS.  Some
      hardware doesn't implement this feature correctly.
 
   3) I have a large (> 33GB) disk but FDISK or LVM report only a fraction of the
-     true disk capacity. Where does that come from ?
+     true disk capacity.  Where does that come from ?
 
      Run "COPY IBMS506$ con:" and look at the geometry values (example):
 
@@ -1241,24 +1242,24 @@ QUESTIONS & ANSWERS
        S     63     63	     63       63       63     63   % Used    99.98
 
      If the "OS2:log" column shows a C value of 65535 then there is most likely
-     a 16 bit overflow due to a badly chosen translation mode. Presumably, the
+     a 16 bit overflow due to a badly chosen translation mode.  Presumably, the
      H value will be 16 instead of the much more appropriate 255 (or 240).
 
      If you see the same H value in the "BPB:log" column then this is the
      translation geometry stored on the disk itself, in the partition table
-     and/or the BPB sectors. In this case you *must* zero out the partition
+     and/or the BPB sectors.  In this case you *must* zero out the partition
      table to get rid of this unwise translation mode, a mere change in the BIOS
      settings is not sufficient!
 
      If there are only zeroes in the "BPB:log" column, then the disks doesn't
      have a valid partition table yet and the translation mode is taken from the
-     BIOS. Change the BIOS setting to "LBA translation" mode.
+     BIOS.  Change the BIOS setting to "LBA translation" mode.
 
   4) I have problems reading CDs now which was working fine with earlier driver
-     versions. Why ?
+     versions.  Why ?
 
      Later drivers enable DMA modes on ATAPI devices now if the seem to follow
-     sufficiently recent ATAPI implementation standards. Some ATAPI units still
+     sufficiently recent ATAPI implementation standards.  Some ATAPI units still
      fail running on DMA, so you have to disable DMA busmastering for these
      units (/A:x /U:x /!BM).
 
@@ -1267,7 +1268,7 @@ CREDITS
      I'd like to express my thanks to some outstanding people who made this
      piece of code a better one:
 
-     Helen Terbizan   for her neverending efforts to make ALi support possible
+     Helen Terbizan   for her never-ending efforts to make ALi support possible
 		      and her patience and perseverance during the tests.
 
      Mark Dodel       for just the same patience and perseverance.
@@ -1280,6 +1281,13 @@ CREDITS
 
      Gerald Eischer   for creating the command line options diagram and table
 
+     Mensys, BV and Serenity Systems International
+                      for providing financial support for on-going development
+		      and testing of this driver.
+
+     The eComStation development and test teams
+                      for putting their systems at risk when testing new builds.
+
 TO DO
 
      Still left is to persuade IBM to incorporate these features
@@ -1288,9 +1296,9 @@ TO DO
 
 COPYRIGHT
 
-     DaniS506 - Copyright (c) 1999-2008 Daniela Engert. All rights reserved.
-     Portions Copyright (c) 2008, 2010 Steven Levine and Associates, Inc. All rights reserved.
-     Portions Copyright (c) 2010 Mensys B.V., Inc. All rights reserved.
+     DaniS506 - Copyright (c) 1999-2008 Daniela Engert.  All rights reserved.
+     Portions Copyright (c) 2008, 2010 Steven Levine and Associates, Inc.  All rights reserved.
+     Portions Copyright (c) 2010 Mensys B.V., Inc.  All rights reserved.
 
 STATUS OF PROGRAM
 
@@ -1300,17 +1308,17 @@ STATUS OF PROGRAM
 DISCLAIMER
 
      YOU ARE USING THIS PROGRAM AT YOUR OWN RISK! I don't take any
-     responsibillity for damages, problems, custodies, marital dis-
+     responsibility for damages, problems, custodies, marital dis-
      putes, etc. resulting from use, inability to use, misuse, pos-
      session or non-possession of this program directly or indirectly.
      I also don't give any warranty for bug-free operation, fitness for
      a particular purpose or the appropriate behaviour of the program
-     concerning animals, programers and little children.
+     concerning animals, programmers and little children.
 
      THE SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
      IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
      WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-     PURPOSE. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE
+     PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE
      PROGRAM IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU
      ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
 
@@ -1321,7 +1329,7 @@ DISCLAIMER
      Permission is granted to redistribute this program free of charge,
      provided it is distributed in the full archive with unmodified
      contents and no profit beyond the price of the media on which it
-     is distributed is made. Exception to the last rule: It may be
+     is distributed is made.  Exception to the last rule: It may be
      included on freeware/shareware collections on CD-ROM, as well as
      on magazine cover CD-ROMs.
 
@@ -1332,6 +1340,11 @@ ORIGINAL AUTHOR
 
      Daniela Engert
      Internet: "Daniela Engert" <dani at ngrt dot de>
+
+CURRENT DEVELOPERS
+
+     Steven H. Levine
+     Internet: "Steven H. Levine" <steve53 at earthlink dot net>
 
 SUPPORT
 
@@ -1347,5 +1360,7 @@ SUPPORT
 
 EPILOGUE
 
-     Suggestions and bug-reports are always welcome. Well ... bug-reports
+     Suggestions and bug-reports are always welcome.  Well ... bug-reports
      are perhaps not *that* welcome ... ;)
+
+$Id$

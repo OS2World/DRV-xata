@@ -1,6 +1,7 @@
 /**************************************************************************
  *
  * SOURCE FILE NAME = S506OEMI.C
+ * $Id$
  *
  * DESCRIPTIVE NAME = DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
@@ -284,6 +285,11 @@ UCHAR NEAR CheckSATAPhy (NPU npU) {
   }
   return FALSE;
 }
+
+/**
+ * Set register addresses if address and offsets known
+ * @return TRUE if set
+ */
 
 UCHAR NEAR CollectSCRPorts (NPU npU)
 {

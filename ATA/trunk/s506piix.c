@@ -1,6 +1,7 @@
 /**************************************************************************
  *
  * SOURCE FILE NAME = S506PIIX.C
+ * $Id$
  *
  * DESCRIPTIVE NAME = DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
@@ -125,16 +126,17 @@
 
 BOOL NEAR AcceptPIIX (NPA npA)
 {
-  UCHAR val = ' ';
-  NPCH	str = PIIXxMsgtxt;
+  UCHAR val = ' ';			// Adapter description modifier
+  NPCH	str = PIIXxMsgtxt;		// Adapter description
   UCHAR map;
 
   map = GetRegB (PciInfo->PCIAddr, PCI_PIIX_MAP);
 
   switch (PciInfo->CompatibleID) {  // besser vielleicht PciInfo->Level!
-    case PIIX_PCIIDE_DEV_ID: {
-      PciInfo->Level = PIIX;
 
+    case PIIX_PCIIDE_DEV_ID:
+    {
+      PciInfo->Level = PIIX;
       if ((MEMBER(npA).Revision < 2) || /* Rev is not capable of proper DMA. */
 	  ((xBridgeDevice == 0x84C4) && (xBridgeRevision < 4))) { // check for ORION
 	npA->Cap &= ~(CHIPCAP_ATADMA | CHIPCAP_ATAPIDMA);
@@ -143,14 +145,16 @@ BOOL NEAR AcceptPIIX (NPA npA)
 
       MEMBER(npA).CfgTable = CfgPIIX;
       MEMBER(npA).TModes |= TR_PIO_SHARED; // PIIX has only one timing register set
-      break;
     }
+    break;
+
     case PIIX3_PCIIDE_DEV_ID:
       PciInfo->Level = PIIX3;
       npA->Cap &= ~CHIPCAP_ULTRAATA;
       val = '3';
       MEMBER(npA).CfgTable = CfgPIIX3;
       break;
+
     case PIIX4_PCIIDE_DEV_ID:
       PciInfo->Level = PIIX4;
       if (MEMBER(npA).Device == ICH0_PCIIDE_DEV_ID) {
@@ -161,30 +165,43 @@ BOOL NEAR AcceptPIIX (NPA npA)
 	MEMBER(npA).CfgTable = CfgPIIX4;
       }
       break;
+
     case ICH_PCIIDE_DEV_ID:
       PciInfo->Level = ICH;
       npA->Cap |= CHIPCAP_ATA66;
       val = 1;
       str = ICHxMsgtxt;
       break;
+
     case ICH2PCIIDE_DEV_ID:
-      val = 2; goto ICHCommon;
+      val = 2;
+      goto ICHCommon;
+
     case ICH3PCIIDE_DEV_ID:
-      val = 3; goto ICHCommon;
+      val = 3;
+      goto ICHCommon;
+
     case ICH4PCIIDE_DEV_ID:
-      val = 4; goto ICHCommon;
+      val = 4;
+      goto ICHCommon;
+
     case ICH5PCIIDE_DEV_ID:
-      val = 5; goto ICHCommon;
+      val = 5;
+      goto ICHCommon;
+
     case ICH6PCIIDE_DEV_ID:
-      val = 6; goto ICHCommon;
+      val = 6;
+      goto ICHCommon;
+
     case ICH7PCIIDE_DEV_ID:
       val = 7;
     ICHCommon:
       str = ICHxMsgtxt;
-//	npA->Cap |= CHIPCAP_ATA66 | CHIPCAP_ATA100 | CHIPCAP_ATA133;
+      // npA->Cap |= CHIPCAP_ATA66 | CHIPCAP_ATA100 | CHIPCAP_ATA133;
       npA->Cap |= CHIPCAP_ATA66 | CHIPCAP_ATA100;
       PciInfo->Level = ICH2;
       break;
+
     case ICH5SPCIIDE_DEV_ID:
       val = 5;
       map >>= 1;
@@ -193,38 +210,46 @@ BOOL NEAR AcceptPIIX (NPA npA)
 	if ((map & 1) != npA->IDEChannel) goto ICHCommon; // combined, PATA port
       }
       goto SATACommon;
+
     case ICH10SPCIIDE_DEV_ID:
       npA->maxUnits = 2;
     case ICH10S2PCIIDE_DEV_ID: // master only!
       val = 10;
       goto SATACommon;
+
     case ICH9SPCIIDE_DEV_ID:
       npA->maxUnits = 2;
       val = 9;
       goto SATACommon;
+
     case ICH8SPCIIDE_DEV_ID:
       npA->maxUnits = 2;
     case ICH8S2PCIIDE_DEV_ID: // master only!
       val = 8;
       goto SATACommon;
+
     case ICH7SPCIIDE_DEV_ID:
       val = 7;
-      goto SATACommon1;
+      goto SATACommon1;		// Force units = 2
+
     case ICH6SPCIIDE_DEV_ID:
       val = 6;
     SATACommon1:
       npA->maxUnits = 2;
       if (map & (1 << npA->IDEChannel)) goto ICHCommon;  // combined, PATA port
+
     SATACommon:
       npA->Cap |= CHIPCAP_SATA;
       npA->FlagsI.b.native = 1;  // required (at least) for ICH8
       if (val >= 6) {
+	// ICH6+
 	NPC   npC  = npA->npC;
-	ULONG BAR5 = npC->BAR[5].Addr;
+	ULONG BAR5 = npC->BAR[5].Addr;	// fixme to be sure this is ABAR/SIDPBA1-AHCI?
 	NPU   npU  = npA->UnitCB;
 
 	if (BAR5) {
-	  if (BAR5 < 0x10000) { // IO mapped index
+	  if (BAR5 < 0x10000) {
+	    // IO mapped index
 	    UCHAR Port = npA->IDEChannel * 2;
 	    SSTATUS = ((ULONG)INDEXED (Port << 8) << 16) | (BAR5 & 0xFFFF);
 	    SERROR   = SSTATUS | 0x20000;
@@ -236,9 +261,11 @@ BOOL NEAR AcceptPIIX (NPA npA)
 	      SCONTROL = SSTATUS | 0x10000;
 	    }
 	    npA->SCR.Offsets = 0;  // do *not* allocate SCR ports by default method
-
-	  } else { // Memory mapped AHCI registers
-	    if (InD (BAR5 | 0x0C)) { // is AHCI.PI != 0
+	  } else {
+	    // Assume memory mapped AHCI registers
+	    // fixme to know why can assume
+	    // is AHCI_PI != 0
+	    if (InD (BAR5 | AHCI_PI)) {
 	      UCHAR Port = npA->IDEChannel;
 	      UCHAR havePhy = 0;
 	      SSTATUS = GetAHCISCR (npA, Port);
@@ -256,13 +283,12 @@ BOOL NEAR AcceptPIIX (NPA npA)
 		  npA->maxUnits = 1;
 	      }
 	      if (!havePhy) return (FALSE);
-	      npA->SCR.Offsets = 0x3120;
+	      npA->SCR.Offsets = 0x3120;	// STATUS, ERROR, CONTROL - see CollectSCRPorts
 	    }
 	  }
 	}
-      }
+      } // ICH6+
       goto ICHCommon;
-      break;
 
     case IDER_DEV_ID:
       str = IDERMsgtxt;
@@ -270,19 +296,17 @@ BOOL NEAR AcceptPIIX (NPA npA)
       MEMBER(npA).CfgTable = CfgNull;
       METHOD(npA).GetPIOMode = 0;
       npA->FlagsT |= ATBF_BIOSDEFAULTS;
-
       break;
-  }
+
+  } // switch CompatibleID
+
   sprntf (npA->PCIDeviceMsg, str, val);
 
   if (npA->FlagsI.b.native) METHOD(npA).CheckIRQ = BMCheckIRQ;
 
   if (npA->Cap & CHIPCAP_ATA66) {
-    UCHAR Cable;
-
     /* determine the presence of a 80wire cable as per defined procedure */
-
-    Cable = GetRegB (PciInfo->PCIAddr, PCI_PIIX_IDECFG);
+    UCHAR Cable = GetRegB (PciInfo->PCIAddr, PCI_PIIX_IDECFG);
     if (Cable & (npA->IDEChannel ? 0xC0 : 0x30))
       npA->Cap |= CHANCAP_CABLE80;
   }
@@ -325,7 +349,7 @@ BOOL NEAR AcceptITE8213 (NPA npA)
 
   npA->npC->numChannels = 1;
   if (npA->IDEChannel) return (FALSE);
-  
+
   sprntf (npA->PCIDeviceMsg, ITEMsgtxt, MEMBER(npA).Device);
   PciInfo->Level = ITE;
   npA->Cap |= CHIPCAP_ATA66 | CHIPCAP_ATA100 | CHIPCAP_ATA133;
