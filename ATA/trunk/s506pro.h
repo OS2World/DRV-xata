@@ -79,8 +79,8 @@ VOID   NEAR _cdecl LoadFlatGS (void);
 ULONG  NEAR _fastcall safeCLR32 (ULONG *location);
 ULONG  NEAR _fastcall safeGET32 (ULONG *location);
 USHORT NEAR _fastcall safeXCHG (NPUSHORT location, USHORT value);
-UCHAR  NEAR _fastcall safeINC (NPBYTE counter);
-UCHAR  NEAR _fastcall safeDEC (NPBYTE counter);
+UCHAR  NEAR _fastcall safeINC (volatile NPBYTE counter);
+UCHAR  NEAR _fastcall safeDEC (volatile NPBYTE counter);
 
 
 /*----------------------------------------------------------------------------*
@@ -291,7 +291,7 @@ VOID   FAR _cdecl CSHookHandler (void);
 VOID   NEAR Delay (USHORT ms);
 
 /*----------------------------------------------------------------------------*
- *	CS.C Procedures 						      *
+ *	CS.C Procedures							      *
  *----------------------------------------------------------------------------*/
 USHORT FAR  PCMCIASetup (VOID);
 USHORT FAR  CSCardPresent (USHORT);
@@ -518,7 +518,7 @@ ULONG  NEAR GetAHCISCR (NPA npA, USHORT Port);
 #pragma alloc_text (FCode, GetAHCISCR)
 
 /*----------------------------------------------------------------*/
-/*	S506CMD.C Procedures
+/*	S506CMD.C Procedures                                      */
 /*----------------------------------------------------------------*/
 BOOL   NEAR AcceptCMD (NPA npA);
 USHORT NEAR GetCMDPio (NPA npA, UCHAR Unit);

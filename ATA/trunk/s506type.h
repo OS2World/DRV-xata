@@ -1,12 +1,14 @@
 /**************************************************************************
  *
  * SOURCE FILE NAME =  S506TYPE.H
+ * $Id$
  *
  * DESCRIPTIVE NAME =  DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
  *	       COPYRIGHT Daniela Engert 1999-2009
+ * Portions Copyright (c) 2010, 2011 Steven H. Levine
  * distributed under the terms of the GNU Lesser General Public License
  *
  * DESCRIPTION : Locally defined structures for this driver.
@@ -341,7 +343,8 @@ typedef struct _A
   /*-----------------*/
   /* State Variables */
   /*-----------------*/
-  UCHAR 	UseCount;					       //  5
+  HSpinLock     FsmSpinLock;
+  volatile UCHAR FsmUseCount;					       //  5
   UCHAR 	cUnits; 					       // 11
   USHORT	Flags;						       // 65
   USHORT	ReqMask;					       // 21
@@ -450,6 +453,9 @@ typedef struct _A
   CHAR		IRQDelay;					       //  6
   union {
     struct {
+      // actually it is two PCI native mode bits and one bit for programming
+      // possibility but we filter out the latter one (see ClassCode.ProgIF
+      // init in EnumPCIDevices)
       unsigned native:3;
       unsigned unused:4;
       unsigned busmaster:1;
@@ -599,6 +605,7 @@ typedef struct _A
 #define ATS_PCCARD_INSERTED	7
 #define ATS_PCCARD_NOT_INS	8
 #define ATS_BAY 		9
+#define ATS_ALLOC_SPINLOCK_FAILED	10
 
 
 /* ACB->TimerFlags */

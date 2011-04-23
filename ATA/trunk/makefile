@@ -14,15 +14,15 @@
 #/* Source File Name: MAKEFILE						 */
 #/*									 */
 #/* Copyright (C) 1999-2009 Daniela Engert				 */
-#/* Portions Copyright (c) 2009, 2010 Steven H. Levine			 */
+#/* Portions Copyright (c) 2009, 2011 Steven H. Levine			 */
 #/*									 */
 #/* Distributed under the terms of the GNU Lesser General Public License */
 #/*									 */
 #/************************************************************************/
 
 # Build options that can be set in enviroment or on nmake command line
-#  VERSION - build version (i.e. 1.8.9) - see makefile for current default
-#  FIXLEVEL - fix level (i.e 9 for 1.8.9) - see makefile for current default
+#  VERSION - build version (i.e. 1.8) - see makefile for current default
+#  FIXLEVEL - fix level (i.e 10 for 1.8.10) - see makefile for current default
 #  VENDOR - builder (i.e. slainc, defaults to unknown)
 #  BUILDMACH - build machine (i.e. slamain, defaults to unknown)
 #  BUILDTIME - build time (yyyy/mm/dd hh:mm:ss) - make fails if not set
@@ -37,14 +37,14 @@
 !ifdef VERSION
 _VERSION = $(VERSION)
 !else
-_VERSION = 1.8.9
+_VERSION = 1.8
 !endif
 
 # Allow external define
 !ifdef FIXLEVEL
 _FIXLEVEL = $(FIXLEVEL)
 !else
-_FIXLEVEL = 9
+_FIXLEVEL = 10
 !endif
 
 # Allow override
@@ -219,7 +219,7 @@ OBJS = $(OBJ1) $(OBJ2) $(OBJ3) $(OBJ4) $(OBJ5) $(OBJ6) $(OBJ7)
 #****************************************************************************
 
 # nmake requires #s to be quoted with ^
-FILEVER = @^#$(_VENDOR):$(_VERSION)^#@^#^#1^#^# $(TIMESTAMP)::::$(_FIXLEVEL)::@@
+FILEVER = @^#$(_VENDOR):$(_VERSION).$(_FIXLEVEL)^#@^#^#1^#^# $(TIMESTAMP)::::$(_FIXLEVEL)::@@
 CFLAGS = $(CFLAGS) /DVERSION=\"$(_VERSION).$(_FIXLEVEL)\"
 
 #

@@ -1,12 +1,13 @@
 /**************************************************************************
  *
- * $Id$
  * SOURCE FILE NAME = S506DATA.C
+ * $Id$
  *
  * DESCRIPTIVE NAME = DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
  *	       COPYRIGHT Daniela Engert, 1999-2009
+ * Portions Copyright (c) 2010, 2011 Steven H. Levine
  * distributed under the terms of the GNU Lesser General Public License
  *
  *****************************************************************************/
@@ -34,8 +35,8 @@
 
 #define YEAR  2011			// Update to match release date
 #define MONTH 4
-#define DAY   11
-#define PCMCIAVERSION 0x188		// Update to match driver version
+#define DAY   22
+#define PCMCIAVERSION 0x1810		// Update to match driver version
 
 /*-------------------------------------------------------------------*/
 /*								     */

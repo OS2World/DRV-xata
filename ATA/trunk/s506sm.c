@@ -45,7 +45,7 @@
 #define PCITRACER 0
 #define TRPORT 0xA80C
 
-#if 0					// 17 Aug 10 SHL fimxe to gone if not useful
+#if 0					// 17 Aug 10 SHL fixme to gone if not useful
 void IBeep (USHORT freq) {
   USHORT i;
   DevHelp_Beep (freq, 10);
@@ -54,14 +54,50 @@ void IBeep (USHORT freq) {
 }
 #endif
 
-/*---------------------------------------------*/
-/*  StartSM()				       */
-/*					       */
-/*					       */
-/*					       */
-/*---------------------------------------------*/
-VOID NEAR StartSM (NPA npA)
+/**
+ * StartSM()
+ *
+ * Executes an adapter FSM until it goes again to ACBS_WAIT state. A concurrent
+ * call to the same FSM adds one more cycle (until next WAIT) to execute, this
+ * cycle is performed by the first call and the second call is finished
+ * immediatelly.
+ *
+ * This method can be called from several contexts:
+ * 1) IORB (always task time?)
+ * 2) Various timer callbacks
+ * 3) Handler of IRQ from a storage adapter
+ *
+ * Possibility for recursive calling in IRQ time raises the question what
+ * sections have to be protected by CLI state and when to do EOI. Two simple but
+ * not working approaches are possible:
+ * 1) (original Dani) execute all after EOI and in STI synchronizing only access
+ *    to cycles counter. With this approach we can be infinitely reinterrupted
+ *    outside of FSM switch cycle and exhaust interrupt stack (the simple test
+ *    configuration with one HDD easily generates 60 nested interrupts on LVM
+ *    init)
+ * 2) (more safe) execute in STI but do EOI only after exit from StartSM. This
+ *    effectively disables nested interrupts from the same adapter but also
+ *    allows only interrupts with greater priority than an adapter's one. This
+ *    is not a problem on 8259a (storage devices priority is usually relatively
+ *    low) but on configuration with APIC+IOAPICs this can produce to long
+ *    unwanted delays.
+ *
+ * Taking all this into account we go with the hybrid approach:
+ * - the function is called after an EOI but in CLI
+ * - the function may be called is STI in task time
+ * - FSM cycle is executed in STI so it may be reinterrupted
+ * - we outside FSM cycle interrupts are disabled if they were disabled on enter
+ *   to the function
+ * - cycles counter is protected by spinlock because we can't rely to CLI for
+ *   this in SMP env
+ *
+ * @param npA pointer to adapter structure
+ * @param isAdapterIRQ we are called from an adapter's IRQ handler
+ */
+VOID NEAR StartSM(NPA npA)
 {
+  UCHAR fsmUseCount;
+
   /*-------------------------------------------------*/
   /* ACB Use Count Checks			     */
   /* --------------------			     */
@@ -73,8 +109,24 @@ VOID NEAR StartSM (NPA npA)
   outpw (TRPORT, 0xDE60);
 #endif
 
-  if (0 == safeINC (&(npA->UseCount))) {
+  // TODO: review callbacks from timer
+
+  DevHlp_AcquireSpinLock(npA->FsmSpinLock);
+  fsmUseCount = npA->FsmUseCount++;
+  DevHlp_ReleaseSpinLock(npA->FsmSpinLock);
+
+  if (!fsmUseCount) {
+    USHORT intsEnabled;
+
+    // FSM is not executed concurrently, incremented FsmUseCount prevents other
+    // to go to this section and current IF is the same that was on entering to
+    // this function
+
+    intsEnabled = isInterruptsEnabled(); // save IF
+
     do {
+
+      ENABLE; // FSM has to be executed with enabled interrupts
       do {
 	npA->State &= ~ACBS_WAIT;
 
@@ -84,10 +136,10 @@ VOID NEAR StartSM (NPA npA)
 	    break;
 	  case ACBS_INTERRUPT:
 	    TERR(npA->npU,0xAA)
-	    InterruptState(npA);
+	    InterruptState (npA);
 	    break;
 	  case ACBS_DONE:
-	    DoneState(npA);
+	    DoneState (npA);
 	    break;
 	  case ACBS_SUSPEND:
 	    SuspendState (npA);
@@ -105,19 +157,23 @@ VOID NEAR StartSM (NPA npA)
 	    break;
 	} // switch
       } while (!(npA->State & ACBS_WAIT));
-    } while (safeDEC (&(npA->UseCount)));
-  } // if UseCount == 0
+
+      // restore IF to prevent possible infinite reinterrupts after npA->FsmUseCount decrement
+      if (!intsEnabled) {
+        DISABLE;
+      }
+
+      DevHlp_AcquireSpinLock(npA->FsmSpinLock);
+      fsmUseCount = --npA->FsmUseCount;
+      DevHlp_ReleaseSpinLock(npA->FsmSpinLock);
+    } while (fsmUseCount);
+  }
+
+  // FSM has been executed all requested times. IF is intact
 
 #if PCITRACER
   outpw (TRPORT, 0xDE61);
 #endif
-
-  _asm {
-    pop si
-    leave
-    sti
-    ret
-  }
 }
 
 #undef PCITRACER
@@ -177,35 +233,38 @@ USHORT NEAR HandleInterrupts (NPA npA) {
 
 USHORT NEAR FixedInterrupt (NPA npA)
 {
-  USHORT Claimed = 0;
-
 #if PCITRACER
     outpw (TRPORT, 0xDEA0 | (npA->IDEChannel));
 #endif
-  if (!(Claimed = METHOD(npA).CheckIRQ (npA))) {
+  if (!(METHOD(npA).CheckIRQ (npA))) { // not claimed
 #if PCITRACER
     outpw (TRPORT, 0xDEAA);
 #endif
-    return (Claimed);
+    return (0);
   }
 
-  if (((NPUSHORT)&(npA->SuspendIRQaddr))[1]) {
+  if (((NPUSHORT)&(npA->SuspendIRQaddr))[1]) { // SEG_OF(npA->SuspendIRQaddr) not zero
+    // we are suspended. Let's delegate handling and EOI to an outer replacement handler
     npA->SuspendIRQaddr (npA->IRQLevel);
   } else {
     USHORT TimerHandle;
 
-    TimerHandle = safeXCHG (&(npA->IRQTimerHandle), 0);
+    DISABLE // disabling interrupts to avoid possible infinite nested IRQs
     DevHelp_EOI (npA->IRQLevel);
 
+    // post-EOI handling
+    TimerHandle = safeXCHG(&(npA->IRQTimerHandle), 0);
     if (TimerHandle) {
-      ADD_CancelTimer (TimerHandle);
-      StartSM (npA);
+      ADD_CancelTimer(TimerHandle);
+      StartSM(npA); // this call also provides limited reinterrupt window
     }
   }
+
 #if PCITRACER
     outpw (TRPORT, 0xDEF0 | (npA->IDEChannel));
 #endif
-  return (Claimed);
+
+  return (1);
 }
 
 USHORT NEAR CatchInterrupt (NPA npA)
@@ -213,6 +272,7 @@ USHORT NEAR CatchInterrupt (NPA npA)
   USHORT Claimed = 0;
 
   if (METHOD(npA).CheckIRQ (npA)) {
+    DISABLE
     DevHelp_EOI (npA->IRQLevel);
     Claimed = 1;
   }
@@ -1403,7 +1463,11 @@ VOID NEAR ErrorState (NPA npA)
     npA->Flags &= ~ACBF_MULTIPLEMODE;
   }
 
-  npA->UseCount = 1;
+  // we can execute this code concurrently with other FSM starts so FsmUseCount
+  // have to be protected on the same spinlock as in StartSM
+  DevHlp_AcquireSpinLock(npA->FsmSpinLock);
+  npA->FsmUseCount = 1;
+  DevHlp_FreeSpinLock(npA->FsmSpinLock);
 
   npA->IORBStatus |= IORB_RECOV_ERROR;
   npA->IORBError   = MapError (npA);
@@ -1846,7 +1910,7 @@ UCHAR NEAR CheckWorker (NPA npA, UCHAR Mask, UCHAR Value)
   while ((--Count != 0) && ((*msTimer - Stop) < 0)) {
     STATUS = InBd (STATUSREG, npA->IODelayCount);
     if ((STATUS & Mask) == Value) break;
-    IODelay();
+    IODelay ();
   }
 
   if (STATUS & FX_BUSY) npA->TimerFlags |= ACBT_BUSY;

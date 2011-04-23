@@ -1,6 +1,7 @@
 /**************************************************************************
  *
  * SOURCE FILE NAME =  S506CONS.H
+ * $Id$
  *
  * DESCRIPTIVE NAME =  DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
@@ -32,7 +33,7 @@
 /* TimeOut for RESET to complete (30s)	 */
 /*					 */
 /* After a RESET the drive is checked	 */
-/* every 200ms. 			 */
+/* every 200ms.				 */
 /*---------------------------------------*/
 #define DELAYED_RESET_MAX	(30*1000L)
 #define DELAYED_RESET_INTERVAL	      200L
@@ -51,7 +52,7 @@
 #define IRQ_LONG_TIMEOUT_INTERVAL (30*1000L)
 
 /*---------------------------------------*/
-/* Retry Delay interval (200ms) 	 */
+/* Retry Delay interval (200ms)		 */
 /*---------------------------------------*/
 #define DELAYED_RETRY_INTERVAL	      200L
 
@@ -73,15 +74,15 @@
 /*---------------------------------------*/
 /* Maximum Cmd/Data Error Retries	 */
 /*---------------------------------------*/
-#define MAX_DATA_ERRORS 		25
+#define MAX_DATA_ERRORS			25
 
 /*---------------------------------------*/
 /* Maximum Reset Retries		 */
 /*---------------------------------------*/
-#define MAX_RESET_RETRY 		10
+#define MAX_RESET_RETRY			10
 
 /*---------------------------------------*/
-/* Initialization unit timeouts 	 */
+/* Initialization unit timeouts		 */
 /*---------------------------------------*/
 #define INIT_TIMEOUT_LONG	(10*1000L)
 #define INIT_TIMEOUT_SHORT	( 2*1000L)
@@ -117,7 +118,7 @@
 /* Suspend Count			 */
 /*---------------------------------------*/
 #define DEFERRED_COUNT			 5
-#define IMMEDIATE_COUNT 		 1
+#define IMMEDIATE_COUNT			 1
 
 /*---------------------------------------*/
 /* ATAPI: ATA_BACKOFF æs		 */
@@ -129,6 +130,7 @@
 /*-------------------------------*/
 #define ENABLE	_enable();
 #define DISABLE _disable();
+unsigned short _fastcall isInterruptsEnabled(void);
 
 #ifdef P4_LOOP
 #define P4_REP_NOP _asm { rep nop }
@@ -174,14 +176,14 @@
 #define PCI_CMD_MEM		0x0002	    /* MEM */
 #define PCI_CMD_BM		0x0004	    /* Bus Master Enable */
 #define PCI_CMD_BME		0x0005	    /* Bus Master Enable & IO */
-#define PCI_CMD_BME_MEM 	0x0007	    /* Bus Master Enable & IO & Mem */
+#define PCI_CMD_BME_MEM		0x0007	    /* Bus Master Enable & IO & Mem */
 
 /* Ultra DMA Mode Supported Identify Word 88 *//*xxxxx210xxxxx210*/
 
-#define ULTRADMA_7ACTIV  0x8000 	    /*	   Active Modes   */
-#define ULTRADMA_6ACTIV  0x4000 	    /*	   Active Modes   */
-#define ULTRADMA_5ACTIV  0x2000 	    /*	   Active Modes   */
-#define ULTRADMA_4ACTIV  0x1000 	    /*	   Active Modes   */
+#define ULTRADMA_7ACTIV  0x8000		    /*	   Active Modes   */
+#define ULTRADMA_6ACTIV  0x4000		    /*	   Active Modes   */
+#define ULTRADMA_5ACTIV  0x2000		    /*	   Active Modes   */
+#define ULTRADMA_4ACTIV  0x1000		    /*	   Active Modes   */
 #define ULTRADMA_3ACTIV  0x0800
 #define ULTRADMA_2ACTIV  0x0400
 #define ULTRADMA_1ACTIV  0x0200
@@ -218,7 +220,7 @@
 // ATA Geometry Limits
 #define ATA_MAX_CYLINDERS	       65536l
 #define ATA_MAX_NUMHEADS		  16
-#define ATA_MAX_SECTORSPERTRACK 	 255
+#define ATA_MAX_SECTORSPERTRACK		 255
 #define ATA_MAX_TOTALSECTORS	   267386880l // 65536 * 16 * 255
 #define ATA_MAX_UNTRANSLATED	    16514064l // 16383 * 16 * 63
 

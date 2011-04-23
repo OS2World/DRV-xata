@@ -7,6 +7,7 @@
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
  *	       COPYRIGHT Daniela Engert 1999-2009
+ * Portions Copyright (c) 2010, 2011 Steven H. Levine
  * distributed under the terms of the GNU Lesser General Public License
  *
  * DESCRIPTION : Adapter Driver initialization routines.
@@ -724,6 +725,7 @@ VOID NEAR ConfigureACB (NPA npA)
 {
   UCHAR i;
   NPU	npU;
+  USHORT rc;
 
   ACBPtrs[cAdapters] = npA;
 
@@ -740,6 +742,14 @@ VOID NEAR ConfigureACB (NPA npA)
   npA->IntHandler	    = CatchInterrupt;
 
   DevHelp_AllocGDTSelector (&(npA->IOSGPtrs.Selector), 1);
+
+  // Create spinlocks. For simplicity we create one for each adapter
+  rc = DevHlp_CreateSpinLock(&npA->FsmSpinLock);
+  if (rc) {
+    npA->Status = ATS_ALLOC_SPINLOCK_FAILED;	// spinlock allocation fail
+    return;
+  }
+
   if (npA->IRQLevel) {
     HookIRQ (npA);
   }

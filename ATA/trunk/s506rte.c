@@ -7,6 +7,7 @@
  *
  * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
  *	       COPYRIGHT Daniela Engert 1999-2009
+ * Portions Copyright (c) 2010, 2011 Steven H. Levine
  * distributed under the terms of the GNU Lesser General Public License
  *
  * DESCRIPTION : Strategy 1 Entry Point
@@ -233,6 +234,13 @@ ExitIOCtl:
 	  }
 	}
 	Delay (500);
+
+        // TODO: who removes IRQ handlers?
+
+        // hardware is disabled. We can deallocate spinlocks
+	for (Adapter = 0; Adapter < cAdapters; Adapter++) {
+          DevHlp_FreeSpinLock (ACBPtrs[Adapter]->FsmSpinLock);
+        }
       }
       break;
     }
@@ -966,7 +974,7 @@ void NEAR DoIOCTLs (PRP_GENIOCTL pRP_IOCTL)
       case DSKSP_POWER: {
 	PowerState = Parameter;
 	if (0 == PowerState) {
-	  APMResume();
+	  APMResume ();
 	} else {
 	  APMSuspend (PowerState);
 	}

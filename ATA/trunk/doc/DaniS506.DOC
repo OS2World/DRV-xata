@@ -1,6 +1,6 @@
 
-		      Daniela's S506 ADD - Release 1.8.9
-		      ----------------------------------
+		      Daniela's S506 ADD - Release 1.8.10
+		      -----------------------------------
 
 NAME
 
@@ -128,7 +128,9 @@ DESCRIPTION
      - support for high interrupts (IRQ16 and above) in APIC interrupt mode
        this requires ACPI.PSD v3 or later!
      - supports AHCI controllers in SATA legacy mode, when available
-***  - coexists with drivers that acquire controllers known to Danis506
+     - coexists with drivers that acquire controllers known to Danis506
+       including the soon to be released AHCI controller driver from Mensys.    
+***  - fixes some SMP compatibility issues (thanks to Slavik Gnatenko)
 
 ###  Caution: users of DaniBoot v1.0 need to upgrade to version 1.0.2!
 ###  Caution: users of DaniATAPI v0.3.x need to upgrade to version 0.4.0!
@@ -1357,6 +1359,14 @@ SUPPORT
          http://svn.netlabs.org/xata
 
      for instruction on how to obtain a login id.
+
+     eComStation users with a Support Contract can submit tickets
+     to the eComStation Ticketing System at
+
+        http://www.ecomstation.com/support/tickets/ticket_create.php
+
+     Click the Support radio button to select the category.
+
 
 EPILOGUE
 

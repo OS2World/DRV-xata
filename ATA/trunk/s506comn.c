@@ -34,6 +34,16 @@
 
 #pragma optimize(OPTIMIZE, on)
 
+unsigned short _fastcall isInterruptsEnabled()
+{
+  _asm {
+    push ax
+    pushf
+    pop ax
+    and ax, 200h
+  }
+}
+
 /*--------------------------------------------*/
 /* SetupCommonPre()			      */
 /*--------------------------------------------*/

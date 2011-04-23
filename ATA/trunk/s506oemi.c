@@ -7,6 +7,7 @@
  *
  *
  * Copyright : COPYRIGHT Daniela Engert 1999-2009
+ * Portions Copyright (c) 2010, 2011 Steven H. Levine
  * distributed under the terms of the GNU Lesser General Public License
  *
  * DESCRIPTION : PCI detection code
@@ -421,7 +422,8 @@ USHORT FAR EnumPCIDevices (void)
 
     if (ClassCode.Subclass != PCI_IDE_CONTROLLER)
       ClassCode.ProgIF = PCI_IDE_BUSMASTER | PCI_IDE_NATIVE_IF1 | PCI_IDE_NATIVE_IF2;
-    ClassCode.ProgIF &= PCI_IDE_BUSMASTER | PCI_IDE_NATIVE_IF1 | PCI_IDE_NATIVE_IF2;
+    else
+      ClassCode.ProgIF &= PCI_IDE_BUSMASTER | PCI_IDE_NATIVE_IF1 | PCI_IDE_NATIVE_IF2;
 
     if (ClassCode.ProgIF & (PCI_IDE_NATIVE_IF1 | PCI_IDE_NATIVE_IF2)) {
       switch (Int) {
@@ -599,7 +601,10 @@ UCHAR NEAR HandleFoundAdapter (NPA npA, NPPCI_DEVICE npDev)
     npA->npPCIDeviceMsg = (npA->PCIDeviceMsg[0] == 0) ?
 			    PCIDevice[MEMBER(npA).Index].npDeviceMsg :
 			    npA->PCIDeviceMsg;
-    if (npA->FlagsI.b.native) npA->FlagsT |= ATBF_INTSHARED;
+    // enable interrupt sharing only if at least one of channels is in PCI native mode
+    if (npA->FlagsI.b.native)
+      npA->FlagsT |= ATBF_INTSHARED;
+
     npA->SGAlign = MEMBER(npA).SGAlign - 1;
 
     npC->populatedChannels++;

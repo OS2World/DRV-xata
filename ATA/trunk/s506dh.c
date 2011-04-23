@@ -5,6 +5,7 @@
  * DESCRIPTIVE NAME = DANIS506.ADD - Adapter Driver for PATA/SATA DASD
  *
  * Copyright : COPYRIGHT Daniela Engert 1999-2009
+ * Portions Copyright (c) 2010, 2011 Steven H. Levine
  * distributed under the terms of the GNU Lesser General Public License
  *
  * DESCRIPTION : Device Helper library
@@ -355,4 +356,77 @@ USHORT MYENTRY DevHelp_LockLite (SEL Selector,
   }
 }
 
+USHORT MYENTRY DevHlp_CreateSpinLock(HSpinLock FAR * pSpl)
+{
+  // FAR* is passed via stack. We need to place it to ax:bx. We don't need
+  // to save bx
+  _asm {
+    PUSH SI
+    PUSH DI
+    MOV  AX, WORD PTR [pSpl+2]
+    MOV  BX, WORD PTR [pSpl]
+    MOV  DL, 0x79
+    MOV  DS, CS:[DSSel]
+    CALL [Device_Help]
+    SBB  DX, DX
+    AND  AX, DX
+    POP  DI
+    POP  SI
+  }
+}
 
+USHORT MYENTRY DevHlp_FreeSpinLock(HSpinLock spl)
+{
+  // ULONG is passed in dx:ax. We need it in ax:bx
+  _asm {
+    PUSH SI
+    PUSH DI
+    MOV  BX, AX
+    MOV  AX, DX
+    MOV  DL, 0x7A
+    MOV  DS, CS:[DSSel]
+    CALL [Device_Help]
+    SBB  DX, DX
+    AND  AX, DX
+    POP  DI
+    POP  SI
+  }
+}
+
+USHORT MYENTRY DevHlp_AcquireSpinLock(HSpinLock spl)
+{
+  // ULONG is passed in dx:ax. We need it in ax:bx
+  // also at least 14.104a kernel garbages SI in the helper so we have to save
+  // it to satisfy _stdcall
+  _asm {
+    PUSH SI
+    PUSH DI
+    MOV  BX, AX
+    MOV  AX, DX
+    MOV  DL, 0x71
+    MOV  DS, CS:[DSSel]
+    CALL [Device_Help]
+    SBB  DX, DX
+    AND  AX, DX
+    POP  DI
+    POP  SI
+  }
+}
+
+USHORT MYENTRY DevHlp_ReleaseSpinLock(HSpinLock spl)
+{
+  // ULONG is passed in dx:ax. We need it in ax:bx
+  _asm {
+    PUSH SI
+    PUSH DI
+    MOV  BX, AX
+    MOV  AX, DX
+    MOV  DL, 0x72
+    MOV  DS, CS:[DSSel]
+    CALL [Device_Help]
+    SBB  DX, DX
+    AND  AX, DX
+    POP  DI
+    POP  SI
+  }
+}

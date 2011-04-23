@@ -1,6 +1,7 @@
 /**************************************************************************
  *
  * SOURCE FILE NAME =  DHCALLS.H
+ * $Id$
  *
  * DESCRIPTIVE NAME =  ADD/DM include file
  *		       C Function Prototypes services in DHCALLS.LIB
@@ -686,6 +687,15 @@ USHORT APIENTRY DevHelp_OpenFile (PFILEIOINFO pFileOpen);
 USHORT APIENTRY DevHelp_CloseFile (PFILEIOINFO pFileClose);
 USHORT APIENTRY DevHelp_ReadFile (PFILEIOINFO pFileRead);
 USHORT APIENTRY DevHelp_ReadFileAt (PFILEIOINFO pFileReadAT);
+
+
+/* SpinLocks management DevHelp routines */
+typedef ULONG HSpinLock;
+
+USHORT MYENTRY DevHlp_CreateSpinLock(HSpinLock FAR * pSpl);
+USHORT MYENTRY DevHlp_FreeSpinLock(HSpinLock spl);
+USHORT MYENTRY DevHlp_AcquireSpinLock(HSpinLock spl);
+USHORT MYENTRY DevHlp_ReleaseSpinLock(HSpinLock spl);
 
 
 /*

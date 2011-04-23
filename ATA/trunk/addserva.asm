@@ -1,4 +1,5 @@
 ;*DDK*************************************************************************/
+; $Id$
 ;
 ; Copyright:   COPYRIGHT Daniela Engert 1999-2009
 ; COPYRIGHT    Copyright (C) 1995 IBM Corporation
@@ -141,9 +142,7 @@ TI_loop1:				      ; clear timer pool
 	     mov     ax,offset f_ADD_TimerHandler ; ax <= Timer Handler offset
 					      ;
 	     SaveReg <es,gs,di,si,bx,cx>
-	     cli			      ;
-	     DEVHLP  DevHlp_SetTimer	      ; Set timer handler to be
-	     sti			      ;    called on every timer tick
+	     DEVHLP  DevHlp_SetTimer	      ; Set timer handler to be called on every timer tick
 	     RestoreReg <cx,bx,si,di,gs,es>
 
 	     jc      TI_error_exit	      ; if carry on => error
@@ -328,7 +327,7 @@ TS_exit:					;
 ;*
 ;*  DESCRIPTIVE NAME:  Cancel Timer
 ;*
-;*  FUNCTION:	       This function calces the timer, so the
+;*  FUNCTION:	       This function cancels the timer, so the
 ;*		       timer handle won't be effective any more.
 ;*
 ;*  LINKAGE:	       call near
