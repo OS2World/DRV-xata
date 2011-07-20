@@ -117,6 +117,14 @@ _TEXT		SEGMENT DWORD PUBLIC 'CODE'
 		RET
 @safeINC	ENDP
 
+                PUBLIC  @isInterruptsEnabled
+@isInterruptsEnabled    PROC NEAR
+                PUSHF
+                POP     AX
+                AND     AX, 0200h
+                RET
+@isInterruptsEnabled    ENDP
+
 		; IRQ handler entry points
 		; This strange code avoids cache flushes.
 		; BL gets loaded with the offset into the IHdr table.

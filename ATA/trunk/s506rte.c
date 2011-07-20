@@ -236,11 +236,6 @@ ExitIOCtl:
 	Delay (500);
 
         // TODO: who removes IRQ handlers?
-
-        // hardware is disabled. We can deallocate spinlocks
-	for (Adapter = 0; Adapter < cAdapters; Adapter++) {
-          DevHlp_FreeSpinLock (ACBPtrs[Adapter]->FsmSpinLock);
-        }
       }
       break;
     }

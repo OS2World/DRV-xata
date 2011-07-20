@@ -76,11 +76,19 @@ USHORT NEAR FixedInterrupt (NPA npA);
 USHORT NEAR CatchInterrupt (NPA npA);
 
 VOID   NEAR _cdecl LoadFlatGS (void);
-ULONG  NEAR _fastcall safeCLR32 (ULONG *location);
+VOID   NEAR _fastcall safeCLR32 (ULONG *location);
 ULONG  NEAR _fastcall safeGET32 (ULONG *location);
 USHORT NEAR _fastcall safeXCHG (NPUSHORT location, USHORT value);
-UCHAR  NEAR _fastcall safeINC (volatile NPBYTE counter);
-UCHAR  NEAR _fastcall safeDEC (volatile NPBYTE counter);
+/**
+ * Atomically increments the counter by 1.
+ * Returns previous value of the counter
+ */
+UCHAR  NEAR _fastcall safeINC (NPVBYTE counter);
+/**
+ * Atomically decrements the counter by 1.
+ * Returns 0 if new value is zero otherwise the result is 1
+ */
+UCHAR  NEAR _fastcall safeDEC (NPVBYTE counter); /* returns 1 if 
 
 
 /*----------------------------------------------------------------------------*

@@ -343,7 +343,6 @@ typedef struct _A
   /*-----------------*/
   /* State Variables */
   /*-----------------*/
-  HSpinLock     FsmSpinLock;
   volatile UCHAR FsmUseCount;					       //  5
   UCHAR 	cUnits; 					       // 11
   USHORT	Flags;						       // 65

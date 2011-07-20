@@ -96,8 +96,6 @@ void IBeep (USHORT freq) {
  */
 VOID NEAR StartSM(NPA npA)
 {
-  UCHAR fsmUseCount;
-
   /*-------------------------------------------------*/
   /* ACB Use Count Checks			     */
   /* --------------------			     */
@@ -111,11 +109,7 @@ VOID NEAR StartSM(NPA npA)
 
   // TODO: review callbacks from timer
 
-  DevHlp_AcquireSpinLock(npA->FsmSpinLock);
-  fsmUseCount = npA->FsmUseCount++;
-  DevHlp_ReleaseSpinLock(npA->FsmSpinLock);
-
-  if (!fsmUseCount) {
+  if (!safeINC(&npA->FsmUseCount)) {
     USHORT intsEnabled;
 
     // FSM is not executed concurrently, incremented FsmUseCount prevents other
@@ -162,11 +156,7 @@ VOID NEAR StartSM(NPA npA)
       if (!intsEnabled) {
         DISABLE;
       }
-
-      DevHlp_AcquireSpinLock(npA->FsmSpinLock);
-      fsmUseCount = --npA->FsmUseCount;
-      DevHlp_ReleaseSpinLock(npA->FsmSpinLock);
-    } while (fsmUseCount);
+    } while (safeDEC(&npA->FsmUseCount));
   }
 
   // FSM has been executed all requested times. IF is intact
@@ -1463,11 +1453,7 @@ VOID NEAR ErrorState (NPA npA)
     npA->Flags &= ~ACBF_MULTIPLEMODE;
   }
 
-  // we can execute this code concurrently with other FSM starts so FsmUseCount
-  // have to be protected on the same spinlock as in StartSM
-  DevHlp_AcquireSpinLock(npA->FsmSpinLock);
   npA->FsmUseCount = 1;
-  DevHlp_FreeSpinLock(npA->FsmSpinLock);
 
   npA->IORBStatus |= IORB_RECOV_ERROR;
   npA->IORBError   = MapError (npA);

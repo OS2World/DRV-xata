@@ -348,8 +348,11 @@ typedef struct _PCI_DATA {
 #define PROMISE_ID_STRING_OFFSET  0x10
 
 typedef UCHAR	BYTE, NEAR *NPBYTE, FAR *PBYTE;
+typedef volatile BYTE NEAR *NPVBYTE;
 typedef USHORT	WORD, NEAR *NPWORD, FAR *PWORD;
+typedef volatile WORD NEAR *NPVWORD;
 typedef ULONG	DWORD, NEAR *NPDWORD, FAR *PDWORD;
+typedef volatile DWORD NEAR *NPVDWORD;
 
 #define STATUS_ERR_INVPAR	    0x0013
 

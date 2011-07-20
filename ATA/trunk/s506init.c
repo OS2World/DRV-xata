@@ -743,13 +743,6 @@ VOID NEAR ConfigureACB (NPA npA)
 
   DevHelp_AllocGDTSelector (&(npA->IOSGPtrs.Selector), 1);
 
-  // Create spinlocks. For simplicity we create one for each adapter
-  rc = DevHlp_CreateSpinLock(&npA->FsmSpinLock);
-  if (rc) {
-    npA->Status = ATS_ALLOC_SPINLOCK_FAILED;	// spinlock allocation fail
-    return;
-  }
-
   if (npA->IRQLevel) {
     HookIRQ (npA);
   }
