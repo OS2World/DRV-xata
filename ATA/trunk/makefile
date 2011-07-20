@@ -5,6 +5,7 @@
 # 2010-06-07 SHL Clone from older msc build
 # 2010-06-07 SHL Sync with LGPL sources
 # 2011-03-04 SHL Comments and bldlevel tweaks
+# 2011-06-07 SHL Correct icat debug build
 
 #/************************************************************************/
 #/*									 */
@@ -143,7 +144,7 @@ PACKFLAGS = /P:255 /A:0 /S /E+ /O-
 
 !ifdef icat
 # Generate source level codeview debug data
-CFLAGS = $(CFLAGS) /Zi /Od
+CFLAGS = $(CFLAGS) /Zi /Od /Oi
 LFLAGS = $(LFLAGS) /co
 !endif
 
