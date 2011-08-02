@@ -23,7 +23,7 @@
 
 # Build options that can be set in enviroment or on nmake command line
 #  VERSION - build version (i.e. 1.8) - see makefile for current default
-#  FIXLEVEL - fix level (i.e 10 for 1.8.10) - see makefile for current default
+#  FIXLEVEL - fix level (i.e 11 for 1.8.11) - see makefile for current default
 #  VENDOR - builder (i.e. slainc, defaults to unknown)
 #  BUILDMACH - build machine (i.e. slamain, defaults to unknown)
 #  BUILDTIME - build time (yyyy/mm/dd hh:mm:ss) - make fails if not set
@@ -45,7 +45,7 @@ _VERSION = 1.8
 !ifdef FIXLEVEL
 _FIXLEVEL = $(FIXLEVEL)
 !else
-_FIXLEVEL = 10
+_FIXLEVEL = 11
 !endif
 
 # Allow override
