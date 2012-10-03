@@ -41,6 +41,13 @@
 
 extern RP_GENIOCTL IOCtlRP;
 
+/**
+ * Set up for OEMHlp IDC call and call IDC to get PCI BIOS info
+ * Sets PCInumBuses if IDC call does not fail
+ * Ensures IDC call occurs only once
+ * @returns 0 if OK, 1 if failed
+ */
+
 UCHAR FAR SetupOEMHlp (void)
 {
   PCI_PARM_FIND_DEV PCIParmPkt;
@@ -49,7 +56,7 @@ UCHAR FAR SetupOEMHlp (void)
 
   if ((SELECTOROF(OemHlpIDC.ProtIDCEntry) != NULL) &&
       (OemHlpIDC.ProtIDC_DS != NULL))
-    return (0);     /* alread initialized */
+    return (0);     /* already initialized */
 
   /* Setup Global OEMHlp Variables */
   if (DevHelp_AttachDD (OEMHLP_DDName, (NPBYTE)&OemHlpIDC))
@@ -70,18 +77,20 @@ UCHAR FAR SetupOEMHlp (void)
   if (PCIDataPkt.bReturn != PCI_SUCCESSFUL) return (1);
 
   PCInumBuses = PCIDataPkt.Data_Bios_Info.LastBus + 1;
-#if TRACES
-  if (Debug & 8) TS("OEMBuses:%d,",PCInumBuses)
-#endif
+# if TRACES
+    if (Debug & 8) TS("OEMBuses:%d,",PCInumBuses)
+# endif
   return (0);
 }
 
-USHORT NEAR GetPCIBuses (void) {
+USHORT NEAR GetPCIBuses (void)
+{
   if (BIOSInt13 && SetupOEMHlp()) PCInumBuses = 0;
   return (PCInumBuses);
 }
 
-VOID FAR CheckLegacyPorts (VOID) {
+VOID FAR CheckLegacyPorts (VOID)
+{
   UCHAR Int;
 
   for (Int = PRIMARY_I; Int <= SECNDRY_I; Int++) {
@@ -101,7 +110,8 @@ VOID FAR CheckLegacyPorts (VOID) {
   }
 }
 
-VOID NEAR SetLatency (NPA npA, UCHAR Lat) {
+VOID NEAR SetLatency (NPA npA, UCHAR Lat)
+{
   UCHAR Latency;
 
   Latency = GetRegB (npA->PCIInfo.PCIAddr, PCIREG_LATENCY);
@@ -111,7 +121,13 @@ VOID NEAR SetLatency (NPA npA, UCHAR Lat) {
   SetRegB (npA->PCIInfo.PCIAddr, PCIREG_LATENCY, Latency);
 }
 
-BOOL NEAR CheckWellknown (NPPCI_INFO npPCIInfo) {
+/**
+ * Check for known PCI ids
+ * @return TRUE if found otherwise FALSE
+ */
+
+BOOL NEAR CheckWellknown (NPPCI_INFO npPCIInfo)
+{
   NPUSHORT p;
   USHORT   Id;
   UCHAR    i, j;
@@ -126,17 +142,17 @@ BOOL NEAR CheckWellknown (NPPCI_INFO npPCIInfo) {
     if (ChipID.Vendor == q->Ident.Vendor) {
       for (p = q->ChipListCompatible; (Id = *p) != 0; p += 2) {
 	if (Id == ChipID.Device) {
-	  ChipID.Device = p[1];		// Got compatible
+	  ChipID.Device = p[1];		// Found compatible - override id
 	  break;
 	}
-      }
+      } // for compatibles
 
-      npPCIInfo->CompatibleID = ChipID.Device;
+      npPCIInfo->CompatibleID = ChipID.Device;	// Remember
 
       for (p = q->ChipListFamily, j = 0; (Id = *p) != 0; p++, j++) {
 	if (Id == ChipID.Device) {
-	  npPCIInfo->Ident.Index = i;
-	  npPCIInfo->Level	 = j;	// Got family for compatible device id
+	  npPCIInfo->Ident.Index = i;	// Remember ChipListCompatible device index
+	  npPCIInfo->Level	 = j;	// Remember ChipListFamily family index
 	  return (TRUE);
 	}
       } // for family
@@ -145,7 +161,8 @@ BOOL NEAR CheckWellknown (NPPCI_INFO npPCIInfo) {
   return (FALSE);
 }
 
-VOID NEAR GetBAR (NPBAR npB, USHORT PCIAddr, UCHAR Index) {
+VOID NEAR GetBAR (NPBAR npB, USHORT PCIAddr, UCHAR Index)
+{
   ULONG Val, Mask;
   UCHAR BAR = PCIREG_BAR0 + 4 * Index;
 
@@ -178,58 +195,102 @@ VOID NEAR GetBAR (NPBAR npB, USHORT PCIAddr, UCHAR Index) {
   }
 }
 
-UCHAR NEAR ProbeChannel (NPA npA) {
-  UCHAR Dev;
+/**
+ * Probe controller for active channels
+ * Code tries to empirically exclude controllers that will not work correctly
+ * @calledby HandleFoundAdapter
+ * @return TRUE if found
+ */
 
-  Dev = InB (DRVHDREG);
+UCHAR NEAR ProbeChannel (NPA npA)
+{
+  UCHAR Dev = InB (DRVHDREG);
 
-#if TRACES
-  if (Debug & 8) TS(" P(%02X",Dev)
-#endif
+# if TRACES
+    if (Debug & 8) TS(" P(%02X",Dev)
+# endif
 
-  if ((Dev == FX_BUSY) || (Dev == (FX_BUSY | 0x50))) return (1);
-  if ((Dev & 0x6F) == 0x6F) {
-    OutBdms (DRVHDREG, 0xE0);
+// DEVHDREG - Device/Head register, typically baseaddr+6, orginally called Drive/Head
+
+#define DEVHD_RO7	0x80      // 7 - reserved, typically r/o = 1, but not always
+#define DEVHD_LBA	0x40      // 6 - LBA - r/w, 1 = LBA mode enabled
+#define DEVHD_RO5	0x20      // 5 - reserved, typically r/o = 1, but not always
+#define DEVHD_DEV1	0x10      // 4 - Device# = r/w, 0 = device#0, 1 = device#1
+#define DEVHD_RW3	0x08      // 3 - LBA27, HS3 - typically r/w
+#define DEVHD_RW2	0x04      // 2 - LBA26, HS2 - typicall r/w
+#define DEVHD_RW1	0x02      // 1 - LBA25, HS1 - typically r/w
+#define DEVHD_RW0	0x01      // 0 - LBA24, HS0 - typically r/w
+
+  // 2011-07-20 SHL fixme to know why - probably empirically determine by Daniela?
+  if (Dev == DEVHD_RO7 || Dev == (DEVHD_RO7|DEVHD_LBA|DEVHD_DEV1)) return (1); // OK - 0x80 or 0xD0
+
+  #define LBA_RO5_BITS3_0 (DEVHD_LBA|DEVHD_RO5|0xF) // 0x6F - fixme to understand why
+  #define LBA_DEV0 (DEVHD_RO7|DEVHD_LBA|DEVHD_RO5)	// 0xE0
+  if ((Dev & LBA_RO5_BITS3_0) == LBA_RO5_BITS3_0) {
+    // All r/w bits set, try to select LBA, device#0
+    OutBdms (DRVHDREG, LBA_DEV0);	// Try LBA, device#0, 0xE0
     Dev = InB (DRVHDREG);
-
-#if TRACES
-   if (Debug & 8) TS(":%02X",Dev)
-#endif
-
-    if ((Dev & 0x6F) == 0x6F) {
-      OutBdms (DRVHDREG, 0xF0);
-      Dev = InB (DRVHDREG);
-
-  #if TRACES
+#   if TRACES
       if (Debug & 8) TS(":%02X",Dev)
-  #endif
+#   endif
+
+    // 2011-07-20 SHL fixme to know why
+    #define RO7_LBA_RO5_DEV1 (DEVHD_RO7|DEVHD_LBA|DEVHD_RO5|DEVHD_DEV1)	// 0xF0
+    if ((Dev & LBA_RO5_BITS3_0 ) == LBA_RO5_BITS3_0) {
+      // All r/w bits still set, try to select LBA and device#1 (0xF0)
+      OutBdms (DRVHDREG, RO7_LBA_RO5_DEV1);	// Enable LBA, select device#1, 0xF0
+      Dev = InB (DRVHDREG);
+#     if TRACES
+	if (Debug & 8) TS(":%02X",Dev)
+#     endif
     }
 
-  }
+  } // if LBA_RO5_BITS3_0 (0x6F)
 
   if (Dev == 0) {
-    OutBdms (DRVHDREG, 0xF0);
+    // No bits set - probably in some sort of off state - try to turn on
+    OutBdms (DRVHDREG, RO7_LBA_RO5_DEV1);	// Try to selelct LBA, device#1 (0xF0)
     Dev = InB (DRVHDREG);
+#   if TRACES
+      if (Debug & 8) TS(":%02X",Dev)
+#   endif
 
-#if TRACES
-  if (Debug & 8) TS(":%02X",Dev)
-#endif
-  }
+    // 2011-11-11 SHL ticket #8, ICH1 with ATAPI CD attached returns 0x7f here
+    // 2011-12-08 SHL ticket #8, ICH2 with ATAPI CD attached returns 0x30 here
+    if (Dev == 0x7f || Dev == 0x30) {
+      OutBdms (DRVHDREG, DEVHD_RO7 | DEVHD_RO5);	// Try to set just R/O bits
+      Dev = InB (DRVHDREG);
+#     if TRACES
+	if (Debug & 8) TS(":%02X",Dev)
+#     endif
+    } // if 0x7f or 0x30
+  } // Dev == 0
 
-  if ((Dev & ~0x10) == FX_DF) return (0);
+  if ((Dev & ~DEVHD_DEV1) == DEVHD_RO5) return (0);	// fail - can't set RO7 (~0x20 - 0xDF)
 
-  Dev &= ~0xEF;
+  Dev &= ~DEVHD_DEV1;	// ~0xEF = 0xA0, typically 0xE0 here
 
-  OutBdms (DRVHDREG, (UCHAR)(Dev | 0x05));
-  OutBdms (DRVHDREG, (UCHAR)(Dev | 0xEA));
+  #define MASK1 (DEVHD_RW2 | DEVHD_RW0)	// 0x05
+  OutBdms (DRVHDREG, (UCHAR)(Dev | MASK1));	// Try to set to 0xE5
+  #define MASK2 (DEVHD_RO7|DEVHD_LBA|DEVHD_RO5|DEVHD_RW3|DEVHD_RW1)	// 0xEA
+  OutBdms (DRVHDREG, (UCHAR)(Dev | MASK2));	// Try to set to 0xEA
   Dev = InB (DRVHDREG);
-#if TRACES
-  if (Debug & 8) TS(":%02X)", Dev)
-#endif
-  return (((Dev & 0xEF) == 0xEA) ||  // expected result
-	  ((Dev & 0xAF) == 0xA0)     // some ATAPI units with fixed reserved bits
-	  );
+# if TRACES
+    if (Debug & 8) TS(":%02X)", Dev)
+# endif
+
+  #define OK1_MASK (DEVHD_RO7|DEVHD_LBA|DEVHD_RO5|0xf) // 0xEF
+  #define OK1_BITS (DEVHD_RO7|DEVHD_LBA|DEVHD_RO5|DEVHD_RW3|DEVHD_RW1) // 0xEA
+  #define OK2_MASK (DEVHD_RO7|DEVHD_RO5|0xf) // 0xAF
+  #define OK2_BITS (DEVHD_RO7|DEVHD_RO5) // 0xA0
+  // expected result - some ATAPI units have non-writable bits 3..0
+  return (Dev & OK1_MASK) == OK1_BITS || (Dev & OK2_MASK) == OK2_BITS;
 }
+
+/**
+ * Setup adapter assuming standard T13 controller.
+ * Setup bypassed if more than two channels since it can't be T13
+ */
 
 VOID NEAR SetupT13StandardController (NPA npA)
 {
@@ -237,7 +298,7 @@ VOID NEAR SetupT13StandardController (NPA npA)
   USHORT BMBase = npC->BAR[4].Addr;
   USHORT Base1	= npC->BAR[npA->IDEChannel ? 3 : 1].Addr;
 
-  if (npA->IDEChannel >= 2) return;
+  if (npA->IDEChannel >= 2) return;	// Can't be T13
 
   // standard T13 ATA host resource setup
 
@@ -245,7 +306,7 @@ VOID NEAR SetupT13StandardController (NPA npA)
 
   switch (npA->IDEChannel) {
     case 0:
-      if (!(npA->FlagsI.b.native & PCI_IDE_NATIVE_IF1)) {
+      if (!(npA->ProgIF.b.native & PCI_IDE_NATIVE_IF1)) {
 	npA->IRQLevel = PRIMARY_I;
 	DEVCTLREG     = PRIMARY_C;
 	npC->IrqPIC   = npC->IrqAPIC = 0;
@@ -257,7 +318,7 @@ VOID NEAR SetupT13StandardController (NPA npA)
       break;
 
     case 1:
-      if (!(npA->FlagsI.b.native & PCI_IDE_NATIVE_IF2)) {
+      if (!(npA->ProgIF.b.native & PCI_IDE_NATIVE_IF2)) {
 	npA->IRQLevel = SECNDRY_I;
 	DEVCTLREG     = SECNDRY_C;
 	npC->IrqPIC   = npC->IrqAPIC = 0;
@@ -269,14 +330,20 @@ VOID NEAR SetupT13StandardController (NPA npA)
   }
 }
 
-UCHAR NEAR CheckSATAPhy (NPU npU) {
+/**
+ * Check SATA Phy OK
+ * @return TRUE if OK
+ */
+
+UCHAR NEAR CheckSATAPhy (NPU npU)
+{
   if (SERROR) {
     USHORT Status  = InD (SSTATUS);
     USHORT Control = InD (SCONTROL);
     ULONG  Diag    = InD (SERROR);
-#if TRACES
-    if (Debug & 8) TraceStr (" S(%X:%X:%X)", Status, (USHORT)Diag, Control);
-#endif
+#   if TRACES
+      if (Debug & 8) TraceStr (" S(%X:%X:%X)", Status, (USHORT)Diag, Control);
+#   endif
     if ((Status & SSTAT_DET) & (SSTAT_DEV_OK | SSTAT_COM_OK)) {
       OutD (SERROR, Diag);
       npU->FoundLPMLevel = (Control & SCTRL_IPM) >> 8;
@@ -288,7 +355,7 @@ UCHAR NEAR CheckSATAPhy (NPU npU) {
 }
 
 /**
- * Set register addresses if address and offsets known
+ * Set SATA control register addresses if address and offsets known
  * @return TRUE if set
  */
 
@@ -308,8 +375,14 @@ UCHAR NEAR CollectSCRPorts (NPU npU)
   }
 }
 
-UCHAR NEAR nextController (NPPCI_INFO Enum) {
-  UCHAR rc = FALSE;
+/**
+ * Scan PCI bus for next well known or generic controller
+ * @return TRUE if found otherwise FALSE
+ */
+
+UCHAR NEAR nextController (NPPCI_INFO Enum)
+{
+  UCHAR ok = FALSE;
   static UCHAR BusInc = 1;
   static UCHAR maxFnc = MAX_PCI_FUNCTIONS;
   static struct {
@@ -322,65 +395,78 @@ UCHAR NEAR nextController (NPPCI_INFO Enum) {
 #define DevFnc ((UCHAR *)&PciAddr)[0]
 #define Fnc (DevFnc & 0x07)
 
+  // Try next
   while (++PciAddr != -1) {
     if (Fnc >= maxFnc)
-      PciAddr = (PciAddr + (MAX_PCI_FUNCTIONS - 1)) & ~(MAX_PCI_FUNCTIONS - 1);
-    if (Bus >= PCInumBuses) break;
+      PciAddr = (PciAddr + (MAX_PCI_FUNCTIONS - 1)) & ~(MAX_PCI_FUNCTIONS - 1); // Next device
+    if (Bus >= PCInumBuses) break;	// Done
 
     *(ULONG *)&ClassCode = GetRegD (PciAddr, PCIREG_CLASS_CODE);
     HeaderType = GetRegB (PciAddr, PCIREG_HEADER_TYPE);
 
     if (Fnc == 0) {
-#if TRACES
-      if (!DevFnc && (Debug & 8)) TS("\nBus %d:",Bus)
-#endif
+#     if TRACES
+	if (!DevFnc && (Debug & 8)) TS("\nBus %d:",Bus)
+#     endif
       maxFnc = MAX_PCI_FUNCTIONS;     // default to full function enumeration
 
-      if (!(HeaderType & 0x80)) {  // this is a single function device
-	maxFnc = 1;		   // enumerate first function only
+#     define HEADER_TYPE_MULTIFUNCTION 0x80
+      if (~HeaderType & HEADER_TYPE_MULTIFUNCTION) {
+	// single function device - enumerate first function only
+	maxFnc = 1;
 
-	/* some old PCI-ISA-bridges have broken PCI config spaces ! */
-	if (*(USHORT*)&(ClassCode.Class) == 0x0106) maxFnc++;
+	/* Some old PCI-ISA-bridges have broken PCI config spaces
+	   Assume they have 2 functions
+	 */
+#       define CLASS_PCI_ISA_BRIDGE 0x0106	// Intel order
+	if (*(USHORT*)&(ClassCode.Class) == CLASS_PCI_ISA_BRIDGE) maxFnc++;
       }
     }
 
-    HeaderType &= ~0x80;
+    HeaderType &= ~HEADER_TYPE_MULTIFUNCTION;	// Strip
 
-    if (HeaderType && (HeaderType <= 2)) {    // this is a bridge device
+    if (HeaderType && (HeaderType <= 2)) {
+      // this is a bridge device
       UCHAR SubBus = GetRegB (PciAddr, PCIREG_SUBORDINATE_BUS);
-#if TRACES
-      if (Debug & 8) TS("[->%d]",SubBus)
-#endif
-      if (!SubBus || (SubBus == 0xFF)) continue;
+#     if TRACES
+	if (Debug & 8) TS("[->%d]",SubBus)
+#     endif
+      if (SubBus == 0 || (SubBus == 0xFF)) continue;
       SubBus += BusInc;
       if (SubBus < BusInc) SubBus = 0xFF;
-      if (PCInumBuses < SubBus) PCInumBuses = SubBus;
+      if (PCInumBuses < SubBus) PCInumBuses = SubBus;	// Remember to scan
     } else {
       // count all HOST->PCI bridges
-      if (*(USHORT*)&(ClassCode.Class) == 0x0006) BusInc++;
+#     define CLASS_HOST_PCI_BRIDGE 0x0006	// Intel order
+      if (*(USHORT*)&(ClassCode.Class) == CLASS_HOST_PCI_BRIDGE) BusInc++;
     }
 
     if (ClassCode.Class != PCI_MASS_STORAGE) continue;
 
-    rc = CheckWellknown (Enum);
-    if (!rc &&
-	(ClassCode.Subclass == PCI_IDE_CONTROLLER) &&
-       !(ClassCode.ProgIF & (PCI_IDE_NATIVE_IF1 | PCI_IDE_NATIVE_IF2))) {
-      Enum->Ident.Index = PCID_Generic;
-      rc = TRUE;
+    ok = CheckWellknown (Enum);
+    if (!ok &&
+	ClassCode.Subclass == PCI_IDE_CONTROLLER &&
+	(ClassCode.ProgIF & (PCI_IDE_NATIVE_IF1 | PCI_IDE_NATIVE_IF2)) == 0) {
+      // 2011-07-27 SHL ticket #9 fixme to switch to compatibility if chipset supports it
+      // Programmed for compatibility mode
+      Enum->Ident.Index = PCID_Generic;	// Pass to caller
+      ok = TRUE;			// Accept
     }
-    if (!rc) continue;
+    if (!ok) continue;			// No match
 
-#if TRACES
-    if (Debug & 8) {
-      TraceStr ("& %X/%X=%04X/%04X,%d/%d:", Bus, DevFnc,
-		 Enum->Ident.Vendor, Enum->Ident.Device, Enum->Ident.Index, Enum->Level);
-    }
-#endif
-    break;
-  }
+    // 2011-07-27 SHL fixme to pass back ClassCode maybe?
 
-  return (rc);
+#   if TRACES
+      if (Debug & 8) {
+	TraceStr ("& %X/%X=%04X/%04X,%d/%d:",
+		  Bus, DevFnc, Enum->Ident.Vendor, Enum->Ident.Device,
+		  Enum->Ident.Index, Enum->Level);
+      }
+#   endif
+    break;				// Got match
+  } // while PciAddr
+
+  return ok;
 }
 
 #define CUT_OFF (4 * MAX_PCI_DEVICES)
@@ -408,13 +494,14 @@ USHORT FAR EnumPCIDevices (void)
 
   Enum.PCIAddr = -1;
   while (nextController (&Enum)) {
+
     *(PULONG)&ClassCode = GetRegD (Enum.PCIAddr, PCIREG_CLASS_CODE);
     Enum.Ident.Revision = ClassCode.Rev;
 
     Cmd = GetRegW (Enum.PCIAddr, PCIREG_COMMAND);
-    if (!(Cmd & (PCI_CMD_IO | PCI_CMD_MEM))) continue;
+    if (!(Cmd & (PCI_CMD_IO | PCI_CMD_MEM))) continue;	// No access mode enabled
 
-    Cmd &= ~PCI_COMMAND_INTX_DIS;
+    Cmd &= ~PCI_COMMAND_INTX_DIS;		// Ensure INTX signalling enabled
     SetRegW (Enum.PCIAddr, PCIREG_COMMAND, Cmd | PCI_CMD_BME_MEM);
 
     Int = GetRegB (Enum.PCIAddr, PCIREG_INT_LINE);
@@ -422,8 +509,10 @@ USHORT FAR EnumPCIDevices (void)
 
     if (ClassCode.Subclass != PCI_IDE_CONTROLLER)
       ClassCode.ProgIF = PCI_IDE_BUSMASTER | PCI_IDE_NATIVE_IF1 | PCI_IDE_NATIVE_IF2;
-    else
+    else {
+      // 2011-07-27 SHL ticket #9 fixme to switch to compatibility if chipset supports if
       ClassCode.ProgIF &= PCI_IDE_BUSMASTER | PCI_IDE_NATIVE_IF1 | PCI_IDE_NATIVE_IF2;
+    }
 
     if (ClassCode.ProgIF & (PCI_IDE_NATIVE_IF1 | PCI_IDE_NATIVE_IF2)) {
       switch (Int) {
@@ -462,7 +551,7 @@ USHORT FAR EnumPCIDevices (void)
       UCHAR  EnableReg, EnableBit, Enable;
       USHORT Base0 = -1;
 
-      if (!(npDev->Ident.Revision & NONSTANDARD_HOST) && (Channel < 2)) {
+      if (!(npDev->Ident.Revision & NONSTANDARD_HOST) && Channel < 2) {
 	if (ClassCode.ProgIF & (PCI_IDE_NATIVE_IF1 | PCI_IDE_NATIVE_IF2))
 	  Base0 = npC->BAR[Channel ? 2 : 0].Addr;
 	else
@@ -477,7 +566,7 @@ USHORT FAR EnumPCIDevices (void)
       npA->IDEChannel	   = Channel;
       npA->PCIInfo.PCIAddr = Enum.PCIAddr;
       npA->PCIInfo.npC	   = npA->npC = npC;
-      npA->FlagsI.All	   = ClassCode.ProgIF;
+      npA->ProgIF.ProgIF   = ClassCode.ProgIF;
       npA->HardwareType    = npDev->Ident.Index;
       npA->maxUnits	   = 0;
       npA->PCIDeviceMsg[0] = '\0';
@@ -508,7 +597,7 @@ USHORT FAR EnumPCIDevices (void)
 
       // test for required resources
 
-      if (npA->FlagsI.b.native) {
+      if (npA->ProgIF.b.native) {
 	if (!(npDev->Ident.Revision & MODE_NATIVE_OK) || !npA->IRQLevel) goto Recycle;
 	if (!(npDev->Ident.Revision & NONSTANDARD_HOST) && !npC->BAR[4].Addr) goto Recycle;
       }
@@ -518,7 +607,7 @@ USHORT FAR EnumPCIDevices (void)
 	EnableBit ^= 0x0F;
 	Enable = ~Enable;
       }
-      if ((Channel < 2) && !(Enable & (1 << EnableBit)) && !(npA->FlagsT & ATBF_BAY)) goto Recycle;
+      if (Channel < 2 && !(Enable & (1 << EnableBit)) && !(npA->FlagsT & ATBF_BAY)) goto Recycle;
 
       CollectPorts (npA);
       npU[0].SStatus = npU[1].SStatus = 0;
@@ -527,29 +616,34 @@ USHORT FAR EnumPCIDevices (void)
       savedUnitFlags[0] = npU[0].FlagsT;
       savedUnitFlags[1] = npU[1].FlagsT;
 
-      if (npDev->Ident.ChipAccept (npA) &&
-	  !HandleFoundAdapter (npA, npDev)) {
+      if (npDev->Ident.ChipAccept (npA) && !HandleFoundAdapter (npA, npDev)) {
 	count++;
 	if (*(NPUSHORT)(&npC->IrqPIC) && (npC->IrqPIC != Int) && !(npA->FlagsT & ATBF_DISABLED))
 	  APICRewire |= 1 << (npA - AdapterTable);
 
-	#if TRACES
+#       if TRACES
 	  if (Debug & 8) TS("%d ",count)
-	#endif
+#       endif
       } else {
 	npA->FlagsT   = savedAdapterFlags; // restore cmdline options
 	npU[0].FlagsT = savedUnitFlags[0];
 	npU[1].FlagsT = savedUnitFlags[1];
-      Recycle:
+Recycle:
 	DATAREG = 0;  // return adapter slot for reuse
       }
-    }
-  }
+    } // for channel
+  } // while nextController
 
-  if (npC->populatedChannels) npC++;
-  cChips = npC - ChipTable;
+  if (npC->populatedChannels) npC++;	// Remember chip
+  cChips = npC - ChipTable;		// Recalc count
   return (count);
 }
+
+/**
+ * Handle found SATA adapter
+ * @calledby EnumPCIDevices
+ * @return FALSE if channels found else TRUE (sorta backwards)
+ */
 
 UCHAR NEAR HandleFoundAdapter (NPA npA, NPPCI_DEVICE npDev)
 {
@@ -570,13 +664,13 @@ UCHAR NEAR HandleFoundAdapter (NPA npA, NPPCI_DEVICE npDev)
       isPopulated |= isAttached;
       if (!isAttached) {
 	npU->FlagsT |= UTBF_DISABLED;
-
 	// switch off unused ports
 	OutD (SCONTROL, (InD (SCONTROL) & ~SCTRL_DET) | SCTRL_DISABLE);
 	InD (SCONTROL);
-      }
+      } // if !attached
     }
-  }
+  } // for
+
   if (!hasPhy)
     isPopulated = ProbeChannel (npA);
 
@@ -586,10 +680,8 @@ UCHAR NEAR HandleFoundAdapter (NPA npA, NPPCI_DEVICE npDev)
       npA->Cap &= ~(CHIPCAP_ULTRAATA | CHIPCAP_ATADMA | CHIPCAP_ATAPIDMA);
     } else {
       // disable simplex bit if possible
-
       if (npDev->Ident.Revision & SIMPLEX_DIS) {
 	UCHAR Value;
-
 	if ((Value = InB (BMSTATUSREG)) & BMISTA_SIMPLEX)
 	  OutB (BMSTATUSREG, (UCHAR)(Value & ~BMISTA_SIMPLEX));
       }
@@ -602,15 +694,15 @@ UCHAR NEAR HandleFoundAdapter (NPA npA, NPPCI_DEVICE npDev)
 			    PCIDevice[MEMBER(npA).Index].npDeviceMsg :
 			    npA->PCIDeviceMsg;
     // enable interrupt sharing only if at least one of channels is in PCI native mode
-    if (npA->FlagsI.b.native)
+    if (npA->ProgIF.b.native)
       npA->FlagsT |= ATBF_INTSHARED;
 
     npA->SGAlign = MEMBER(npA).SGAlign - 1;
 
-    npC->populatedChannels++;
-    return (FALSE);
+    npC->populatedChannels++;		// Count channels used
+    return (FALSE);			// OK
 
   } else {
-    return (TRUE);
+    return (TRUE);			// No channels
   }
 }

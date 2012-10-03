@@ -33,10 +33,10 @@
  #include "s506ext.h"
  #include "s506pro.h"
 
-#define YEAR  2011			// Update to match release date
-#define MONTH 4
-#define DAY   22
-#define PCMCIAVERSION 0x1810		// Update to match driver version
+#define YEAR  2012			// Update to match release date
+#define MONTH 10
+#define DAY   02
+#define PCMCIAVERSION 0x1812		// Update to match driver version
 
 /*-------------------------------------------------------------------*/
 /*								     */
@@ -61,19 +61,19 @@ PFN	       Device_Help	      = 0L;
 PFN	       RM_Help0 	      = 0l;
 PFN	       RM_Help3 	      = 0l;
 ULONG	       RMFlags		      = 0;
-ULONG	       ppDataSeg	      = 0L;
+ULONG	       ppDataSeg	      = 0L;		// physical address of Data segment
 HDRIVER        hDriver		      = 0L;
 USHORT	       ADDHandle	      = 0;
 UCHAR	       cChips		      = 0;
-UCHAR	       cAdapters	      = 0;
-UCHAR	       cUnits		      = 0;
-UCHAR	       cSockets 	      = 0;
-UCHAR	       DriveId		      = 0;
+UCHAR	       cAdapters	      = 0;		// 0..MAX_ADAPTERS
+UCHAR	       cUnits		      = 0;		// For all adapters
+UCHAR	       cSockets 	      = 0;		// 0..n
+UCHAR	       DriveId		      = 0;		// Max id found/assigned (0x80..0xff)
 UCHAR	       InitActive	      = 0;		// 0..2
 UCHAR	       InitIOComplete	      = 0;
 UCHAR	       InitComplete	      = 0;		// Set by CMDInitComplete
 UCHAR	       BIOSActive	      = 1;		// Cleared by CompleteInit
-UCHAR	       BIOSInt13	      = 1;		// !BIOS switch
+UCHAR	       BIOSInt13	      = 1;		// 0 if /!BIOS
 UCHAR	       EzDrivePresent	      = 0;		// May be unused
 PGINFOSEG      pGlobal		      = 0;
 volatile SHORT _far *msTimer	      = 0;
@@ -1442,24 +1442,17 @@ DEVICESTRUCT DevStruct =
 };
 
 /*----------------------------------------------------------------*/
-/*								  */
 /*	Mini-VDM Data						  */
-/*								  */
-/*								  */
 /*----------------------------------------------------------------*/
-BOOL	   VDMInt13Created = FALSE;
+
+BOOL	   VDMInt13Created = FALSE;	// TRUE = created and ready to use, -1 disabled
 BOOL	   VDMInt13Active  = FALSE;
 VDMINT13CB VDMInt13	   = { 0 };
 ULONG	   VDMDskBlkID	   = (ULONG)&ACBPtrs[0];
 ULONG	   VDMInt13BlkID   = (ULONG)&VDMInt13;
 
-
-
 /*-------------------------------------------------------------------*/
-/*								     */
 /*	Verbose Data						     */
-/*								     */
-/*								     */
 /*-------------------------------------------------------------------*/
 
 UCHAR VPCIInfo[] = "  %s %cATA host (%04x:%04x rev:%02x) on PCI %d:%d.%d#%d";
@@ -1477,7 +1470,6 @@ UCHAR VGeomInfo1[] = "  C %6u %6u               %6u %6u   Avail %10lu";
 UCHAR VGeomInfo2[] = "  H %6u %6u     %6u    %6u %6u   OS2   %10lu";
 UCHAR VGeomInfo3[] = "  S %6u %6u     %6u    %6u %6u   %% Used    %3u.%02u";
 UCHAR VBlankLine[] = " ";
-
 
 UCHAR VPauseVerbose0[] = "SYS    : Pausing DANIS506.ADD output...";
 UCHAR VPauseVerbose1[] = "SYS    : End of DANIS506.ADD output.";

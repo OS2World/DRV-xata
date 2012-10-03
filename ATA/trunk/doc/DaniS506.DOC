@@ -1,6 +1,7 @@
 
-		      Daniela's S506 ADD - Release 1.8.10
+		      Daniela's S506 ADD - Release 1.8.12
 		      -----------------------------------
+		                    BETA
 
 NAME
 
@@ -130,7 +131,11 @@ DESCRIPTION
      - supports AHCI controllers in SATA legacy mode, when available
      - coexists with drivers that acquire controllers known to Danis506
        including the soon to be released AHCI controller driver from Mensys.    
-***  - fixes some SMP compatibility issues (thanks to Slavik Gnatenko)
+     - fixes some SMP compatibility issues (thanks to Slavik Gnatenko)
+     - rework SMP compatibility updates to avoid spinlocks (thanks to Slavik Gnatenko)
+***  - resolve ticket #8 (8086:2411 ICH1 controller #1 w/ATAPI device detect)
+***  - resolve ticket #8 (8086:244B ICH2 controller #1 w/ATAPI device detect)
+***  - rework Paulsbro SCH setup (8086:811A)
 
 ###  Caution: users of DaniBoot v1.0 need to upgrade to version 1.0.2!
 ###  Caution: users of DaniATAPI v0.3.x need to upgrade to version 0.4.0!
