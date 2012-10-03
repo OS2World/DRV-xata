@@ -452,6 +452,13 @@ typedef struct _A
   CHAR		IRQDelay;					       //  6
   union {
     struct {
+      // 2011-07-27 SHL	fixme to match pci spec better
+      // the reality is
+      // 3 - secondary channel mode programmable, 1 = yes
+      // 2 - secondary channel operating mode, 1 = native, 0 = compatbile
+      // 1 - primary channel mode programmable 
+      // 0 - primary channel operating mode, 1 = native, 0 = compatbile
+      // ----
       // actually it is two PCI native mode bits and one bit for programming
       // possibility but we filter out the latter one (see ClassCode.ProgIF
       // init in EnumPCIDevices)
@@ -459,8 +466,8 @@ typedef struct _A
       unsigned unused:4;
       unsigned busmaster:1;
     } b;
-    UCHAR All;
-  } FlagsI;
+    UCHAR ProgIF;
+  } ProgIF;  // was FlagsI
   union {
     USHORT Offsets;
     struct {
@@ -470,7 +477,7 @@ typedef struct _A
     } Ofs;
   } SCR;
 
-  NPSZ		npPCIDeviceMsg; 				       //  3
+  NPSZ		npPCIDeviceMsg;
   NPC		npC;
   UCHAR 	InsertState;
   UCHAR 	maxUnits;
@@ -497,6 +504,8 @@ typedef struct _A
 #define ACBF_BMINT_SEEN 	0x1000
 #define ACBF_MULTIPLEMODE	0x0200
 #define ACBF_DISABLERETRY	0x0040
+
+/* ACB->FlagsT values */
 
 #define ATBF_DISABLED		0x8000
 #define ATBF_ON 		0x4000

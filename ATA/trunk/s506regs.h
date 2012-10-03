@@ -251,20 +251,20 @@
 
 // SATA Status and Control bits
 
-#define SSTAT_DET	    0x000F
+#define SSTAT_DET	    0x000F	// Device detection and init bits
 #define SSTAT_DEV_OK	    0x1
 #define SSTAT_COM_OK	    0x3
 #define SSTAT_OFFLINE	    0x4
-#define SSTAT_SPD	    0x00F0
+#define SSTAT_SPD	    0x00F0	// Speed control bits
 #define SSTAT_SPD_1	    0x1
 #define SSTAT_SPD_2	    0x2
 #define SDIAG_PHYRDY_CHANGE 0x0001
 #define SCTRL_DET	    SSTAT_DET
-#define SCTRL_RESET	    0x1
-#define SCTRL_DISABLE	    0x4
+#define SCTRL_RESET	    0x1		// Reset interface and reinitialize
+#define SCTRL_DISABLE	    0x4		// Disable SATA interface and put Phy offline
 #define SCTRL_SPD	    SSTAT_SPD
 #define SCTRL_SPD_LIMIT_1   SSTAT_SPD_1
-#define SCTRL_IPM	    0x0F00
+#define SCTRL_IPM	    0x0F00	// Interface power management bits
 #define SCTRL_IPM_ALL	    0x0
 #define SCTRL_IPM_NO_PARTL  0x1
 #define SCTRL_IPM_NO_SLMBR  0x2

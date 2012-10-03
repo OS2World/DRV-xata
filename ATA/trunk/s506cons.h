@@ -22,7 +22,7 @@
 #define MAX_IRQS	8
 #define MAX_ADAPTERS   16
 #define MAX_CHANNELS	4
-#define MAX_UNITS	2
+#define MAX_UNITS	2		// per adapter
 #define MAX_SOCKETS	8
 
 /*-------------------*/
@@ -172,8 +172,8 @@ unsigned short _fastcall isInterruptsEnabled(void);
 
 #define REQ(x,y) (((x) << 8) | (UCHAR)(y))
 
-#define PCI_CMD_IO		0x0001	    /* IO  */
-#define PCI_CMD_MEM		0x0002	    /* MEM */
+#define PCI_CMD_IO		0x0001	    /* IO access enable  */
+#define PCI_CMD_MEM		0x0002	    /* MEM access enable */
 #define PCI_CMD_BM		0x0004	    /* Bus Master Enable */
 #define PCI_CMD_BME		0x0005	    /* Bus Master Enable & IO */
 #define PCI_CMD_BME_MEM		0x0007	    /* Bus Master Enable & IO & Mem */

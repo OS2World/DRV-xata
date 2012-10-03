@@ -41,7 +41,8 @@ VOID   NEAR TErr (NPU npU, UCHAR x);
 #define TTIME TraceTime();
 #define TWRITE(x) TWrite(x);
 #define TEND
-#else
+
+#else // !TRACES
 
 #undef TINIT
 #undef T

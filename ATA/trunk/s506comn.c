@@ -79,7 +79,7 @@ USHORT SetupCommonPre (NPA npA)
     if (!(Cap & CHIPCAP_ATA133) && (npU->UltraDMAMode > ULTRADMAMODE_5))
       npU->UltraDMAMode = ULTRADMAMODE_5;
 
-TSTR("UF:%lX,O:%X", npU->Flags, npU->FlagsT);
+    TSTR("UF:%lX,O:%X", npU->Flags, npU->FlagsT);
 
     if (npU->FlagsT & UTBF_NOT_BM) npU->Flags &= ~UCBF_BM_DMA;
 
@@ -121,7 +121,7 @@ TSTR("UF:%lX,O:%X", npU->Flags, npU->FlagsT);
     if (MinIFTiming > npU->InterfaceTiming)
       MinIFTiming = npU->InterfaceTiming;
 
-TS("F:%lX,", npU->Flags)
+    TS("F:%lX,", npU->Flags)
   }
 
   npA->FlagsT &= ~ATBF_BM_DMA;

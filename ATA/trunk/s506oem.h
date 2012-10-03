@@ -68,17 +68,25 @@
 /* PCI Configuration Register values */
 /*-----------------------------------*/
 
+// Class codes
 #define PCI_MASS_STORAGE	0x01	/* PCI Base Class code */
 #define PCI_IDE_CONTROLLER	0x01	/* PCI Sub Class code  */
 #define PCI_RAID_CONTROLLER	0x04	/* PCI Sub Class code  */
 #define PCI_SATA_CONTROLLER	0x06	/* PCI Sub Class code  */
-#define PCI_IDE_NATIVE_IF1	0x01
-#define PCI_IDE_NATIVE_IF2	0x04
+#define PCI_CLASS_HOST_BRIDGE	0x0600	// Class/subclass
+#define PCI_CLASS_ISA_BRIDGE	0x0601	// Class/subclass
+
+// Programming Interface byte
+#define PCI_IDE_NATIVE_IF1	0x01	// Primary channel mode, 1 = native, 0 = compatibility
+#define PCI_IDE_NATIVE_IF2	0x04	// Secondary channel mode, 1 = native, 0 = compatibility
 #define PCI_IDE_BUSMASTER	0x80
-#define PCI_STATUS_MASTER_ABORT 0x2000
-#define PCI_COMMAND_INTX_DIS	0x0400
-#define PCI_CLASS_HOST_BRIDGE	0x0600
-#define PCI_CLASS_ISA_BRIDGE	0x0601
+
+// Status register
+#define PCI_STATUS_MASTER_ABORT 0x2000	// Received master abort, reset by ?
+
+// Command register
+#define PCI_COMMAND_INTX_DIS	0x0400	// Disable INTX signalling (PCI 2.3)
+
 #define PCI_BARTYPE_IO		0x01
 
 typedef enum {

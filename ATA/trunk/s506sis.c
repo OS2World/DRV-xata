@@ -232,7 +232,7 @@ BOOL NEAR AcceptSIS (NPA npA)
 	}
 
 #if TRACES
-      if (Debug & 2) TraceStr ("Set:%04X Get:%04X -> level:%d", Set, Get, PciInfo->Level);
+	if (Debug & 2) TraceStr ("Set:%04X Get:%04X -> level:%d", Set, Get, PciInfo->Level);
 #endif
       } else {
 	PciInfo->Level = SIS;

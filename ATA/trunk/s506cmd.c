@@ -96,7 +96,7 @@ BOOL NEAR AcceptCMD (NPA npA)
     npA->Cap |= CHIPCAP_ATA66 | CHIPCAP_ATA100;
   }
 
-  if (npA->FlagsI.b.native)
+  if (npA->ProgIF.b.native)
     if (PciInfo->Level < CMDB)
       return (FALSE);
     else

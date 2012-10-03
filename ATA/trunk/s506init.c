@@ -14,14 +14,16 @@
  *
  *****************************************************************************/
 
+#include <stddef.h>
+
 #define INCL_NOPMAPI
 #define INCL_DOSINFOSEG
 #define INCL_NO_SCB
 #define INCL_INITRP_ONLY
 #define INCL_DOSERRORS
 #include "os2.h"
+
 #include "dskinit.h"
-#include <stddef.h>
 
 #include "devhdr.h"
 #include "iorb.h"
@@ -67,7 +69,7 @@ UCHAR NEAR TestStatus50us (NPA npA)
     Data = InBdms (STATUSREG);
     if (Data & (FX_BUSY | FX_DRQ | FX_ERROR)) break;
   }
-TS(",%X",Data);
+  TS(",%X",Data);
   return (Data);
 }
 
@@ -81,7 +83,7 @@ UCHAR NEAR WaitNotBusy (NPA npA)
     if (!(Data & FX_BUSY) || ((Data & 0x7F) == 0x7F)) break;
     IODly (-1);
   }
-TS(",%X",Data);
+  TS(",%X",Data);
   return ((Data & FX_BUSY) || (Data == 0x7F));
 }
 
@@ -95,7 +97,7 @@ UCHAR NEAR WaitNotBusyDRQ (NPA npA)
     if (!(Data & (FX_BUSY | FX_DRQ))) break;
     IODly (-1);
   }
-TS(",%X",Data);
+  TS(",%X",Data);
   return ((Data & (FX_BUSY | FX_DRQ)) || (Data == 0x7F));
 }
 
@@ -178,7 +180,7 @@ USHORT NEAR TestChannel (NPA npA, UCHAR UnitId)
     Data1 = InBdms (CYLLREG);
     if (((Data1 ==  ATAPISIGL) && (InBdms (CYLHREG) ==	ATAPISIGH)) ||
 	((Data1 == SATAPISIGL) && (InBdms (CYLHREG) == SATAPISIGH))) {
-T('a')
+      T('a')
       haveSig = TRUE;
       OutBdms (CYLLREG, 0);
     }
@@ -215,6 +217,7 @@ T('a')
   } else {
     goto Fault;
   }
+
 MakeDecision:
 
   OutB (FEATREG, 0);
@@ -222,9 +225,9 @@ MakeDecision:
   npA->Controller[UnitId] = Controller;
 #if TRACES
   if (!Controller) {
-T('-')
+    T('-')
   }
-TS("'%d", Controller)
+  TS("'%d", Controller)
 #endif
 
   return (!Controller);
@@ -234,7 +237,7 @@ USHORT NEAR CheckController (NPA npA)
 {
   USHORT rc;
 
-T('R') T('(')
+  T('R') T('(')
 
   npA->Controller[0] = CtNone;
   npA->Controller[1] = CtNone;
@@ -253,11 +256,15 @@ T('R') T('(')
 
   OutBdms (DRVHDREG, (UCHAR)(((npA->Controller[0] == CtNone) && (npA->Controller[1] != CtNone)) ? 0xB0 : 0xA0));
 
-T(')')
+  T(')')
 
   return (rc);
 }
 
+/**
+ * Execute IORB
+ * @return 0 if OK otherwise IORB error code
+ */
 
 USHORT FAR Execute (UCHAR ADDHandle, NPIORB npIORB)
 {
@@ -366,11 +373,10 @@ UCHAR counted = 0;
 #define NOTCOUNTED(x) (!(counted & (1 << (x))))
 #define SETCOUNTED(x) (counted |= 1 << (x))
 
-/*------------------------------------*/
-/*				      */
-/* DriveInit()			      */
-/*				      */
-/*------------------------------------*/
+/*
+ * Process CMDInitBase strategy request
+ * @param pRPH points to Init Request Packet
+ */
 
 VOID NEAR DriveInit (PRPINITIN pRPH)
 {
@@ -405,12 +411,12 @@ VOID NEAR DriveInit (PRPINITIN pRPH)
   DevHelp_AllocateCtxHook ((NPFN)&CSHookHandler, (PULONG)&CSCtxHook);
   RMCreateDriver (&DriverStruct, &hDriver);
 
-//DevHelp_Beep (1000, 50);
-//DevHelp_ProcBlock ((ULONG)(PVOID)&CompleteInit, 1000UL, 0);
+  // DevHelp_Beep (1000, 50);
+  // DevHelp_ProcBlock ((ULONG)(PVOID)&CompleteInit, 1000UL, 0);
 
-TINIT
+  TINIT
 #if TRACES
-TotalTime();
+  TotalTime();
 #endif
 
   InitActive = 2;
@@ -460,9 +466,9 @@ TotalTime();
   }
 
   ADD_StartTimerMS (&ElapsedTimerHandle, ELAPSED_TIMER_INTERVAL, (PFN)ElapsedTimer, 0);
-TINIT
+  TINIT
   ScanForUnits();
-TEND
+  TEND
 
   for (npC = ChipTable; npC < (ChipTable + MAX_ADAPTERS); npC++) {
     if ((USHORT)npC->npA[0] | (USHORT)npC->npA[1])
@@ -470,19 +476,19 @@ TEND
   }
 
 #if PCITRACER
-outpw (TRPORT+2, 0xDEDC);
+  outpw (TRPORT+2, 0xDEDC);
 #endif
 
   InitIOComplete = 1;
 
-TINIT
+  TINIT
 
 #if PCITRACER
-outpw (TRPORT+2, 0xDEDD);
+  outpw (TRPORT+2, 0xDEDD);
 #endif
 
   SetupPCI();
-TTIME TWRITE(1)
+  TTIME TWRITE(1)
 
   PrintInfo (AdapterTable);
 
@@ -492,21 +498,21 @@ TTIME TWRITE(1)
   AssignSGList();
 
 #if PCITRACER
-outpw (TRPORT+2, 0xDEDB);
+  outpw (TRPORT+2, 0xDEDB);
 #endif
 
   InitActive = 1;
 
-TINIT
+  TINIT
   VerifyInitPost();
-TWRITE(1)
+  TWRITE(1)
 
 S506_Install:
 
-npTrace=TraceBuffer;DiffTime();TraceTTime();
+  npTrace=TraceBuffer;DiffTime();TraceTTime();
 
-TWRITE(1)
-TEND
+  TWRITE(1)
+  TEND
 
 #define pRPO ((PRPINITOUT)pRPH)
 
@@ -538,9 +544,9 @@ TEND
 S506_Deinstall:
 
   if (rc) {
-#if PCITRACER
-outpw (TRPORT+2, 0xDEEE);
-#endif
+#   if PCITRACER
+    outpw (TRPORT+2, 0xDEEE);
+#   endif
     ADD_DeInstallTimer();
 
     pRPO->CodeEnd = pRPO->DataEnd = (USHORT)MemTop = 0;
@@ -604,7 +610,7 @@ void AssignPCIChips (void) {
   ACPISetup();
   Count = EnumPCIDevices();
 
-TWRITE(8)
+  TWRITE(8)
 }
 
 void NoMaster (NPA npA) {
@@ -704,9 +710,9 @@ void VerifyInitPost (void) {
     for (npU = npA->UnitCB; npU < (npA->UnitCB + MAX_UNITS); npU++) {
       if (!(npU->Flags & UCBF_NOTPRESENT)) {
 	NPIDENTIFYDATA npID = (NPIDENTIFYDATA) ScratchBuf;
-T('a')
+	T('a')
 	IdentifyDevice (npU, npID);
-TTIME
+	TTIME
       }
 
       memset (&(npU->DeviceCounters), 0, sizeof (DeviceCountersData));
@@ -797,7 +803,7 @@ VOID NEAR ConfigurePCCard (NPA npA)
   if (Socket == 0) Socket = FirstSocket;
   while (Socket < (FirstSocket + NumSockets)) {
     if (0 == CSCardPresent (Socket)) {
-TTIME
+      TTIME
       SocketPtrs[Socket] = npA;
       npA->npPCIDeviceMsg = npA->PCIDeviceMsg;
       memcpy (npA->PCIDeviceMsg, GetTuple.GTD_TupleData, 20);
@@ -810,6 +816,10 @@ TTIME
     Socket++;
   }
 }
+
+/**
+ * Assign port addresses using DATAREG as base address
+ */
 
 VOID FAR CollectPorts (NPA npA)
 {
@@ -926,7 +936,7 @@ USHORT NEAR ConfigureController (NPA npA)
   OutBdms (DEVCTLREG, DEVCTL);
   RehookIRQ (npA);
 
-TSTR("F:%X/%X", npA->Flags, npA->FlagsT);
+  TSTR("F:%X/%X", npA->Flags, npA->FlagsT);
 
   for (npU = npA->UnitCB; npU < (npA->UnitCB + npA->maxUnits); npU++) {
     npID = ((NPIDENTIFYDATA)ScratchBuf) + npU->UnitIndex;
@@ -944,6 +954,7 @@ TSTR("F:%X/%X", npA->Flags, npA->FlagsT);
   if (METHOD(npA).EnableInterrupts) METHOD(npA).EnableInterrupts (npA);
 
 ConfigureControllerExit:
+
   if (npA->Status)
     UnhookIRQ (npA);
   else
@@ -958,16 +969,16 @@ ConfigureControllerExit:
 }
 
 
-/*------------------------------------*/
-/*				      */
-/* ConfigureUnit()		      */
-/*				      */
-/*------------------------------------*/
+/**
+ * ConfigureUnit()
+ * @return 0 if OK or error code
+ */
+
 USHORT ConfigureUnit (NPU npU)
 {
   TTIME
   T('U') T('(')
-  //  if ((npU->Flags & (UCBF_FORCE | UCBF_ATAPIDEVICE)) == UCBF_FORCE) { // ATA only
+  //  if ((npU->Flags & (UCBF_FORCE | UCBF_ATAPIDEVICE)) == UCBF_FORCE) { } // ATA only
   if (npU->Flags & UCBF_FORCE) {
     npU->Flags |= UCBF_REMOVABLE;
     if (npU->Flags & UCBF_PCMCIA) npU->Flags |= UCBF_CFA;
@@ -992,17 +1003,17 @@ USHORT ConfigureUnit (NPU npU)
   if ((npU->Flags & (UCBF_ATAPIDEVICE | UCBF_FORCE)) != UCBF_ATAPIDEVICE)
     DetermineUnitGeometry (npU);
 
-TTIME
-TSTR("F:%X/%lXS:%d)", npU->FlagsT, npU->Flags, npU->Status);
+  TTIME
+  TSTR("F:%X/%lXS:%d)", npU->FlagsT, npU->Flags, npU->Status);
   return (npU->Status);
 }
 
 
-/*------------------------------------*/
-/*				      */
-/* ReadDrive()			      */
-/*				      */
-/*------------------------------------*/
+/**
+ * ReadDrive
+ * @return 0 if OK or non-zero error code
+ */
+
 USHORT ReadDrive (NPU npU, ULONG RBA, USHORT Retry, NPBYTE pBuf)
 {
   NPIORB_EXECUTEIO npTI = &InitIORB;
@@ -1781,6 +1792,7 @@ VOID FAR PrintInfo (NPA npA)
 }
 
 #if TRACES
+
 VOID NEAR TraceCh (CHAR c)
 {
   if (InitActive) *(npTrace++) = c;
@@ -1854,7 +1866,7 @@ VOID NEAR TWrite (USHORT DbgLevel)
   npTrace = TraceBuffer;
 }
 
-#else
+#else // !TRACES
 USHORT NEAR DiffTime (VOID) {}
 VOID TraceTTime (VOID) {}
 #endif
@@ -1906,6 +1918,7 @@ VOID NEAR ProcessVerboseTimings (NPU npU, NPA npA, NPCH s2, NPCH s3)
 {
   *s2 = 0;					/* start with empty strings */
 
+  // If have SATA status register
   if (SSTATUS) {
     UCHAR Sspeed = ((UCHAR)InD (SSTATUS) & SSTAT_SPD) >> 4;
     switch (Sspeed) {
@@ -1915,6 +1928,7 @@ VOID NEAR ProcessVerboseTimings (NPU npU, NPA npA, NPCH s2, NPCH s3)
     }
     if (npU->Flags & UCBF_BM_DMA)
       sprntf (s2, VString, MsgTypeMDMAOn);
+  // No SATA status register
   } else if (npU->Flags & UCBF_BM_DMA) {
     sprntf (s2, VString, MsgTypeMDMAOn);
     if (npU->CurDMAMode > 2)		     /* show UltraDMA and PIO modes */
@@ -2160,34 +2174,36 @@ VOID FAR FindHotPCCard (void)
 }
 
 
-/*-------------------------------*/
-/*				 */
-/* LocateATEntry()		 */
-/*				 */
-/*-------------------------------*/
+/**
+ * Locate entry in AdapterTable
+ * @return pointer to matching entry or next available entry or NULL
+ */
+
 NPA FAR LocateATEntry (USHORT BasePort, USHORT PCIAddr, UCHAR Channel)
 {
   NPA npA, npAfree = NULL;
 
-//if (Debug & 8) TraceStr ("[%04X,%X#%d-", BasePort, PCIAddr, Channel);
+  // if (Debug & 8) TraceStr ("[%04X,%X#%d-", BasePort, PCIAddr, Channel);
 
   for (npA = AdapterTable; npA < (AdapterTable + MAX_ADAPTERS); npA++) {
-    if (npA->FlagsT & (ATBF_ON | ATBF_PCMCIA | ATBF_POPULATED)) continue;
-//if (Debug & 8) TraceStr ("<%04X>(%04X,%X#%d)", npA,(USHORT)DATAREG, npA->LocatePCI, npA->LocateChannel);
-    if (!DATAREG && !npA->LocatePCI && !npAfree) npAfree = npA;
+    if (npA->FlagsT & (ATBF_ON | ATBF_PCMCIA | ATBF_POPULATED))
+      continue;				// I use
+    // if (Debug & 8) TraceStr ("<%04X>(%04X,%X#%d)", npA,(USHORT)DATAREG, npA->LocatePCI, npA->LocateChannel);
+    if (!DATAREG && !npA->LocatePCI && !npAfree)
+      npAfree = npA;			// Available
     // if the ports match or slot is empty
     if ((DATAREG == BasePort) ||
-	(PCIAddr && ((PCIAddr == npA->LocatePCI) && (Channel == npA->LocateChannel)))) {
-      npAfree = npA;
+	(PCIAddr && (PCIAddr == npA->LocatePCI && Channel == npA->LocateChannel))) {
+      npAfree = npA;			// Exact match
       break;
     }
-  }
+  } // for adapter
 
   if (npAfree) {
     npAfree->IOPorts[0] = BasePort;
   }
 
-//if (Debug & 8) TraceStr("=%04X]", npAfree);
+  // if (Debug & 8) TraceStr("=%04X]", npAfree);
   return (npAfree);
 }
 
@@ -2203,7 +2219,7 @@ VOID NEAR UCBSetupDMAPIO (NPU npU, NPIDENTIFYDATA npID)
   NPA	 npA = npU->npA;
   USHORT Delay;
 
-TS("D<F:%X", npU->Features)
+  TS("D<F:%X", npU->Features)
 
   Delay = npU->Features & 3;
   if (npA->Cap & CHIPCAP_ATA33) Delay = 3;
@@ -2223,7 +2239,7 @@ TS("D<F:%X", npU->Features)
     npU->Flags |= UCBF_DISABLEIORDY;
 
   if (npID->IDECapabilities & FX_DMASUPPORTED) {
-T('a')
+    T('a')
     npU->Flags |= UCBF_BM_DMA;
 
     if (npID->AdditionalWordsValid & FX_WORD88_VALID)
@@ -2308,13 +2324,11 @@ VOID GetDeviceULTRAMode (NPU npU, NPIDENTIFYDATA npID)
 VOID GetDeviceDMAMode (NPU npU, NPIDENTIFYDATA npID)
 {
   USHORT dmaMWMode;
-  USHORT MaxDMA;
+  USHORT MaxDMA = (~npU->MaxRate & 0x0070) >> 4;
 
-  MaxDMA = (~npU->MaxRate & 0x0070) >> 4;
+  TSTR ("M%d,I:%X,", MaxDMA, npID->DMAMWordFlags);
 
- TSTR ("M%d,I:%X,", MaxDMA, npID->DMAMWordFlags);
-
-  MaxDMA = (1 << MaxDMA) - 1;
+  MaxDMA = (1 << MaxDMA) - 1;		// Conver to mask
 
   if (!(npID->AdditionalWordsValid & FX_WORDS64_70VALID) &&
        (npID->DMAMWordFlags & 0xF8F8))
@@ -2336,13 +2350,14 @@ VOID GetDeviceDMAMode (NPU npU, NPIDENTIFYDATA npID)
     /************************************************************/
     if (!npID->MinMWDMACycleTime && (npID->DMAMode <= 0x2FF))
       npID->DMAMWordFlags |= (2 << (npID->DMAMode >> 8)) - 1;
+
     dmaMWMode = npID->DMAMWordFlags & MaxDMA;
   }
 
   npU->CurDMAMode   = CountBits ((dmaMWMode & 7) >> 1);
   npU->FoundDMAMode = CountBits ((npU->FoundDMAMode & 7) >> 1);
 
- TSTR ("D%d/F%d;", npU->CurDMAMode, npU->FoundDMAMode);
+  TSTR ("D%d/F%d;", npU->CurDMAMode, npU->FoundDMAMode);
 }
 
 /*-------------------------------*/
@@ -2415,12 +2430,12 @@ VOID NEAR IdentifyDevice (NPU npU, NPIDENTIFYDATA npID)
   NPA	npA    = npU->npA;
   UCHAR UnitId = npU->UnitIndex;
 
-#define npTI (&npA->PTIORB)
-#define npicp (&npA->icp)
+# define npTI (&npA->PTIORB)
+# define npicp (&npA->icp)
 
   TS("I(U%d", UnitId)
 
-  Retry:
+Retry:
 
   ClearIORB (npA);
 

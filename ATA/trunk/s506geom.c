@@ -40,11 +40,10 @@
 
 extern RP_GENIOCTL IOCtlRP;
 
-//
-//   DetermineUnitGeometry()
-//
-// Extract and determine the logical and physical geometry.
-//
+/**
+ * Extract and determine the logical and physical geometry for unit.
+ */
+
 VOID DetermineUnitGeometry (NPU npU)
 {
   NPA	 npA;
@@ -53,7 +52,7 @@ VOID DetermineUnitGeometry (NPU npU)
   USHORT SecPerCyl;
   UCHAR  rc;
 
-T('G') T('<')
+  T('G') T('<')
   if ((npU->Flags & (UCBF_NOTPRESENT | UCBF_FORCE)) == UCBF_NOTPRESENT) return;
   npA = npU->npA;
 
@@ -92,18 +91,18 @@ T('G') T('<')
 
 #if TRACES
   if (Debug & 16) {
-  TWRITE(16)
-  TraceStr ("LGeoB: H:%u S:%u",      npU->BPBLogGeom.NumHeads,
-				     npU->BPBLogGeom.SectorsPerTrack);
-  TWRITE(16)
-  TraceStr ("LGeo3: H:%u S:%u",      npU->I13LogGeom.NumHeads,
-				     npU->I13LogGeom.SectorsPerTrack);
-  TWRITE(16)
-  TraceStr ("LGeoI: C:%u H:%u S:%u", npU->IDELogGeom.TotalCylinders,
-				     npU->IDELogGeom.NumHeads,
-				     npU->IDELogGeom.SectorsPerTrack);
-  TWRITE(16)
-}
+    TWRITE(16)
+    TraceStr ("LGeoB: H:%u S:%u",      npU->BPBLogGeom.NumHeads,
+				       npU->BPBLogGeom.SectorsPerTrack);
+    TWRITE(16)
+    TraceStr ("LGeo3: H:%u S:%u",      npU->I13LogGeom.NumHeads,
+				       npU->I13LogGeom.SectorsPerTrack);
+    TWRITE(16)
+    TraceStr ("LGeoI: C:%u H:%u S:%u", npU->IDELogGeom.TotalCylinders,
+				       npU->IDELogGeom.NumHeads,
+				       npU->IDELogGeom.SectorsPerTrack);
+    TWRITE(16)
+  }
 #endif
 
   // Reconsile the logical geometries.
@@ -140,7 +139,7 @@ T('G') T('<')
   npU->MaxTotalCylinders = npU->LogGeom.TotalCylinders;
   npU->MaxTotalSectors	 = npU->LogGeom.TotalSectors;
 
-T('>')
+  T('>')
 }
 
 
@@ -190,7 +189,7 @@ BOOL NEAR IdentifyGeometryGet (NPU npU)
 
   npID = ((NPIDENTIFYDATA)ScratchBuf) + npU->UnitIndex;
 
-T('a')
+  T('a')
   // The routines in the following block have nothing to do with
   // the drive's geometry, but do require the drive's identify
   // data, so they are called here for convenience of accessing
@@ -235,7 +234,7 @@ T('a')
 ////////////////
   // Verify the extracted physcial geometry is reasonable.
   if (!PhysGeomValidate ((NPGEO1)&npU->IDEPhysGeom)) {
-T('b')
+    T('b')
     npU->FlagsT |= UTBF_IDEGEOMETRYVALID;
     return (FALSE);
   }
@@ -362,9 +361,17 @@ VOID NEAR IDEGeomExtract (NPGEO npIDEGeom, NPIDENTIFYDATA npId)
   // geometry. The BIOS might have changed that, so use that one if valid!
 
 #if TRACES
-  if (Debug & 16) TraceStr ("%u/%u/%u,%u/%u/%u/%lu,%lu",
-    npId->SectorsPerTrack, npId->NumHeads, npId->TotalCylinders,
-    npId->LogSectorsPerTrack, npId->LogNumHeads, npId->LogNumCyl, npId->LogTotalSectors, npId->LBA48TotalSectorsL);
+  if (Debug & 16) {
+    TraceStr ("%u/%u/%u,%u/%u/%u/%lu,%lu",
+      npId->SectorsPerTrack,
+      npId->NumHeads,
+      npId->TotalCylinders,
+      npId->LogSectorsPerTrack,
+      npId->LogNumHeads,
+      npId->LogNumCyl,
+      npId->LogTotalSectors,
+      npId->LBA48TotalSectorsL);
+  }
 #endif
 
   logicalTotalSectors = (ULONG)(npId->LogNumCyl)
@@ -425,13 +432,13 @@ VOID NEAR IDEGeomExtract (NPGEO npIDEGeom, NPIDENTIFYDATA npId)
 
 #if TRACES
   if (Debug & 16) {
-  TWRITE(16)
-  TraceStr ("GeoI: C:%u H:%u S:%u T:%lu", npIDEGeom->TotalCylinders,
-					  npIDEGeom->NumHeads,
-					  npIDEGeom->SectorsPerTrack,
-					  npIDEGeom->TotalSectors);
-  TWRITE(16)
-}
+    TWRITE(16)
+    TraceStr ("GeoI: C:%u H:%u S:%u T:%lu", npIDEGeom->TotalCylinders,
+					    npIDEGeom->NumHeads,
+					    npIDEGeom->SectorsPerTrack,
+					    npIDEGeom->TotalSectors);
+    TWRITE(16)
+  }
 #endif
 }
 
@@ -517,12 +524,12 @@ VOID NEAR LogGeomCalculateLBAAssist (NPGEO1 npLogGeom, ULONG TotalSectors)
 
 #if TRACES
   if (Debug & 16) {
-  TraceStr ("GLBA: C:%u H:%u S:%u T:%lu", npLogGeom->TotalCylinders,
-					  npLogGeom->NumHeads,
-					  npLogGeom->SectorsPerTrack,
-					  TotalSectors);
-  TWRITE(16)
-}
+    TraceStr ("GLBA: C:%u H:%u S:%u T:%lu", npLogGeom->TotalCylinders,
+					    npLogGeom->NumHeads,
+					    npLogGeom->SectorsPerTrack,
+					    TotalSectors);
+    TWRITE(16)
+  }
 #endif
 }
 
@@ -580,6 +587,11 @@ BOOL NEAR Int13GeometryGet (NPU npU)
   return (rc);
 }
 
+/**
+ * Override sectors/track and heads/cyl if valid LVM data found
+ * @return TRUE if LVM data exists
+ */
+
 BOOL NEAR CheckLVM (NPGEO2 npGeo)
 {
   UCHAR isLVM = FALSE;
@@ -610,8 +622,8 @@ BOOL NEAR CheckMBRConsistency (NPGEO2 npGeo)
       UCHAR  Heads, Sectors;
       USHORT SectorsPerCylinder;
 
-      Heads   = BootRecord.partitionTable[i].end.head + 1;
-      Sectors = BootRecord.partitionTable[i].end.sector & 0x3F;
+      Heads   = BootRecord.partitionTable[i].end.head + 1;	// 1..N
+      Sectors = BootRecord.partitionTable[i].end.sector & 0x3F;	// 0..63, 0 should not occur
       SectorsPerCylinder = Heads * Sectors;
 
       if (SectorsPerCylinder) { // offset plus length must be an integral number of SPC
@@ -640,14 +652,14 @@ BOOL NEAR CheckMBRConsistency (NPGEO2 npGeo)
       npGeo->NumHeads	     = Heads;
       npGeo->SectorsPerTrack = Sectors;
       MBRconsistent = TRUE;
-    }
-  }
+    } // if partitionType
+  } // for
   if (i < BR_MAX_PARTITIONS) {
     npGeo->NumHeads	   = 0;
     npGeo->SectorsPerTrack = 0;
     MBRconsistent = FALSE;
   }
-TS("MBR:%d,",MBRconsistent)
+  TS("MBR:%d,",MBRconsistent)
   return (MBRconsistent);
 }
 

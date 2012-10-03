@@ -42,7 +42,7 @@
 
 BOOL NEAR AcceptGeneric (NPA npA)
 {
-  if ((GenericBM > 0) && npA->FlagsI.b.busmaster && (npA->BMICOM & 0xFFF0)) {
+  if (GenericBM > 0 && npA->ProgIF.b.busmaster && (npA->BMICOM & 0xFFF0)) {
     USHORT Port;
     UCHAR  err = FALSE;
 
@@ -62,7 +62,7 @@ BOOL NEAR AcceptGeneric (NPA npA)
       TTYWrite (2, "Generic: busmaster registers not available");
       npA->Cap &= ~(CHIPCAP_ATADMA | CHIPCAP_ATAPIDMA);
     } else {
-      if (npA->FlagsI.b.native) METHOD(npA).CheckIRQ = BMCheckIRQ;
+      if (npA->ProgIF.b.native) METHOD(npA).CheckIRQ = BMCheckIRQ;
     }
   } else {
     npA->Cap &= ~(CHIPCAP_ATADMA | CHIPCAP_ATAPIDMA);

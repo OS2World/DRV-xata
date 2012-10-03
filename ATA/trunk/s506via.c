@@ -249,7 +249,7 @@ BOOL NEAR AcceptVIA (NPA npA)
       }
   }
 
-  if (npA->FlagsI.b.native) METHOD(npA).CheckIRQ = BMCheckIRQ;
+  if (npA->ProgIF.b.native) METHOD(npA).CheckIRQ = BMCheckIRQ;
 
   return (TRUE);
 }
@@ -410,7 +410,7 @@ BOOL NEAR AcceptNVidia (NPA npA)
   Cable &= (Cable >> 4) & 0x0404;
   if (Cable) npA->Cap |= CHANCAP_CABLE80;
 
-  if (npA->FlagsI.b.native) METHOD(npA).CheckIRQ = BMCheckIRQ;
+  if (npA->ProgIF.b.native) METHOD(npA).CheckIRQ = BMCheckIRQ;
 
   return (TRUE);
 }

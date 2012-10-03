@@ -1,11 +1,11 @@
 
-		      Daniela's S506 ADD - Release 1.8.7
-		      ----------------------------------
+		      Daniela's S506 ADD - Release 1.8.12
+		      -----------------------------------
 
 == How to report problems ==
 ============================
 
-// Daniela has this to say...
+// Daniela had this to say...
 // To those people who still don't understand the meaning of REQUIRED:
 // Do not ask if the info is, simply generate it - even if you think you
 // can't do that - and attach it  -  UNCONDITIONALLY, ALWAYS, WITHOUT ASKING!
@@ -39,13 +39,13 @@ the output of "COPY IBMS506$ anyfile" will list the driver version in
 the first line. If you cannot boot, then run "BLDLEVEL DaniS506.ADD" which
 will output something like this:
 
-     Signature:       @#DANI:1.8#@##1## 4.7.2000 10:45:10 ....
-     Vendor:	      DANI
-     Revision:	      1.02
-     Date/Time:       4.7.2000 10:45:10
-     Build Machine:   Nachtigall
-     File Version:    1.2.5   <------------------------------+
-     Description:     Adapter Driver for ST506/IDE DASD      |
+     Signature:       @#slainc:1.8.11#@##1## 2012/04/27 11:28:58 ...
+     Vendor:          slainc
+     Revision:        1.08.12
+     Date/Time:       2012/04/27 11:28:58    
+     Build Machine:   slamain
+     File Version:    1.8.12   <-----------------------------+
+     Description:     Adapter Driver for PATA/SATA DASD      |
 							     |
      This is the full version number  -----------------------+
 
@@ -101,7 +101,15 @@ Once you have captured the above information, create a TRAC ticket at
 
   http:svn.netlabs.org/xata
 
+This is the community support site for the Daniela drivers.  Support is 
+provided on a best-efforts basis.
+
 The home page explains how to submit a ticket.  See
 
   http://svn.netlabs.org/xata/wiki/WikiStart#SubmittingTickets
+
+If you are a eComStation customer with an eComStation support agreement, you 
+can submit a support ticket at
+
+  http://www.ecomstation.com/support/
 
