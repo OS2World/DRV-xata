@@ -1,13 +1,13 @@
 /****************************************************************************
- *							    *
- *			     OCO Source Materials		    *
+ *							                    *
+ *			     OCO Source Materials		            *
  *			       IBM Confidential 			    *
- *							    *
+ *							                    *
  *		      Copyright (c) IBM Corporation 1998		    *
  *			     All Rights Reserved			    *
  * Copyright : COPYRIGHT Daniela Engert 1999-2009			    *
- * distributed under the terms of the GNU Lesser General Public License		    *
- *							    *
+ * distributed under the terms of the GNU Lesser General Public License	    *
+ *							                    *
  ****************************************************************************/
 
 #define INCL_NOBASEAPI
@@ -35,13 +35,12 @@
 #pragma optimize(OPTIMIZE, on)
 
 /**@internal VDMInt13Create()
- *  Set up the DiskDD to INT 13 VDM communications area and pass it to
+ * Set up the DiskDD to INT 13 VDM communications area and pass it to
  * DevHelp_CreateInt13VDM.  Verify the VDM was created successfully.
  *
  * @return
- *  FALSE - the mini-VDM was successfully created.
- * @return
- *  TRUE - creation of the mini-VDM failed.
+ *  FALSE - the mini-VDM was successfully created and is ready to use
+ *  TRUE - creation of the mini-VDM failed or was disabled by /!BIOS
  */
 BOOL NEAR VDMInt13Create (VOID)
 {
@@ -70,7 +69,7 @@ BOOL NEAR VDMInt13Create (VOID)
   VDMInt13Created = 1;
   if (rc || VDMInt13.Int13CreateRc)
     VDMInt13Created = -1;
-  return (VDMInt13Created != 1);
+  return (VDMInt13Created != 1);	// Return 0 if VDM ready to use, 1 if not
 }
 
 

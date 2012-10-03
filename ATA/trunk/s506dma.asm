@@ -45,6 +45,8 @@ SGAlign 	EQU BP - 14
 ;	register dx = SGAlign
 ;	register ax = npSGPtrs
 ;	BytesLeft = bp + 4
+; Returns non-zero if OK;
+; Returns 0 is misaligned and align required
 
 		PUBLIC	@BuildSGList
 @BuildSGList	PROC NEAR
@@ -162,7 +164,7 @@ Exit:
 
 NotAligned:
 		ADD	SP, 10
-		SUB	AX, AX
+		SUB	AX, AX		; Failed
 		JMP	Exit
 
 @BuildSGList	ENDP

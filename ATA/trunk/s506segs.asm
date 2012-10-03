@@ -184,13 +184,13 @@ _TEXT		SEGMENT DWORD PUBLIC 'CODE'
 		MOV	GS, CS:[_FlatSel]
 		MOV	BH, 0
 		XOR	DI, DI
-		MOV	SI, [_IHdr+BX]
+		MOV	SI, [_IHdr+BX]	; Get ACB pointer
 __LOOP:
 		OR	SI, SI
 		JZ	__EXIT
 		LOCK INC BYTE PTR [SI+2]
 		MOV	BX, SI
-		CALL	WORD PTR [SI+4]
+		CALL	WORD PTR [SI+4]	; Typically FixedInterrupt or CatchInterrupt
 		OR	DI, AX
 __NEXT:
 		LOCK DEC BYTE PTR [SI+2]
@@ -387,7 +387,7 @@ DoOEMHlp:
 		ADD	SP, 4
 		MOV	AX, WORD PTR ES:[BX+3]
 CallOEMHlpEnd:
-		AND	AX, 8000h
+		AND	AX, 8000h	; return 8000h if request failed
 		POP	DI
 		POP	SI
 		LEAVE
