@@ -482,8 +482,8 @@ typedef struct _IDENTIFYDATA
   USHORT	LogNumSectorsPerInt;	/* 59				      */
   ULONG 	LBATotalSectors;	/* 60 ULONG Mode - Sectors	      */
   USHORT	DMADir; 		/* 62 ATAPI: DMADir	    ATA:SWDMA */
-  USHORT	DMAMWordFlags;		/* 63				      */
-  USHORT	AdvancedPIOModes;	/* 64 Advanced PIO modes supported    */
+  USHORT	DMAMWordFlags;		/* 63 Multiword DMA modes (bitmask 2..0) */
+  USHORT	AdvancedPIOModes;	/* 64 Advanced PIO modes supported 3..n (bitmask 7..0) */
   USHORT	MinMWDMACycleTime;	/* 65 Minimum multiword DMA cycle time */
   USHORT	RecMWDMACycleTime;	/* 66 Recommended MW DMA cycle time   */
   USHORT	MinPIOCycleTimeWOFC;	/* 67 Minimum PIO cycle time without IORDY */
@@ -502,7 +502,7 @@ typedef struct _IDENTIFYDATA
   USHORT	MinorVersion;		/* 81			       */
   USHORT	CommandSetSupported[3]; /* 82			       */
   USHORT	CommandSetEnabled[3];	/* 85			       */
-  USHORT	UltraDMAModes;		/* 88 Ultra DMA Modes	       */
+  USHORT	UltraDMAModes;		/* 88 Ultra DMA Modes (bitmask 6..0)  */
   USHORT	Reserved5[93-89];	/* 89			       */
   USHORT	HardwareTestResult;	/* 93 hardware test result     */
   USHORT	AcousticManagement;	/* 94			       */

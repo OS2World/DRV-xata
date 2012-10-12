@@ -21,7 +21,7 @@ SCATGATENTRY	STRUC
 SCATGATENTRY	ENDS
 
 ADD_X		STRUC
-  TMode 	DW ?	 ; + 0			Direction of xferdata
+  TMode 	DW ?	 ; + 0			Direction of transfer
   cSGList	DW ?	 ; + 2			Count of S/G list elements
   pSGList	DD ?	 ; + 4 PSCATGATENTRY	Far pointer to S/G List
   iPortAddress	DW ?	 ; + 8			I/O Port Address
@@ -40,10 +40,13 @@ npSGPtrs	EQU BP - 10
 npSGOutM1	EQU BP - 12
 SGAlign 	EQU BP - 14
 
-; USHORT NEAR BuildSGList (NPPRD npSGOut, NPADD_X npSGPtrs, ULONG BytesLeft, UCHAR SGAlign) {
-;	register bx = npSGOut
-;	register dx = SGAlign
-;	register ax = npSGPtrs
+; USHORT NEAR _fastcall BuildSGList (NPPRD npSGOut, NPADD_X npSGPtrs, ULONG BytesLeft, UCHAR SGAlign) {
+; Read OS/2 scatter/gather list and build SFF-8038i compatible list for DMA controller
+; OS/2 list has ULONG counts and no address aliginment
+; SFF-8038i list is word aligned and respects 64K address boundaries
+;	register ds:bx = NPPRD npSGOut
+;	register dx = UCHAR SGAlign
+;	register ds:ax = ADD_X* IOSGPtrs
 ;	BytesLeft = bp + 4
 ; Returns non-zero if OK;
 ; Returns 0 is misaligned and align required
@@ -52,46 +55,44 @@ SGAlign 	EQU BP - 14
 @BuildSGList	PROC NEAR
 		PUSH	BP
 		MOV	BP,SP
-		PUSH	DI
-		PUSH	SI
+		PUSH	DI			   ; bp - 2
+		PUSH	SI			   ; bp - 4
 
 		SUB	BX, 8			   ; npSGOut--
 
-		MOV	SI, AX
-		MOV	EDI, DWORD PTR [SI + SGOffset] ; SGOff
-		NEG	EDI
-		PUSH	EDI
+		MOV	SI, AX			   ; npSGPtrs
+		MOV	EDI, DWORD PTR [SI + SGOffset] ; current offset
+		NEG	EDI			   ; - offset
+		PUSH	EDI			   ; save SGOff, bp - 6
 
-		PUSH	SI			   ; save npSGPtrs
-		PUSH	BX			   ; save npSGOut - 1
-		PUSH	DX			   ; save SGAlign
+		PUSH	SI			   ; save npSGPtr (bp - 10)
+		PUSH	BX			   ; save npSGOut - 1 (bp - 12)
+		PUSH	DX			   ; save SGAlign (bp - 14)
 
 		MOV	EDI, [BytesLeft]	   ; BytesLeft
 
-		ROR	EBX, 16
-		LES	BX, DWORD PTR [SI + pSGList]
-		MOV	CX, [SI + cSGList]
-		SHL	CX, 3
-		ADD	CX, BX			   ; pSGEnd
-		MOV	DX, [SI + iSGList]
+		ROR	EBX, 16			   ; npSGOut -> msw
+		LES	BX, DWORD PTR [SI + pSGList] ; es:bx -> 1st entry
+		MOV	CX, [SI + cSGList]	   ; cx = # items
+		SHL	CX, 3			   ; sizeof SCATGATENTRY
+		ADD	CX, BX			   ; calc pSGEnd
+		MOV	DX, [SI + iSGList]         ; get current entry index
 		SHL	DX, 3
-		ADD	BX, DX
-		ROR	EBX, 16
-
+		ADD	BX, DX			   ; point at current SCATGATENTRY
+		ROR	EBX, 16			   ; to high word
 OuterLoop:
-		ROR	EBX, 16
-		CMP	BX, CX
-		JAE	Done
+		ROR	EBX, 16			   ; current entry -> bx
+		CMP	BX, CX                     ; done?
+		JAE	Done			   ; yes
 
 		MOV	EAX, DWORD PTR [SGOff]	   ; Length
-		MOV	EDX, DWORD PTR ES:[BX+BufAdr]
+		MOV	EDX, DWORD PTR ES:[BX+BufAdr] ; pCurSGPtr->
 		MOV	ESI, EDX		   ; CurPhysEnd
 		SUB	EDX, EAX		   ; PhysicalAddress
 		MOV	DWORD PTR [SGOff], 0
 
-		TEST	DL,BYTE PTR [SGAlign]
-		JNZ	NotAligned
-
+		TEST	DL,BYTE PTR [SGAlign]	   ; Align ok?
+		JNZ	NotAligned		   ; No, fail
 LenLoop:
 		ADD	EAX, DWORD PTR ES:[BX+BufLen]
 		ADD	ESI, DWORD PTR ES:[BX+BufLen]
@@ -110,8 +111,8 @@ LenTooLong:
 		MOV	DWORD PTR [SGOff], EAX
 		MOV	EAX, EDI
 LenDone:
-		TEST	AL, BYTE PTR [SGAlign]
-		JNZ	Short NotAligned
+		TEST	AL, BYTE PTR [SGAlign]	   ; Align OK?
+		JNZ	Short NotAligned	   ; No, fail
 
 		ROR	EBX, 16
 BldLoop:
@@ -155,13 +156,11 @@ Done:
 		SHR	BX, 3
 		MOV	[SI + iSGList], BX
 		POP	DWORD PTR [SI + SGOffset]  ; SGOffset
-
 Exit:
 		POP	SI
 		POP	DI
 		LEAVE
 		RET	4
-
 NotAligned:
 		ADD	SP, 10
 		SUB	AX, AX		; Failed

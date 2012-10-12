@@ -6,6 +6,7 @@
 # 2010-06-07 SHL Sync with LGPL sources
 # 2011-03-04 SHL Comments and bldlevel tweaks
 # 2011-06-07 SHL Correct icat debug build
+# 2012-10-04 SHL Support mapsymi
 
 #/************************************************************************/
 #/*									 */
@@ -23,7 +24,7 @@
 
 # Build options that can be set in enviroment or on nmake command line
 #  VERSION - build version (i.e. 1.8) - see makefile for current default
-#  FIXLEVEL - fix level (i.e 10 for 1.8.10) - see makefile for current default
+#  FIXLEVEL - fix level (i.e 10 for 1.8.12) - see makefile for current default
 #  VENDOR - builder (i.e. slainc, defaults to unknown)
 #  BUILDMACH - build machine (i.e. slamain, defaults to unknown)
 #  BUILDTIME - build time (yyyy/mm/dd hh:mm:ss) - make fails if not set
@@ -45,7 +46,7 @@ _VERSION = 1.8
 !ifdef FIXLEVEL
 _FIXLEVEL = $(FIXLEVEL)
 !else
-_FIXLEVEL = 10
+_FIXLEVEL = 12
 !endif
 
 # Allow override
@@ -121,12 +122,20 @@ LIBOBJ    = LibObj
 AS=tasm
 CC=cl
 LINK=link
+# Use mapsymi.pl if available
+!if [mapsymi.pl -v]
 MAPSYM=mapsym
+!else
+MAPSYM=mapsymi.pl
+!endif
 PACK=nelite
 
-#
-# Set compiler and Linker Options
-#
+# Compiler and Linker Options
+
+# -MX case sensitive globals
+# -T suppress messages if no errors
+# -Z display source line with error number
+# -M allow multiple passes
 
 AFLAGS = -MX -T -Z -M
 AINC   = -I. -I$(INC)
@@ -138,6 +147,7 @@ AINC   = -I. -I$(INC)
 # Define __OS2__ because code needs it; undefine MSDOS for safety
 # CFLAGS = /c /Zp /G2sr /Answ /nologo /Oi
 CFLAGS = /c /Zp /G2sr /Answ /nologo /Oi /D__OS2__ /UMSDOS
+
 LFLAGS = /map /nod /packd /a:2 /far
 
 PACKFLAGS = /P:255 /A:0 /S /E+ /O-
@@ -245,7 +255,7 @@ clean:
 
 DaniS506.add:  $(OBJS) $(LIBS) $(HDR) makefile
 	@echo Creating DaniS506.def <<$(@B).def
-; Created by makefile
+; Do not edit - created by makefile
 
 LIBRARY $(@B)
 

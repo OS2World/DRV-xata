@@ -118,7 +118,7 @@ typedef struct _U
   /*--------------------*/
   UCHAR 	UnitId; 					       // 70
   UCHAR 	Status; 					       // 22
-  UCHAR 	UltraDMAMode;			/* Ultra DMA Mode   */ // 70
+  UCHAR 	UltraDMAMode;		    /* Ultra DMA Mode, 1..5 */ // 70
   CHAR		LongTimeout;					       // 11
 
   ULONG 	SStatus;		    /* SATA Status register address	*/
@@ -135,9 +135,9 @@ typedef struct _U
   /*------------------------*/
   /* DMA/PIO Timing Values  */
   /*------------------------*/
-  UCHAR 	CurDMAMode;			/* Current DMA mode */ // 35
-  UCHAR 	CurPIOMode;			/* Current PIO mode */ // 30
-  UCHAR 	InterfaceTiming;		/* interface timing */ // 24
+  UCHAR 	CurDMAMode;		/* Current DMA mode, mdma = 0..2, udma = 3..8 */ // 35
+  UCHAR 	CurPIOMode;		/* Current PIO mode, 1..4 */ // 30
+  UCHAR 	InterfaceTiming;	/* interface timing */ // 24
 
   DeviceCountersData DeviceCounters;				       // 35
 

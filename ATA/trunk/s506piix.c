@@ -114,23 +114,29 @@
 #define ACBX_IDETIM_TIME0    0x0001	/* fast timing select drive 0 */
 #define ACBX_IDETIM_ITE1     0x4000	/* PIIX3 slave timing enable */
 
-#define SCH_D0TIM	     0x80
-#define SCH_D1TIM	     0x84
-#define SCH_USD 	     (1ul << 31)
-#define SCH_PPE 	     (1ul << 30)
-#define SCH_UDM_SHIFT	     16
-#define SCH_MDM_SHIFT	     8
-#define SCH_PIO_SHIFT	     0
+#define SCH_D0TIM	     0x80	// Device 0 timing register
+#define SCH_D1TIM	     0x84	// Device 1 timing register
+#define SCH_USD 	     (1ul << 31) // Use Synchronous DMA
+#define SCH_PPE 	     (1ul << 30) // Prefetch/Post Enable
+#define SCH_UDM_SHIFT	     16		// Ultra DMA mode shift, bits 18:16
+#define SCH_MDM_SHIFT	     8		// Multi-word DMS mode shift, bits 9:8
+#define SCH_PIO_SHIFT	     0		// PIO mode shift, bits 2:0
 
 #define PciInfo (&npA->PCIInfo)
 
+/**
+ * Check detected device acceptable for use and set up
+ * Fails only if SATA device without physical device attached
+ * @return TRUE if accepted else FALSE
+ */
+
 BOOL NEAR AcceptPIIX (NPA npA)
 {
-  UCHAR val = ' ';			// Adapter description modifier
-  NPCH	str = PIIXxMsgtxt;		// Adapter description
-  UCHAR map;
+  UCHAR modifier = ' ';			// Adapter description modifier (char or number)
+  NPCH	str = PIIXxMsgtxt;		// Adapter description, overridden for ICH
+  UCHAR ichregmap;
 
-  map = GetRegB (PciInfo->PCIAddr, PCI_PIIX_MAP);
+  ichregmap = GetRegB (PciInfo->PCIAddr, PCI_PIIX_MAP);
 
   switch (PciInfo->CompatibleID) {  // besser vielleicht PciInfo->Level!
 
@@ -151,17 +157,17 @@ BOOL NEAR AcceptPIIX (NPA npA)
     case PIIX3_PCIIDE_DEV_ID:
       PciInfo->Level = PIIX3;
       npA->Cap &= ~CHIPCAP_ULTRAATA;
-      val = '3';
+      modifier = '3';
       MEMBER(npA).CfgTable = CfgPIIX3;
       break;
 
     case PIIX4_PCIIDE_DEV_ID:
       PciInfo->Level = PIIX4;
       if (MEMBER(npA).Device == ICH0_PCIIDE_DEV_ID) {
-	val = '0';
+	modifier = '0';
 	str = ICHxMsgtxt;
       } else {
-	val = '4';
+	modifier = '4';
 	MEMBER(npA).CfgTable = CfgPIIX4;
       }
       break;
@@ -169,32 +175,32 @@ BOOL NEAR AcceptPIIX (NPA npA)
     case ICH_PCIIDE_DEV_ID:
       PciInfo->Level = ICH;
       npA->Cap |= CHIPCAP_ATA66;
-      val = 1;
+      modifier = 1;
       str = ICHxMsgtxt;
       break;
 
     case ICH2PCIIDE_DEV_ID:
-      val = 2;
+      modifier = 2;
       goto ICHCommon;
 
     case ICH3PCIIDE_DEV_ID:
-      val = 3;
+      modifier = 3;
       goto ICHCommon;
 
     case ICH4PCIIDE_DEV_ID:
-      val = 4;
+      modifier = 4;
       goto ICHCommon;
 
     case ICH5PCIIDE_DEV_ID:
-      val = 5;
+      modifier = 5;
       goto ICHCommon;
 
     case ICH6PCIIDE_DEV_ID:
-      val = 6;
+      modifier = 6;
       goto ICHCommon;
 
     case ICH7PCIIDE_DEV_ID:
-      val = 7;
+      modifier = 7;
     ICHCommon:
       str = ICHxMsgtxt;
       // npA->Cap |= CHIPCAP_ATA66 | CHIPCAP_ATA100 | CHIPCAP_ATA133;
@@ -203,45 +209,48 @@ BOOL NEAR AcceptPIIX (NPA npA)
       break;
 
     case ICH5SPCIIDE_DEV_ID:
-      val = 5;
-      map >>= 1;
-      if (map & 2) {
+      modifier = 5;
+      ichregmap >>= 1;
+      if (ichregmap & 2) {
 	npA->maxUnits = 2;
-	if ((map & 1) != npA->IDEChannel) goto ICHCommon; // combined, PATA port
+	if ((ichregmap & 1) != npA->IDEChannel) goto ICHCommon; // combined, PATA port
       }
       goto SATACommon;
 
     case ICH10SPCIIDE_DEV_ID:
       npA->maxUnits = 2;
     case ICH10S2PCIIDE_DEV_ID: // master only!
-      val = 10;
+      modifier = 10;
       goto SATACommon;
 
     case ICH9SPCIIDE_DEV_ID:
       npA->maxUnits = 2;
-      val = 9;
+      modifier = 9;
       goto SATACommon;
 
     case ICH8SPCIIDE_DEV_ID:
       npA->maxUnits = 2;
+
     case ICH8S2PCIIDE_DEV_ID: // master only!
-      val = 8;
+      modifier = 8;
       goto SATACommon;
 
     case ICH7SPCIIDE_DEV_ID:
-      val = 7;
-      goto SATACommon1;		// Force units = 2
+      modifier = 7;
+      goto SATACommon1;
 
     case ICH6SPCIIDE_DEV_ID:
-      val = 6;
+      modifier = 6;
+
     SATACommon1:
-      npA->maxUnits = 2;
-      if (map & (1 << npA->IDEChannel)) goto ICHCommon;  // combined, PATA port
+      npA->maxUnits = 2;		// Force 2 units
+      if (ichregmap & (1 << npA->IDEChannel)) goto ICHCommon;  // combined, PATA port
 
     SATACommon:
       npA->Cap |= CHIPCAP_SATA;
-      npA->FlagsI.b.native = 1;  // required (at least) for ICH8
-      if (val >= 6) {
+      // npA->ProgIF.b.native = 1;  // required (at least) for ICH8 // 2011-07-27 SHL fixme to be gone
+      npA->ProgIF.b.native = PCI_IDE_NATIVE_IF1;  // required (at least) for ICH8
+      if (modifier >= 6) {
 	// ICH6+
 	NPC   npC  = npA->npC;
 	ULONG BAR5 = npC->BAR[5].Addr;	// fixme to be sure this is ABAR/SIDPBA1-AHCI?
@@ -300,9 +309,9 @@ BOOL NEAR AcceptPIIX (NPA npA)
 
   } // switch CompatibleID
 
-  sprntf (npA->PCIDeviceMsg, str, val);
+  sprntf (npA->PCIDeviceMsg, str, modifier);
 
-  if (npA->FlagsI.b.native) METHOD(npA).CheckIRQ = BMCheckIRQ;
+  if (npA->ProgIF.b.native) METHOD(npA).CheckIRQ = BMCheckIRQ;
 
   if (npA->Cap & CHIPCAP_ATA66) {
     /* determine the presence of a 80wire cable as per defined procedure */
@@ -320,6 +329,7 @@ BOOL NEAR AcceptSCH (NPA npA)
   npA->Cap |= CHIPCAP_ATA66 | CHIPCAP_ATA100;
 
   // there's no architected method to determine cable type
+  // Assume 80 pin cable if running DMA mode2 or better
   if ((GetRegB (PciInfo->PCIAddr, SCH_D0TIM + 2) > 2) ||
       (GetRegB (PciInfo->PCIAddr, SCH_D1TIM + 2) > 2))
     npA->Cap |= CHANCAP_CABLE80;
@@ -387,11 +397,15 @@ USHORT NEAR GetPIIXPio (NPA npA, UCHAR Unit) {
   }
 }
 
+/**
+ * Return number of clocks for selected PIO mode
+ */
+
 USHORT NEAR GetSCHPio (NPA npA, UCHAR Unit) {
   switch (ReadConfigB (PciInfo, (UCHAR)(Unit ? SCH_D1TIM : SCH_D0TIM))) {
-    case 4:  return (4);
-    case 3:  return (6);
-    default: return (20);
+    case 4:  return (4);		// Mode 4 - 4 clocks
+    case 3:  return (6);		// Mode 3 - 6 clocks
+    default: return (20);		// Others - 20 clocks
   }
 }
 
@@ -509,6 +523,10 @@ VOID ProgramPIIXChip (NPA npA)
   }
 }
 
+/**
+ * Program Paulsbo SCH PATA controller
+ */
+
 VOID ProgramSCH (NPA npA) {
   NPU npU;
   UCHAR Reg = SCH_D0TIM;
@@ -523,6 +541,7 @@ VOID ProgramSCH (NPA npA) {
       val |= ((ULONG)(npU->UltraDMAMode-1) << SCH_UDM_SHIFT) | SCH_USD;
     else if (npU->CurDMAMode)
       val |= (npU->CurDMAMode << SCH_MDM_SHIFT);
+    // 2012-10-02 SHL FIXME to know if should set PPE only for PIO mode
     if (!(npU->Flags & UCBF_ATAPIDEVICE)) val |= SCH_PPE;
 
     WConfigD (Reg, val);

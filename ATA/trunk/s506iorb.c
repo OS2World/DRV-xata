@@ -180,7 +180,7 @@ goodACB:
 **
 ** Called from StartState() with interrupts disabled so additional,
 ** synchronized processing may be done in StartState() upon return.
-** Prepair the ACB to process the next IORB on its queue.
+** Prepare the ACB to process the next IORB on its queue.
 **
 ** Return 0 if there is another IORB to process.
 ** Return 1 if the queue is empty.

@@ -166,7 +166,9 @@ BOOL NEAR AcceptHPT (NPA npA)
       METHOD(npA).ErrorDMA = HPT36xErrorDMA;
       METHOD(npA).PreReset = HPT36xPreReset;
       MEMBER(npA).CfgTable = CfgHPT36x;
-      MEMBER(npA).SGAlign  = 2;  // HPT366 docs say scatter gather is SFF8038i compliant
+      // HPT366 docs say scatter gather is strictly SFF8038i compliant so
+      // DMA must be word aligned
+      MEMBER(npA).SGAlign  = 2;
       npA->HardwareType = HPT36x;
       npA->BMSize = 0x100;
       npA->ExtraPort = npA->ExtraSize = 0;

@@ -333,7 +333,7 @@ NPIHDRS FAR HookIRQ (NPA npA) {
       p->npA	     = npA;
       return (p);
     }
-  }
+  } // for
   return (NULL);
 }
 
@@ -1448,13 +1448,13 @@ USHORT FAR ParseCmdLine (PSZ pCmdLine)
 	  break;
 
 	/*-------------------------------------------*/
-	/* Limit Data Rate -  /MR:0hhh		     */
+	/* Limit Data Rate -  /MR:0hhh (udp)	     */
 	/*					     */
 	/*-------------------------------------------*/
 
 	case TOK_MAXRATE:
 
-	  npU->MaxRate = ~Value;
+	  npU->MaxRate = ~Value;	// udp mask inverted
 	  break;
 
 	/*-------------------------------------------*/
@@ -2082,7 +2082,7 @@ VOID FAR AssignAdapterResources (NPA npA)
   } else if (npA->FlagsT & ATBF_PCMCIA)
     AdapterStruct.HostBusType = AS_HOSTBUS_PCMCIA;
 
-  RMCreateAdapter (hDriver, &hAdapter, &AdapterStruct, NULL, (PAHRESOURCE)(npA->ResourceBuf));
+  RMCreateAdapter (hDriver, &hAdapter, &AdapterStruct, (HDEVICE)0, (PAHRESOURCE)(npA->ResourceBuf));
 
   for (npU = npA->UnitCB, i = 0; i < npA->cUnits; npU++, i++) {
     Adjunct.Add_Unit.UnitHandle = (USHORT)npU;
@@ -2207,13 +2207,11 @@ NPA FAR LocateATEntry (USHORT BasePort, USHORT PCIAddr, UCHAR Channel)
   return (npAfree);
 }
 
-/*-------------------------------*/
-/*				 */
-/* UCBSetupDMAPIO()		 */
-/*				 */
-/* For ATA or ATAPI devices	 */
-/*				 */
-/*-------------------------------*/
+/**
+ * Configure UCB DMA and PIO settings for ATA or ATAPI devices
+ * based on indentify data
+ */
+
 VOID NEAR UCBSetupDMAPIO (NPU npU, NPIDENTIFYDATA npID)
 {
   NPA	 npA = npU->npA;
@@ -2259,20 +2257,23 @@ VOID NEAR UCBSetupDMAPIO (NPU npU, NPIDENTIFYDATA npID)
 	 npU->CurDMAMode,npU->CurPIOMode,npU->BestPIOMode,npU->Flags);
 }
 
-UCHAR CountBits (USHORT x) {
-  UCHAR i;
-  for (i = 0; x; x >>= 1)
+/**
+ * Count number of 1 bits in word
+ */
+
+UCHAR CountBits (USHORT x)
+{
+  UCHAR i = 0;
+  for (; x; x >>= 1)
     i++;
-  return (i);
+  return i;
 }
 
-/*-------------------------------*/
-/*				 */
-/* GetDeviceULTRAMode()		 */
-/*				 */
-/* For ATA or ATAPI devices	 */
-/*				 */
-/*-------------------------------*/
+/**
+ * Determine supported ULTRA DMA modes for ATA or ATAPI devices
+ * Also determines cable type
+ */
+
 VOID GetDeviceULTRAMode (NPU npU, NPIDENTIFYDATA npID)
 {
   NPA	 npA = npU->npA;
@@ -2285,16 +2286,17 @@ VOID GetDeviceULTRAMode (NPU npU, NPIDENTIFYDATA npID)
     || (npA->Cap & CHIPCAP_SATA))
     Cable80Pin = TRUE;
 
+  // Get selected UDMA mode from identify data
   npU->FoundUDMAMode = CountBits (npID->UltraDMAModes >> 8);
 
-  MaxUDMA = (~npU->MaxRate & 0x0F00) >> 8;
+  MaxUDMA = (~npU->MaxRate & 0x0F00) >> 8;	// Get u from /MR:udp
 
   if ((npA->Cap & CHIPCAP_SATA) &&
       ((npID->SATACapabilities == 0) ||
        (npID->SATACapabilities == 0xFFFF) ||
       !(npID->SATACapabilities & 0xF) ||
        (npID->HardwareTestResult != 0))) {
-    if (MaxUDMA > (5+1)) MaxUDMA = 5+1;
+    if (MaxUDMA > (5+1)) MaxUDMA = 5+1;		// Limit
     npU->SATAGeneration = 0;
   } else {
     npU->SATAGeneration = (npID->SATACapabilities & 0xF) >> 1;
@@ -2303,47 +2305,44 @@ VOID GetDeviceULTRAMode (NPU npU, NPIDENTIFYDATA npID)
   TSTR ("M%d,C%d,I:%X,S%x,", MaxUDMA, Cable80Pin, npID->UltraDMAModes, npU->SATAGeneration);
 
   if (npA->FlagsT & ATBF_BIOSDEFAULTS) {
-    npU->UltraDMAMode = npU->FoundUDMAMode;
+    npU->UltraDMAMode = npU->FoundUDMAMode;	// Use existing setting
   } else {
     if ((MaxUDMA > 3) && !(Cable80Pin || (npA->FlagsT & ATBF_80WIRE)))
-      MaxUDMA = 3;
-    MaxUDMA = (1 << MaxUDMA) - 1;
+      MaxUDMA = 3;		// Limit if 40 wire
+    MaxUDMA = (1 << MaxUDMA) - 1;	// Generate mask
     npU->UltraDMAMode = CountBits (npID->UltraDMAModes & ULTRADMAMASK & MaxUDMA);
   }
 
   TSTR ("U%d/F%d;", npU->UltraDMAMode, npU->FoundUDMAMode);
 }
 
-/*-------------------------------*/
-/*				 */
-/* GetDeviceDMAMode()		 */
-/*				 */
-/* For ATA or ATAPI devices	 */
-/*				 */
-/*-------------------------------*/
+/**
+ * Get supported Multiword modes from identify data for ATA or ATAPI devices
+ */
+
 VOID GetDeviceDMAMode (NPU npU, NPIDENTIFYDATA npID)
 {
   USHORT dmaMWMode;
-  USHORT MaxDMA = (~npU->MaxRate & 0x0070) >> 4;
+  USHORT MaxDMA = (~npU->MaxRate & 0x0070) >> 4;	// Get d from /MR:udp
 
   TSTR ("M%d,I:%X,", MaxDMA, npID->DMAMWordFlags);
 
-  MaxDMA = (1 << MaxDMA) - 1;		// Conver to mask
+  MaxDMA = (1 << MaxDMA) - 1;		// Convert to mask
 
   if (!(npID->AdditionalWordsValid & FX_WORDS64_70VALID) &&
        (npID->DMAMWordFlags & 0xF8F8))
     npID->DMAMWordFlags = 0;
 
-  npU->FoundDMAMode = npID->DMAMWordFlags >> 8;
+  npU->FoundDMAMode = npID->DMAMWordFlags >> 8;	// Get currently selected mode
 
   if (npU->npA->FlagsT & ATBF_BIOSDEFAULTS)
-    dmaMWMode = npU->FoundDMAMode;
+    dmaMWMode = npU->FoundDMAMode;		// Use currently selected mode
   else {
     if (npID->MinMWDMACycleTime > 0) {
       if (npID->MinMWDMACycleTime <= 185)
-	npID->DMAMWordFlags |= 2;
+	npID->DMAMWordFlags |= 2;		// Mode 1 supported
       if (npID->MinMWDMACycleTime <= 125)
-	npID->DMAMWordFlags |= 4;
+	npID->DMAMWordFlags |= 4;		// Mode 2 supported
     }
     /************************************************************/
     /* If older WDC drive then use word 52 to decide DMA timing */
@@ -2351,22 +2350,19 @@ VOID GetDeviceDMAMode (NPU npU, NPIDENTIFYDATA npID)
     if (!npID->MinMWDMACycleTime && (npID->DMAMode <= 0x2FF))
       npID->DMAMWordFlags |= (2 << (npID->DMAMode >> 8)) - 1;
 
-    dmaMWMode = npID->DMAMWordFlags & MaxDMA;
+    dmaMWMode = npID->DMAMWordFlags & MaxDMA;	// Limit
   }
 
-  npU->CurDMAMode   = CountBits ((dmaMWMode & 7) >> 1);
-  npU->FoundDMAMode = CountBits ((npU->FoundDMAMode & 7) >> 1);
+  npU->CurDMAMode   = CountBits ((dmaMWMode & 7) >> 1);	// Mask -> number
+  npU->FoundDMAMode = CountBits ((npU->FoundDMAMode & 7) >> 1);	// Mask -> number
 
   TSTR ("D%d/F%d;", npU->CurDMAMode, npU->FoundDMAMode);
 }
 
-/*-------------------------------*/
-/*				 */
-/* GetDevicePIOMode()		 */
-/*				 */
-/* For ATA or ATAPI devices	 */
-/*				 */
-/*-------------------------------*/
+/**
+ * Determine Device PIO Mode from identify data for ATA or ATAPI devices
+ */
+ 
 USHORT GetDevicePIOMode (NPU npU, NPIDENTIFYDATA npID)
 {
   UCHAR PIO;
@@ -2374,28 +2370,32 @@ USHORT GetDevicePIOMode (NPU npU, NPIDENTIFYDATA npID)
   npU->BestPIOMode = 0;
 
   // PIO mode is only in the lower 2 bits, so ignore higher bits.
-  PIO = npID->AdvancedPIOModes & 3;
+  PIO = npID->AdvancedPIOModes & 3;	// Advanced modes 3 and up
   if (PIO != 0) {
     /*************************************************/
     /* Find highest PIO mode the unit can operate in */
     /*************************************************/
 
-    npU->BestPIOMode = 2 + CountBits (PIO);
+    npU->BestPIOMode = 2 + CountBits (PIO);	// Map to 3..4
   }
 
-  PIO = ~npU->MaxRate & 0x0007;
-  if (PIO < 3) PIO = 0;
+  PIO = ~npU->MaxRate & 0x0007;		// Get p from /MR:udp
+  if (PIO < 3) PIO = 0;			// Map PIO 1 and 2 to 0
 
   npU->CurPIOMode = npU->BestPIOMode;
-  if (npU->CurPIOMode > PIO) npU->CurPIOMode = PIO;
+  if (npU->CurPIOMode > PIO) npU->CurPIOMode = PIO;	// Limit
 
   if (npU->FoundDMAMode && (MEMBER(npU->npA).TModes & TR_PIO_EQ_DMA))
-    npU->FoundPIOMode = npU->FoundDMAMode + 2;
+    npU->FoundPIOMode = npU->FoundDMAMode + 2;	// Map -> 3..4
 
   TSTR ("M%d,P%d/B%d/F%d;", PIO, npU->CurPIOMode, npU->BestPIOMode, npU->FoundPIOMode);
 
   return (npU->BestPIOMode);
 }
+
+/**
+ * Get PIO mode from chipset if not already known
+ */
 
 USHORT NEAR GetChipPIOMode (NPA npA) {
   NPU	 npU;
@@ -2406,6 +2406,7 @@ USHORT NEAR GetChipPIOMode (NPA npA) {
   for (Unit = 0; Unit < MAX_UNITS; Unit++, npU++) {
     if ((npU->Flags & UCBF_NOTPRESENT) || (npU->FoundPIOMode)) continue;
 
+    // Not set by Identify - try chipset specific method
     Clocks = METHOD(npA).GetPIOMode (npA, Unit);
     PIO = 0;
     if (Clocks) {
@@ -2419,11 +2420,11 @@ USHORT NEAR GetChipPIOMode (NPA npA) {
   }
 }
 
-/*-----------------------------------*/
-/* IdentifyDevice()		     */
-/*				     */
-/* For ATA or ATAPI devices	     */
-/*-----------------------------------*/
+/**
+ * Retrieve Identify Device data for ATA or ATAPI device
+ * and partially decodes data to set ATA version etc.
+ * @param npID is return buffer for identify data
+ */
 
 VOID NEAR IdentifyDevice (NPU npU, NPIDENTIFYDATA npID)
 {
@@ -2491,9 +2492,11 @@ Retry:
 #endif
 
   npU->ATAVersion = CountBits (npID->MajorVersion) - 1;
-  if (npU->ATAVersion > 15) npU->ATAVersion = 0;
-  if (!npU->ATAVersion)
+  if (npU->ATAVersion > 15) npU->ATAVersion = 0;	// Avoid issues
+  if (!npU->ATAVersion) {
+    // Try to guess
     if (npID->UltraDMAModes) npU->ATAVersion = 4;
     else if (npID->ATAPIMinorVersion >= 9) npU->ATAVersion = 2;
+  }
 }
 

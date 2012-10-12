@@ -86,7 +86,7 @@ void IBeep (USHORT freq) {
  * - the function is called after an EOI but in CLI
  * - the function may be called is STI in task time
  * - FSM cycle is executed in STI so it may be reinterrupted
- * - we outside FSM cycle interrupts are disabled if they were disabled on enter
+ * - when outside FSM cycle interrupts are disabled if they were disabled on enter
  *   to the function
  * - cycles counter is protected by spinlock because we can't rely to CLI for
  *   this in SMP env
@@ -226,14 +226,16 @@ USHORT NEAR FixedInterrupt (NPA npA)
 #if PCITRACER
     outpw (TRPORT, 0xDEA0 | (npA->IDEChannel));
 #endif
-  if (!(METHOD(npA).CheckIRQ (npA))) { // not claimed
+  // Check interrupt not claimed
+  if (!(METHOD(npA).CheckIRQ (npA))) {
 #if PCITRACER
     outpw (TRPORT, 0xDEAA);
 #endif
     return (0);
   }
 
-  if (((NPUSHORT)&(npA->SuspendIRQaddr))[1]) { // SEG_OF(npA->SuspendIRQaddr) not zero
+  if (((NPUSHORT)&(npA->SuspendIRQaddr))[1]) {
+    // If SEG_OF(npA->SuspendIRQaddr) not zero
     // we are suspended. Let's delegate handling and EOI to an outer replacement handler
     npA->SuspendIRQaddr (npA->IRQLevel);
   } else {
@@ -1033,7 +1035,6 @@ VOID NEAR SetIOAddress (NPA npA)
       (npU->Flags & UCBF_BM_DMA) && (npA->ReqFlags & (ACBR_READ | ACBR_WRITE))) {
     /* Check forced PIO mode flag and try to create scatter/gather list */
     if (!(npA->ReqFlags & ACBR_BM_DMA_FORCEPIO) && !(CreateBMSGList (npA))) {
-      /* Shut down Bus Master DMA controller if active */
 
       CmdIdx = (CmdIdx & 1) | 8;
       if (CmdIdx & 1) {
@@ -1044,13 +1045,14 @@ VOID NEAR SetIOAddress (NPA npA)
 	++npU->DeviceCounters.TotalBMReadOperations;
       }
 
+      /* Shut down Bus Master DMA controller if active */
       BMSTATUS = 0;
       METHOD(npA).SetupDMA (npA);
 
       /*
        * Bus Master DMA is now ready for the transfer.	It must be started after the
        * command is issued to the drive, to avoid data corruption in case a spurious
-       * interrupt occured at the bginning of the xfer and the drive is in an unknown
+       * interrupt occured at the beginning of the xfer and the drive is in an unknown
        * state.
        */
 
@@ -1073,7 +1075,7 @@ VOID NEAR SetIOAddress (NPA npA)
 }
 
 /*---------------------------------------------*/
-/* InterruptState			       */
+/* interruptState			       */
 /* --------------			       */
 /*					       */
 /* Continues an ongoing I/O operation.	       */
@@ -1158,7 +1160,7 @@ VOID NEAR InterruptState (NPA npA)
   } else {
     /*--------------------------------------------*/
     /* Handle Other Operations			  */
-    /*	    Recal, SetParam, Identify		  */
+    /*	    Recalibrate, SetParam, Identify  	  */
     /*--------------------------------------------*/
     if (npA->ReqFlags & ACBR_OTHERIO) {
       DoOtherIO (npA);
@@ -1804,9 +1806,10 @@ VOID NEAR ResetCheck (NPA npA)
 }
 
 
-/*---------------------------------------------*/
-/* SendCmdPacket			       */
-/*---------------------------------------------*/
+/**
+ * Send Command Packet
+ * @return 0 if OK
+ */
 
 UCHAR NEAR SendCmdPacket (NPA npA)
 {
@@ -2106,19 +2109,12 @@ USHORT NEAR MapMediaStatus (NPU npU) {
   return 0;
 }
 
-/*--------------------------------------------*/
-/* CreateBMSGList			      */
-/* --------------			      */
-/*					      */
-/* Actions:				      */
-/*	Takes OS/2 scatter/gather list and    */
-/*	builds SFF-8038i compatible list for  */
-/*	DMA controller. 		      */
-/*					      */
-/*					      */
-/* Returns:				      */
-/*	0 if successful 		      */
-/*--------------------------------------------*/
+/**
+ * Create BusMaster DMA Scatter Gather List
+ * Takes OS/2 scatter/gather list and
+ * builds SFF-8038i compatible list for	DMA controller.
+ * @returns 0 if successful
+ */
 
 BOOL NEAR CreateBMSGList (NPA npA)
 {

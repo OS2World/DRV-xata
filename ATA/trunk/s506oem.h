@@ -31,7 +31,7 @@
 #define PCI_SUCCESSFUL		 0
 
 #define MAX_PCI_BASE_REGS	 4
-#define MAX_PCI_DEVICES 	32	/* max per system */
+#define MAX_PCI_DEVICES	32	/* max per system */
 #define MAX_PCI_FUNCTIONS	 8	/* max per device */
 
 /*---------------------------------*/
@@ -45,9 +45,9 @@
 #define PCIREG_COMMAND		0x04
 #define PCIREG_STATUS		0x06
 #define PCIREG_CLASS_CODE	0x08
-#define PCIREG_REVISION 	0x08
+#define PCIREG_REVISION	0x08
 #define PCIREG_PROGIF		0x09
-#define PCIREG_SUBCLASS 	0x0A
+#define PCIREG_SUBCLASS	0x0A
 #define PCIREG_CLASS		0x0B
 #define PCIREG_CACHE_LINE	0x0C
 #define PCIREG_LATENCY		0x0D
@@ -59,7 +59,7 @@
 #define PCIREG_BAR4		0x20
 #define PCIREG_BAR5		0x24
 #define PCIREG_IO_BASE		PCIREG_BAR0
-#define PCIREG_INT_LINE 	0x3C
+#define PCIREG_INT_LINE	0x3C
 #define PCIREG_MIN_GRANT	0x3E
 #define PCIREG_MAX_LAT		0x3F
 #define PCIREG_SUBORDINATE_BUS	0x1A
@@ -138,7 +138,7 @@ typedef enum {
 #define PCID_AMD756	    9  /* AMD 756 IDE */
 #define PCID_AEC62x	   10  /* ARTOP AEC62x */
 #define PCID_SMSC	   11  /* SLC 90C66 */
-#define PCID_SW 	   12  /* ServerWorks SB */
+#define PCID_SW	   12  /* ServerWorks SB */
 #define PCID_OPTI	   13  /* Opti */
 #define PCID_nForce	   14  /* NVidia nForce */
 #define PCID_Geode	   15  /* NS Geode SCx200 */
@@ -180,7 +180,8 @@ typedef struct _PCI_IDENT {
    UCHAR      Index;	  // in PCI device array: hardware type
    UCHAR      Revision;   // in PCI device array: PCI native mode allowed
    UCHAR      TModes;	  // PIO, MWDMA, Channel Timing restrictions
-   UCHAR      SGAlign;	  // DMA buffer alignment restriction
+   UCHAR      SGAlign;	  // DMA buffer alignment restriction, run time value is bit mask
+			  // Init time value is byte count
 
    /* PCI device specific functions to call:	       */
    BOOL       (NEAR *ChipAccept) (struct _A NEAR *);
@@ -215,7 +216,7 @@ typedef struct _PCI_INFO {
    USHORT     PCIAddr;
    PCI_IDENT  Ident;
    USHORT     CompatibleID;	/* compatible PCI device ID */
-   struct _C NEAR *npC; 	/* chip */
+   struct _C NEAR *npC;	/* chip */
    UCHAR      Level;
 } PCI_INFO, NEAR *NPPCI_INFO;
 
@@ -368,7 +369,7 @@ typedef volatile DWORD NEAR *NPVDWORD;
  * IOCTL Function Code Definitions
  */
 
-#define DSKSP_CAT_SMART 	    0x80  /* SMART IOCTL category */
+#define DSKSP_CAT_SMART	    0x80  /* SMART IOCTL category */
 
 #define DSKSP_SMART_ONOFF	    0x20  /* turn SMART on or off */
 #define DSKSP_SMART_AUTOSAVE_ONOFF  0x21  /* turn SMART autosave on or off */
@@ -477,10 +478,10 @@ typedef struct _DeviceCountersData
   WORD	      wRevisionNumber;		  /* counter structure revision */
   ULONG       TotalReadOperations;	  /* total read operations performed */
   ULONG       TotalWriteOperations;	  /* total write operations performed */
-  ULONG       TotalWriteErrors; 	  /* total write errors encountered */
+  ULONG       TotalWriteErrors;	  /* total write errors encountered */
   ULONG       TotalReadErrors;		  /* total read errors encountered */
   ULONG       TotalSeekErrors;		  /* total seek errors encountered */
-  ULONG       TotalSectorsRead; 	  /* total number of sectors read */
+  ULONG       TotalSectorsRead;	  /* total number of sectors read */
   ULONG       TotalSectorsWritten;	  /* total number of sectors written */
 
   ULONG       TotalBMReadOperations;	  /* total bus master DMA read operations */

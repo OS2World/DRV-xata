@@ -697,6 +697,7 @@ UCHAR NEAR HandleFoundAdapter (NPA npA, NPPCI_DEVICE npDev)
     if (npA->ProgIF.b.native)
       npA->FlagsT |= ATBF_INTSHARED;
 
+    // Convert alignment byte count to bit mask, 1 = byte , 2 = word etc.
     npA->SGAlign = MEMBER(npA).SGAlign - 1;
 
     npC->populatedChannels++;		// Count channels used
