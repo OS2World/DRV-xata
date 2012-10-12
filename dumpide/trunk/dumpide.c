@@ -40,6 +40,12 @@ ULONG APIENTRY16 ReadPortPDC (USHORT Port, UCHAR Index);
 ULONG APIENTRY16 ReadPortOpti (USHORT Port);
 VOID APIENTRY16 WritePort (USHORT Port, ULONG Value);
 VOID APIENTRY16 WritePortOpti (USHORT Port, ULONG Value);
+int   APIENTRY16 ReadPCIcfgB (ULONG Port); // Port = 00bbdfrr
+int   APIENTRY16 ReadPCIcfgW (ULONG Port);
+int   APIENTRY16 ReadPCIcfgD (ULONG Port);
+VOID  APIENTRY16 WritePCIcfgB (ULONG Port, UCHAR Value);
+VOID  APIENTRY16 WritePCIcfgW (ULONG Port, USHORT Value);
+VOID  APIENTRY16 WritePCIcfgD (ULONG Port, ULONG Value);
 
 ULONG MapPhysicalToLinear (ULONG PhysicalAddress, ULONG Length);
 static ULONG in32 (int Reg);
@@ -48,6 +54,7 @@ static void out32 (int Reg, ULONG Val);
 static UCHAR clearSATAStatus = 0;
 static UCHAR VIAspecial = 0;
 static UCHAR SISspecial = 0;
+static UCHAR InitioSpecial = 0;
 static UCHAR scanACPI	 = TRUE;
 static UCHAR verboseScan = FALSE;
 
@@ -149,10 +156,12 @@ static void GetPdcSCR_SATA (pAdapter p);
 static void GetPdcSCR_SATA2 (pAdapter p);
 static void GetPdcSCR_Combo (pAdapter p);
 static void GetPdcSCR_Combo2 (pAdapter p);
-static void GetJMicronSCR (pAdapter p);
+static void GetAhci32SCR (pAdapter p);
 static void GetInitioSCR (pAdapter p);
-static void GetViaAHCISCR (pAdapter p);
-static void GetIxpSCR (pAdapter p);
+static void GetMarvellSCR (pAdapter p);
+static void GetSwSCR (pAdapter p);
+
+static void JMicronFnc (pAdapter p);
 
 static tAdapterTable AdapterTable[] = {
   { 0x0640, 0x1095, "CMD 640",                         3, NULL },
@@ -162,21 +171,38 @@ static tAdapterTable AdapterTable[] = {
   { 0x7199, 0x8086, "Intel PIIX4",                     1, FindPiixSB },
   { 0x1571, 0x1106, "VIA 571",                         1, FindSB },
   { 0x0571, 0x1106, "VIA 571",                         3, FindViaSB },
+  { 0x0581, 0x1106, "VIA CX700/VX700 SATA",            3, FindViaSB, GetViaSCR },
+  { 0x0591, 0x1106, "VIA VT8237A SATA",                3, FindViaSB, GetViaSCR },
   { 0x3149, 0x1106, "VIA VT8237/6420 SATA",            3, FindViaSB, GetViaSCR },
-  { 0x3249, 0x1106, "VIA VT6421 SATA",                 3, NULL, GetViaSCR },
   { 0x3164, 0x1106, "VIA VT6410 PATA",                 3, NULL },
-  { 0x3349, 0x1106, "VIA VT8251 SATA",                 3, NULL, GetViaAHCISCR },
+  { 0x3249, 0x1106, "VIA VT6421 SATA",                 3, NULL, GetViaSCR },
+  { 0x3349, 0x1106, "VIA VT8251 SATA",                 3, NULL, GetAhci32SCR },
+  { 0x4149, 0x1106, "VIA VT8237/6420 SATA",            3, FindViaSB, GetViaSCR },
+  { 0x5287, 0x1106, "VIA VT8251 SATA",                 3, NULL, GetAhci32SCR },
+  { 0x5324, 0x1106, "VIA CX700/VX700 PATA",            3, FindViaSB },
+  { 0x5337, 0x1106, "VIA VT8237A SATA",                3, FindViaSB, GetViaSCR },
+  { 0x5372, 0x1106, "VIA ??????? SATA",                3, FindViaSB, GetViaSCR },
+  { 0x6287, 0x1106, "VIA VT8251 SATA",                 3, NULL, GetAhci32SCR },
+  { 0x7353, 0x1106, "VIA CX800/VX800 SATA",            3, FindViaSB, GetViaSCR },
+  { 0x7372, 0x1106, "VIA VT8237S SATA",                3, FindViaSB, GetViaSCR },
   { 0x5229, 0x10B9, "ALi 5229",                        1, FindALiSB },
   { 0x5228, 0x10B9, "ALi 5228",                        2, NULL },
   { 0x5281, 0x10B9, "ALi 5281 SATA",                   2, NULL, GetALiSCR5281 },
   { 0x5287, 0x10B9, "ALi 5287 SATA",                   2, NULL, GetALiSCR5287 },
+  { 0x5288, 0x10B9, "ALi 5288 SATA",                   2, NULL, GetAhci32SCR  },
   { 0x5289, 0x10B9, "ALi 5289 SATA",                   2, NULL, GetALiSCR5289 },
   { 0x5513, 0x1039, "SiS 5513",                        1, FindHB },
   { 0x5517, 0x1039, "SiS 5517",                        1, FindHB },
   { 0x5518, 0x1039, "SiS 5518",                        1, FindHB },
-  { 0x0180, 0x1039, "SiS 180 SATA",                    2, NULL, GetSiSSCR },
-  { 0x0181, 0x1039, "SiS 181 SATA",                    2, NULL, GetSiSSCR },
-  { 0x0182, 0x1039, "SiS 182 SATA",                    2, NULL, GetSiSSCR },
+  { 0x0180, 0x1039, "SiS 964/180 SATA",                2, NULL, GetSiSSCR },
+  { 0x0181, 0x1039, "SiS 964/181 SATA",                2, NULL, GetSiSSCR },
+  { 0x0182, 0x1039, "SiS 965 SATA",                    2, NULL, GetSiSSCR },
+  { 0x0183, 0x1039, "SiS 965 SATA",                    2, NULL, GetSiSSCR },
+  { 0x1180, 0x1039, "SiS 1180 SATA",                   2, NULL, GetSiSSCR },
+  { 0x1182, 0x1039, "SiS 966 SATA",                    2, NULL, GetSiSSCR },
+  { 0x1183, 0x1039, "SiS 966 SATA",                    2, NULL, GetSiSSCR },
+  { 0x1184, 0x1039, "SiS 1184 SATA",                   2, NULL, GetAhci32SCR },
+  { 0x1185, 0x1039, "SiS 1185 SATA",                   2, NULL, GetAhci32SCR },
   { 0x0643, 0x1095, "CMD 643",                         3, NULL },
   { 0x0646, 0x1095, "CMD 646",                         3, NULL },
   { 0x0648, 0x1095, "CMD 648",                         3, NULL },
@@ -232,21 +258,84 @@ static tAdapterTable AdapterTable[] = {
   { 0x24CA, 0x8086, "Intel ICH4",                      1, FindSB },
   { 0x24DB, 0x8086, "Intel ICH5",                      3, FindSB },
   { 0x25A2, 0x8086, "Intel ICH6300",                   3, FindSB },
-  { 0x269E, 0x8086, "Intel ESB",                       3, FindSB },
+  { 0x269E, 0x8086, "Intel ICH631x/2x",                3, FindSB },
   { 0x24D1, 0x8086, "Intel ICH5 SATA",                 3, FindSB },
   { 0x25A3, 0x8086, "Intel ICH5 SATA",                 3, FindSB },
   { 0x24DF, 0x8086, "Intel ICH5R SATA",                3, FindSB },
   { 0x25B0, 0x8086, "Intel ICH5R SATA",                3, FindSB },
   { 0x266F, 0x8086, "Intel ICH6",                      3, FindSB },
-  { 0x2680, 0x8086, "Intel ESB2 SATA",                 3, FindSB },
+  { 0x2680, 0x8086, "Intel ICH631x/2x SATA",           3, FindSB },
+  { 0x2681, 0x8086, "Intel ICH631x/2x SATA (AHCI)",    3, FindSB },
+  { 0x2682, 0x8086, "Intel ICH631x/2x SATA (RAID)",    3, FindSB },
+  { 0x2683, 0x8086, "Intel ICH631x/2x SATA (RAID)",    3, FindSB },
   { 0x27DF, 0x8086, "Intel ICH7",                      3, FindSB },
   { 0x2651, 0x8086, "Intel ICH6 SATA",                 3, FindSB, GetIntelSCR },
   { 0x2652, 0x8086, "Intel ICH6R SATA",                3, FindSB, GetIntelSCR },
   { 0x2653, 0x8086, "Intel ICH6M SATA",                3, FindSB, GetIntelSCR },
   { 0x27C0, 0x8086, "Intel ICH7 SATA",                 3, FindSB, GetIntelSCR },
-  { 0x27C2, 0x8086, "Intel ICH7R SATA",                3, FindSB, GetIntelSCR },
+  { 0x27C1, 0x8086, "Intel ICH7 SATA (AHCI)",          3, FindSB, GetIntelSCR },
   { 0x27C3, 0x8086, "Intel ICH7R SATA",                3, FindSB, GetIntelSCR },
   { 0x27C4, 0x8086, "Intel ICH7M SATA",                3, FindSB, GetIntelSCR },
+  { 0x27C5, 0x8086, "Intel ICH7M SATA (AHCI)",         3, FindSB, GetIntelSCR },
+  { 0x27C6, 0x8086, "Intel ICH7M SATA (RAID)",         3, FindSB, GetIntelSCR },
+  { 0x2820, 0x8086, "Intel ICH8 SATA",                 3, FindSB, GetIntelSCR },
+  { 0x2821, 0x8086, "Intel ICH8 SATA (AHCI)",          3, FindSB, GetIntelSCR },
+  { 0x2822, 0x8086, "Intel ICH8 SATA (RAID)",          3, FindSB, GetIntelSCR },
+  { 0x2824, 0x8086, "Intel ICH8 SATA (AHCI)",          3, FindSB, GetIntelSCR },
+  { 0x2825, 0x8086, "Intel ICH8 SATA",                 3, FindSB, GetIntelSCR },
+  { 0x2828, 0x8086, "Intel ICH8M SATA",                3, FindSB, GetIntelSCR },
+  { 0x2829, 0x8086, "Intel ICH8M SATA (AHCI)",         3, FindSB, GetIntelSCR },
+  { 0x282A, 0x8086, "Intel ICH8M SATA (RAID)",         3, FindSB, GetIntelSCR },
+  { 0x2850, 0x8086, "Intel ICH8M",                     3, FindSB },
+  { 0x2920, 0x8086, "Intel ICH9 SATA",                 3, FindSB, GetIntelSCR },
+  { 0x2921, 0x8086, "Intel ICH9 SATA",                 3, FindSB, GetIntelSCR },
+  { 0x2922, 0x8086, "Intel ICH9 SATA (AHCI)",          3, FindSB, GetIntelSCR },
+  { 0x2923, 0x8086, "Intel ICH9 SATA (AHCI)",          3, FindSB, GetIntelSCR },
+  { 0x2924, 0x8086, "Intel ICH9 SATA (AHCI)",          3, FindSB, GetIntelSCR },
+  { 0x2925, 0x8086, "Intel ICH9 SATA (AHCI)",          3, FindSB, GetIntelSCR },
+  { 0x2926, 0x8086, "Intel ICH9 SATA",                 3, FindSB, GetIntelSCR },
+  { 0x2927, 0x8086, "Intel ICH9 SATA (AHCI)",          3, FindSB, GetIntelSCR },
+  { 0x2928, 0x8086, "Intel ICH9M SATA",                3, FindSB, GetIntelSCR },
+  { 0x2929, 0x8086, "Intel ICH9M SATA (AHCI)",         3, FindSB, GetIntelSCR },
+  { 0x292A, 0x8086, "Intel ICH9M SATA (AHCI)",         3, FindSB, GetIntelSCR },
+  { 0x292B, 0x8086, "Intel ICH9M SATA (AHCI)",         3, FindSB, GetIntelSCR },
+  { 0x292D, 0x8086, "Intel ICH9M SATA",                3, FindSB, GetIntelSCR },
+  { 0x292E, 0x8086, "Intel ICH9M SATA",                3, FindSB, GetIntelSCR },
+  { 0x292F, 0x8086, "Intel ICH9M SATA (AHCI)",         3, FindSB, GetIntelSCR },
+  { 0x294D, 0x8086, "Intel ICH9 SATA (AHCI)",          3, FindSB, GetIntelSCR },
+  { 0x294E, 0x8086, "Intel ICH9M SATA (AHCI)",         3, FindSB, GetIntelSCR },
+  { 0x2986, 0x8086, "Intel IDE ME Redirection",        3, NULL },
+  { 0x2996, 0x8086, "Intel IDE ME Redirection",        3, NULL },
+  { 0x29A6, 0x8086, "Intel IDE ME Redirection",        3, NULL },
+  { 0x29B6, 0x8086, "Intel IDE ME Redirection",        3, NULL },
+  { 0x29C6, 0x8086, "Intel IDE ME Redirection",        3, NULL },
+  { 0x29D6, 0x8086, "Intel IDE ME Redirection",        3, NULL },
+  { 0x29E6, 0x8086, "Intel IDE ME Redirection",        3, NULL },
+  { 0x29F6, 0x8086, "Intel IDE ME Redirection",        3, NULL },
+  { 0x2A06, 0x8086, "Intel IDE ME Redirection",        3, NULL },
+  { 0x2A16, 0x8086, "Intel IDE ME Redirection",        3, NULL },
+  { 0x2A52, 0x8086, "Intel IDE ME Redirection",        3, NULL },
+  { 0x2E06, 0x8086, "Intel IDE ME Redirection",        3, NULL },
+  { 0x3A00, 0x8086, "Intel ICH10 SATA",                3, FindSB, GetIntelSCR },
+  { 0x3A05, 0x8086, "Intel ICH10 SATA (AHCI)",         3, FindSB, GetIntelSCR },
+  { 0x3A06, 0x8086, "Intel ICH10 SATA",                3, FindSB, GetIntelSCR },
+  { 0x3A20, 0x8086, "Intel ICH10 SATA",                3, FindSB, GetIntelSCR },
+  { 0x3A25, 0x8086, "Intel ICH10 SATA (AHCI)",         3, FindSB, GetIntelSCR },
+  { 0x3A26, 0x8086, "Intel ICH10 SATA",                3, FindSB, GetIntelSCR },
+  { 0x3B20, 0x8086, "Intel PCH SATA",                  3, FindSB, GetIntelSCR },
+  { 0x3B21, 0x8086, "Intel PCH SATA",                  3, FindSB, GetIntelSCR },
+  { 0x3B26, 0x8086, "Intel PCH SATA",                  3, FindSB, GetIntelSCR },
+  { 0x3B24, 0x8086, "Intel PCH SATA (AHCI)",           3, FindSB, GetIntelSCR },
+  { 0x3B25, 0x8086, "Intel PCH SATA (AHCI)",           3, FindSB, GetIntelSCR },
+  { 0x3B28, 0x8086, "Intel PCH SATA",                  3, FindSB, GetIntelSCR },
+  { 0x3B2B, 0x8086, "Intel PCH SATA (AHCI)",           3, FindSB, GetIntelSCR },
+  { 0x3B2C, 0x8086, "Intel PCH SATA (AHCI)",           3, FindSB, GetIntelSCR },
+  { 0x3B2D, 0x8086, "Intel PCH SATA",                  3, FindSB, GetIntelSCR },
+  { 0x3B2E, 0x8086, "Intel PCH SATA",                  3, FindSB, GetIntelSCR },
+  { 0x5028, 0x8086, "Intel Tolapai SATA",              3, FindSB, GetIntelSCR },
+  { 0x502A, 0x8086, "Intel Tolapai SATA (AHCI)",       3, FindSB, GetIntelSCR },
+  { 0x502B, 0x8086, "Intel Tolapai SATA (AHCI)",       3, FindSB, GetIntelSCR },
+  { 0x811A, 0x8086, "Intel SCH",                       1, NULL },
   { 0x0102, 0x1078, "Cyrix 5530",                      1, NULL },
   { 0x0004, 0x1103, "HPT 36x/37x",                     2, NULL },
   { 0x0005, 0x1103, "HPT 372A",                        2, NULL },
@@ -269,16 +358,24 @@ static tAdapterTable AdapterTable[] = {
   { 0x0211, 0x1166, "ServerWorks OSB4",                1, FindSwSB },
   { 0x0212, 0x1166, "ServerWorks CSB5",                1, FindSwSB },
   { 0x0213, 0x1166, "ServerWorks CSB6",                1, FindSwSB },
-  { 0x0214, 0x1166, "ServerWorks HT1000 / BCM5785",    1, FindSwSB },
+  { 0x0214, 0x1166, "ServerWorks HT1000/BCM5785 PATA", 1, FindSwSB },
+  { 0x024A, 0x1166, "ServerWorks HT1000/BCM5785 SATA", 3, NULL, GetSwSCR },
   { 0x4349, 0x1002, "ATI IXP200",                      1, FindSB },
-  { 0x4369, 0x1002, "ATI IXP300",                      1, FindSB },
-  { 0x4376, 0x1002, "ATI IXP400",                      1, FindSB },
-  { 0x438C, 0x1002, "ATI IXP600",                      1, FindSB },
+  { 0x4369, 0x1002, "ATI IXP300 PATA",                 1, FindSB },
+  { 0x4376, 0x1002, "ATI IXP400 PATA",                 1, FindSB },
+  { 0x438C, 0x1002, "ATI IXP600 PATA",                 1, FindSB },
+  { 0x439C, 0x1002, "ATI IXP700 PATA",                 1, FindSB },
   { 0x436E, 0x1002, "ATI IXP300 SATA",                 2, NULL, GetSiISCR },
   { 0x4379, 0x1002, "ATI IXP400 SATA",                 2, NULL, GetSiISCR },
   { 0x437A, 0x1002, "ATI IXP400 SATA",                 2, NULL, GetSiISCR },
-  { 0x4380, 0x1002, "ATI IXP600 SATA",                 2, NULL, GetIxpSCR },
-  { 0x4381, 0x1002, "ATI IXP600 SATA",                 2, NULL, GetIxpSCR },
+  { 0x4380, 0x1002, "ATI IXP600 SATA",                 2, NULL, GetAhci32SCR },
+  { 0x4381, 0x1002, "ATI IXP600 SATA",                 2, NULL, GetAhci32SCR },
+  { 0x4390, 0x1002, "ATI IXP700/800 SATA",             2, NULL, GetAhci32SCR },
+  { 0x4391, 0x1002, "ATI IXP700/800 SATA",             2, NULL, GetAhci32SCR },
+  { 0x4392, 0x1002, "ATI IXP700/800 SATA",             2, NULL, GetAhci32SCR },
+  { 0x4393, 0x1002, "ATI IXP700/800 SATA",             2, NULL, GetAhci32SCR },
+  { 0x4394, 0x1002, "ATI IXP700/800 SATA",             2, NULL, GetAhci32SCR },
+  { 0x4395, 0x1002, "ATI IXP700/800 SATA",             2, NULL, GetAhci32SCR },
   { 0xC558, 0x1045, "Opti Viper",                      1, FindOptiSB },
   { 0xC621, 0x1045, "Opti Viper",                      1, FindOptiSB },
   { 0xD568, 0x1045, "Opti Viper",                      1, FindOptiSB },
@@ -291,8 +388,13 @@ static tAdapterTable AdapterTable[] = {
   { 0x00E5, 0x10DE, "Nvidia nForce3 ultra",            3, NULL },
   { 0x0035, 0x10DE, "Nvidia nForce4 M04",              3, NULL },
   { 0x0053, 0x10DE, "Nvidia nForce4 C04",              3, NULL },
-  { 0x0265, 0x10DE, "Nvidia nForce5 M51",              3, NULL },
-  { 0x036E, 0x10DE, "Nvidia nForce5 M55",              3, NULL },
+  { 0x0265, 0x10DE, "Nvidia nForce M51",               3, NULL },
+  { 0x036E, 0x10DE, "Nvidia nForce M55",               3, NULL },
+  { 0x03EC, 0x10DE, "Nvidia nForce M61",               3, NULL },
+  { 0x0448, 0x10DE, "Nvidia nForce M65",               3, NULL },
+  { 0x0560, 0x10DE, "Nvidia nForce M67",               3, NULL },
+  { 0x056C, 0x10DE, "Nvidia nForce M71",               3, NULL },
+  { 0x0759, 0x10DE, "Nvidia nForce M77",               3, NULL },
   { 0x008E, 0x10DE, "Nvidia nForce2 ultra SATA",       3, NULL, GetNvidiaSCR },
   { 0x00E3, 0x10DE, "Nvidia nForce3 CK8 SATA",         3, NULL, GetNvidiaSCR },
   { 0x00EE, 0x10DE, "Nvidia nForce3 CK8 SATA",         3, NULL, GetNvidiaSCR },
@@ -300,16 +402,54 @@ static tAdapterTable AdapterTable[] = {
   { 0x003E, 0x10DE, "Nvidia nForce4 M04 SATA",         3, NULL, GetNvidiaSCR },
   { 0x0054, 0x10DE, "Nvidia nForce4 C04 SATA",         3, NULL, GetNvidiaSCR },
   { 0x0055, 0x10DE, "Nvidia nForce4 C04 SATA",         3, NULL, GetNvidiaSCR },
-  { 0x0266, 0x10DE, "Nvidia nForce5 M51 SATA",         3, NULL, GetNvidiaSCR },
-  { 0x0267, 0x10DE, "Nvidia nForce5 M51 SATA",         3, NULL, GetNvidiaSCR },
-  { 0x036F, 0x10DE, "Nvidia nForce5 M55 SATA",         3, NULL, GetNvidiaSCR },
+  { 0x0266, 0x10DE, "Nvidia nForce M51 SATA",          3, NULL, GetNvidiaSCR },
+  { 0x0267, 0x10DE, "Nvidia nForce M51 SATA",          3, NULL, GetNvidiaSCR },
+  { 0x037E, 0x10DE, "Nvidia nForce M55 SATA",          3, NULL, GetNvidiaSCR },
+  { 0x037F, 0x10DE, "Nvidia nForce M55 SATA",          3, NULL, GetNvidiaSCR },
+  { 0x03F6, 0x10DE, "Nvidia nForce M61 SATA",          3, NULL, GetNvidiaSCR },
+  { 0x03F7, 0x10DE, "Nvidia nForce M61 SATA",          3, NULL, GetNvidiaSCR },
+  { 0x03E7, 0x10DE, "Nvidia nForce M61 SATA",          3, NULL, GetNvidiaSCR },
+  { 0x045C, 0x10DE, "Nvidia nForce M65 SATA",          3, NULL, GetAhci32SCR },
+  { 0x045D, 0x10DE, "Nvidia nForce M65 SATA",          3, NULL, GetAhci32SCR },
+  { 0x045E, 0x10DE, "Nvidia nForce M65 SATA",          3, NULL, GetAhci32SCR },
+  { 0x045F, 0x10DE, "Nvidia nForce M65 SATA",          3, NULL, GetAhci32SCR },
+  { 0x0550, 0x10DE, "Nvidia nForce M67 SATA",          3, NULL, GetAhci32SCR },
+  { 0x0551, 0x10DE, "Nvidia nForce M67 SATA",          3, NULL, GetAhci32SCR },
+  { 0x0552, 0x10DE, "Nvidia nForce M67 SATA",          3, NULL, GetAhci32SCR },
+  { 0x0553, 0x10DE, "Nvidia nForce M67 SATA",          3, NULL, GetAhci32SCR },
+  { 0x07F0, 0x10DE, "Nvidia nForce M73 SATA",          3, NULL, GetAhci32SCR },
+  { 0x07F1, 0x10DE, "Nvidia nForce M73 SATA",          3, NULL, GetAhci32SCR },
+  { 0x07F2, 0x10DE, "Nvidia nForce M73 SATA",          3, NULL, GetAhci32SCR },
+  { 0x07F3, 0x10DE, "Nvidia nForce M73 SATA",          3, NULL, GetAhci32SCR },
+  { 0x0AD0, 0x10DE, "Nvidia nForce M77 SATA",          3, NULL, GetAhci32SCR },
+  { 0x0AD1, 0x10DE, "Nvidia nForce M77 SATA",          3, NULL, GetAhci32SCR },
+  { 0x0AD2, 0x10DE, "Nvidia nForce M77 SATA",          3, NULL, GetAhci32SCR },
+  { 0x0AD3, 0x10DE, "Nvidia nForce M77 SATA",          3, NULL, GetAhci32SCR },
+  { 0x0AB4, 0x10DE, "Nvidia nForce M79 SATA",          3, NULL, GetAhci32SCR },
+  { 0x0AB5, 0x10DE, "Nvidia nForce M79 SATA",          3, NULL, GetAhci32SCR },
+  { 0x0AB6, 0x10DE, "Nvidia nForce M79 SATA",          3, NULL, GetAhci32SCR },
+  { 0x0AB7, 0x10DE, "Nvidia nForce M79 SATA",          3, NULL, GetAhci32SCR },
   { 0x0502, 0x100B, "NS Geode SCx200",                 1, NULL },
   { 0x8211, 0x1283, "ITE 8211",                        2, NULL },
   { 0x8212, 0x1283, "ITE 8212",                        2, NULL },
+  { 0x8213, 0x1283, "ITE 8213",                        2, NULL },
   { 0x0044, 0x169C, "NetCell SyncRAID",                2, NULL },
-  { 0x2360, 0x197B, "JMicron JMB360 SATA",             2, NULL, GetJMicronSCR },
-  { 0x2363, 0x197B, "JMicron JMB363 xATA",             2, NULL, GetJMicronSCR },
-  { 0x1622, 0x1101, "Initio SATA",                     2, NULL, GetInitioSCR },
+  { 0x2360, 0x197B, "JMicron JMB360 SATA",          0x12, NULL, GetAhci32SCR },
+  { 0x2361, 0x197B, "JMicron JMB361 SATA",          0x12, NULL, GetAhci32SCR },
+  { 0x2363, 0x197B, "JMicron JMB363 xATA",          0x12, JMicronFnc, GetAhci32SCR },
+  { 0x2365, 0x197B, "JMicron JMB365 xATA",          0x12, NULL, GetAhci32SCR },
+  { 0x2366, 0x197B, "JMicron JMB366 xATA",          0x12, NULL, GetAhci32SCR },
+  { 0x2368, 0x197B, "JMicron JMB368 xATA",          0x12, NULL, GetAhci32SCR },
+  { 0x1622, 0x1101, "Initio SATA",                     2, NULL, GetInitioSCR  },
+  { 0x6101, 0x11AB, "Marvell 61xx xATA",               2, NULL, GetMarvellSCR },
+  { 0x6111, 0x11AB, "Marvell 61xx xATA",               2, NULL, GetMarvellSCR },
+  { 0x6120, 0x11AB, "Marvell 61xx xATA",               2, NULL, GetMarvellSCR },
+  { 0x6121, 0x11AB, "Marvell 61xx xATA",               2, NULL, GetMarvellSCR },
+  { 0x6122, 0x11AB, "Marvell 61xx xATA",               2, NULL, GetMarvellSCR },
+  { 0x6123, 0x11AB, "Marvell 61xx xATA",               2, NULL, GetMarvellSCR },
+  { 0x6140, 0x11AB, "Marvell 61xx xATA",               2, NULL, GetMarvellSCR },
+  { 0x6141, 0x11AB, "Marvell 61xx xATA",               2, NULL, GetMarvellSCR },
+  { 0x6145, 0x11AB, "Marvell 61xx xATA",               2, NULL, GetMarvellSCR },
   { 0, 0, "Generic SFF-8038i compliant PCI busmaster", 3, CheckGeneric },
   { 0, 0, "Generic PCI IDE (no busmaster DMA)",        3, NULL }
 };
@@ -317,203 +457,247 @@ static tAdapterTable AdapterTable[] = {
 /* --------------------------------------------------------------------------*/
 
 static int PCIBIOSPresent (char *VersionMajor, char *VersionMinor, char *BusCount) {
-  struct {
-    BYTE SubFunction;
-  } Parm = {0} ;
-  ULONG ParmLen = sizeof (Parm);
-  struct {
-    BYTE rc;
-    BYTE Mechanism;
-    BYTE VMajor, VMinor;
-    BYTE LastBus;
-  } Data;
-  ULONG DataLen = sizeof (Data);
+  if (hPCI) {
+    struct {
+      BYTE SubFunction;
+    } Parm = {0} ;
+    ULONG ParmLen = sizeof (Parm);
+    struct {
+      BYTE rc;
+      BYTE Mechanism;
+      BYTE VMajor, VMinor;
+      BYTE LastBus;
+    } Data = {0, 0, 0, 0};
+    ULONG DataLen = sizeof (Data);
 
-  DosDevIOCtl (hPCI, 0x80, 0x0B, &Parm, ParmLen, &ParmLen, &Data, DataLen, &DataLen);
-  if (0 == Data.rc) {
-    *VersionMajor = Data.VMajor;
-    *VersionMinor = Data.VMinor;
-    *BusCount	  = Data.LastBus;
+    DosDevIOCtl (hPCI, 0x80, 0x0B, &Parm, ParmLen, &ParmLen, &Data, DataLen, &DataLen);
+    if (0 == Data.rc) {
+      *VersionMajor = Data.VMajor;
+      *VersionMinor = Data.VMinor;
+      *BusCount     = Data.LastBus;
+    }
+    return (Data.rc);
+  } else {
+      *VersionMajor = 0;
+      *VersionMinor = 0;
+      *BusCount     = 0;
+    return (-1);
   }
-  return (Data.rc);
 }
 
 static int PCIFindDevice (int DeviceId, int VendorId, int Occurence,
 			  char *Bus, char *Device, char *Function) {
-  struct {
-    BYTE SubFunction;
-    WORD DeviceID;
-    WORD VendorID;
-    BYTE Index;
-  } Parm = {1};
-  ULONG ParmLen = sizeof (Parm);
-  struct {
-    BYTE rc;
-    BYTE Bus;
-    BYTE DevFunc;
-  } Data;
-  ULONG DataLen = sizeof (Data);
+  if (hPCI) {
+    struct {
+      BYTE SubFunction;
+      WORD DeviceID;
+      WORD VendorID;
+      BYTE Index;
+    } Parm = {1};
+    ULONG ParmLen = sizeof (Parm);
+    struct {
+      BYTE rc;
+      BYTE Bus;
+      BYTE DevFunc;
+    } Data;
+    ULONG DataLen = sizeof (Data);
 
-  Parm.DeviceID = DeviceId;
-  Parm.VendorID = VendorId;
+    Parm.DeviceID = DeviceId;
+    Parm.VendorID = VendorId;
 
-  DosDevIOCtl (hPCI, 0x80, 0x0B, &Parm, ParmLen, &ParmLen, &Data, DataLen, &DataLen);
-  if (0 == Data.rc) {
-    *Bus      = Data.Bus;
-    *Device   = (Data.DevFunc >> 3) & 0x1F;
-    *Function = Data.DevFunc & 0x07;
+    DosDevIOCtl (hPCI, 0x80, 0x0B, &Parm, ParmLen, &ParmLen, &Data, DataLen, &DataLen);
+    if (0 == Data.rc) {
+      *Bus	= Data.Bus;
+      *Device	= (Data.DevFunc >> 3) & 0x1F;
+      *Function = Data.DevFunc & 0x07;
+    }
+    return (Data.rc);
+  } else {
+    *Bus      = 255;
+    *Device   = 31;
+    *Function = 7;
+    return (-1);
   }
-  return (Data.rc);
 }
 
 static int PCIReadConfigB (char Bus, char Device, char Function, int Reg,
 			   char *Value) {
-  struct {
-    BYTE SubFunction;
-    BYTE Bus, DevFunc;
-    BYTE Register;
-    BYTE Size;
-  } Parm = {3, 0, 0, 0, 1};
-  ULONG ParmLen = sizeof (Parm);
-  struct {
-    BYTE  rc;
-    ULONG Data;
-  } Data;
-  ULONG DataLen = sizeof (Data);
+  if (hPCI) {
+    struct {
+      BYTE SubFunction;
+      BYTE Bus, DevFunc;
+      BYTE Register;
+      BYTE Size;
+    } Parm = {3, 0, 0, 0, 1};
+    ULONG ParmLen = sizeof (Parm);
+    struct {
+      BYTE  rc;
+      ULONG Data;
+    } Data;
+    ULONG DataLen = sizeof (Data);
 
-  Parm.Bus	= Bus;
-  Parm.DevFunc	= (Device << 3) | (Function & 0x07);
-  Parm.Register = Reg;
+    Parm.Bus	  = Bus;
+    Parm.DevFunc  = (Device << 3) | (Function & 0x07);
+    Parm.Register = Reg;
 
-  DosDevIOCtl (hPCI, 0x80, 0x0B, &Parm, ParmLen, &ParmLen, &Data, DataLen, &DataLen);
-  if (0 == Data.rc) {
-    *Value = Data.Data;
+    DosDevIOCtl (hPCI, 0x80, 0x0B, &Parm, ParmLen, &ParmLen, &Data, DataLen, &DataLen);
+    if (0 == Data.rc) {
+      *Value = Data.Data;
+    }
+    return (Data.rc);
+  } else {
+    *Value = ReadPCIcfgB ((Bus << 16) | (Device << 11) | (Function << 8) | Reg);
+    return (0);
   }
-  return (Data.rc);
 }
 
 static int PCIReadConfigW (char Bus, char Device, char Function, int Reg,
 			   USHORT *Value) {
-  struct {
-    BYTE SubFunction;
-    BYTE Bus, DevFunc;
-    BYTE Register;
-    BYTE Size;
-  } Parm = {3, 0, 0, 0, 2};
-  ULONG ParmLen = sizeof (Parm);
-  struct {
-    BYTE  rc;
-    ULONG Data;
-  } Data;
-  ULONG DataLen = sizeof (Data);
+  if (hPCI) {
+    struct {
+      BYTE SubFunction;
+      BYTE Bus, DevFunc;
+      BYTE Register;
+      BYTE Size;
+    } Parm = {3, 0, 0, 0, 2};
+    ULONG ParmLen = sizeof (Parm);
+    struct {
+      BYTE  rc;
+      ULONG Data;
+    } Data;
+    ULONG DataLen = sizeof (Data);
 
-  Parm.Bus	= Bus;
-  Parm.DevFunc	= (Device << 3) | (Function & 0x07);
-  Parm.Register = Reg;
+    Parm.Bus	  = Bus;
+    Parm.DevFunc  = (Device << 3) | (Function & 0x07);
+    Parm.Register = Reg;
 
-  DosDevIOCtl (hPCI, 0x80, 0x0B, &Parm, ParmLen, &ParmLen, &Data, DataLen, &DataLen);
-  if (0 == Data.rc) {
-    *Value = Data.Data;
+    DosDevIOCtl (hPCI, 0x80, 0x0B, &Parm, ParmLen, &ParmLen, &Data, DataLen, &DataLen);
+    if (0 == Data.rc) {
+      *Value = Data.Data;
+    }
+    return (Data.rc);
+  } else {
+    *Value = ReadPCIcfgW ((Bus << 16) | (Device << 11) | (Function << 8) | Reg);
+    return (0);
   }
-  return (Data.rc);
 }
 
 static int PCIReadConfigL (char Bus, char Device, char Function, int Reg,
 			   ULONG *Value) {
-  struct {
-    BYTE SubFunction;
-    BYTE Bus, DevFunc;
-    BYTE Register;
-    BYTE Size;
-  } Parm = {3, 0, 0, 0, 4};
-  ULONG ParmLen = sizeof (Parm);
-  struct {
-    BYTE  rc;
-    ULONG Data;
-  } Data;
-  ULONG DataLen = sizeof (Data);
+  if (hPCI) {
+    struct {
+      BYTE SubFunction;
+      BYTE Bus, DevFunc;
+      BYTE Register;
+      BYTE Size;
+    } Parm = {3, 0, 0, 0, 4};
+    ULONG ParmLen = sizeof (Parm);
+    struct {
+      BYTE  rc;
+      ULONG Data;
+    } Data;
+    ULONG DataLen = sizeof (Data);
 
-  Parm.Bus	= Bus;
-  Parm.DevFunc	= (Device << 3) | (Function & 0x07);
-  Parm.Register = Reg;
+    Parm.Bus	  = Bus;
+    Parm.DevFunc  = (Device << 3) | (Function & 0x07);
+    Parm.Register = Reg;
 
-  DosDevIOCtl (hPCI, 0x80, 0x0B, &Parm, ParmLen, &ParmLen, &Data, DataLen, &DataLen);
-  if (0 == Data.rc) {
-    *Value = Data.Data;
+    DosDevIOCtl (hPCI, 0x80, 0x0B, &Parm, ParmLen, &ParmLen, &Data, DataLen, &DataLen);
+    if (0 == Data.rc) {
+      *Value = Data.Data;
+    }
+    return (Data.rc);
+  } else {
+    *Value = ReadPCIcfgD ((Bus << 16) | (Device << 11) | (Function << 8) | Reg);
+    return (0);
   }
-  return (Data.rc);
 }
 
 static int PCIWriteConfigL (char Bus, char Device, char Function, int Reg,
 			   ULONG Value) {
-  struct {
-    BYTE SubFunction;
-    BYTE Bus, DevFunc;
-    BYTE Register;
-    BYTE Size;
-    ULONG Data;
-  } Parm = {4, 0, 0, 0, 4, 0};
-  ULONG ParmLen = sizeof (Parm);
-  struct {
-    BYTE  rc;
-  } Data;
-  ULONG DataLen = sizeof (Data);
+  if (hPCI) {
+    struct {
+      BYTE SubFunction;
+      BYTE Bus, DevFunc;
+      BYTE Register;
+      BYTE Size;
+      ULONG Data;
+    } Parm = {4, 0, 0, 0, 4, 0};
+    ULONG ParmLen = sizeof (Parm);
+    struct {
+      BYTE  rc;
+    } Data;
+    ULONG DataLen = sizeof (Data);
 
-  Parm.Bus	= Bus;
-  Parm.DevFunc	= (Device << 3) | (Function & 0x07);
-  Parm.Register = Reg;
-  Parm.Data	= Value;
+    Parm.Bus	  = Bus;
+    Parm.DevFunc  = (Device << 3) | (Function & 0x07);
+    Parm.Register = Reg;
+    Parm.Data	  = Value;
 
-  DosDevIOCtl (hPCI, 0x80, 0x0B, &Parm, ParmLen, &ParmLen, &Data, DataLen, &DataLen);
-  return (Data.rc);
+    DosDevIOCtl (hPCI, 0x80, 0x0B, &Parm, ParmLen, &ParmLen, &Data, DataLen, &DataLen);
+    return (Data.rc);
+  } else {
+    WritePCIcfgD ((Bus << 16) | (Device << 11) | (Function << 8) | Reg, Value);
+    return (0);
+  }
 }
 
 static int PCIWriteConfigW (char Bus, char Device, char Function, int Reg,
 			   USHORT Value) {
-  struct {
-    BYTE SubFunction;
-    BYTE Bus, DevFunc;
-    BYTE Register;
-    BYTE Size;
-    ULONG Data;
-  } Parm = {4, 0, 0, 0, 2, 0};
-  ULONG ParmLen = sizeof (Parm);
-  struct {
-    BYTE  rc;
-  } Data;
-  ULONG DataLen = sizeof (Data);
+  if (hPCI) {
+    struct {
+      BYTE SubFunction;
+      BYTE Bus, DevFunc;
+      BYTE Register;
+      BYTE Size;
+      ULONG Data;
+    } Parm = {4, 0, 0, 0, 2, 0};
+    ULONG ParmLen = sizeof (Parm);
+    struct {
+      BYTE  rc;
+    } Data;
+    ULONG DataLen = sizeof (Data);
 
-  Parm.Bus	= Bus;
-  Parm.DevFunc	= (Device << 3) | (Function & 0x07);
-  Parm.Register = Reg;
-  Parm.Data	= Value;
+    Parm.Bus	  = Bus;
+    Parm.DevFunc  = (Device << 3) | (Function & 0x07);
+    Parm.Register = Reg;
+    Parm.Data	  = Value;
 
-  DosDevIOCtl (hPCI, 0x80, 0x0B, &Parm, ParmLen, &ParmLen, &Data, DataLen, &DataLen);
-  return (Data.rc);
+    DosDevIOCtl (hPCI, 0x80, 0x0B, &Parm, ParmLen, &ParmLen, &Data, DataLen, &DataLen);
+    return (Data.rc);
+  } else {
+    WritePCIcfgW ((Bus << 16) | (Device << 11) | (Function << 8) | Reg, Value);
+    return (0);
+  }
 }
 
 static int PCIWriteConfigB (char Bus, char Device, char Function, int Reg,
 			   UCHAR Value) {
-  struct {
-    BYTE SubFunction;
-    BYTE Bus, DevFunc;
-    BYTE Register;
-    BYTE Size;
-    ULONG Data;
-  } Parm = {4, 0, 0, 0, 1, 0};
-  ULONG ParmLen = sizeof (Parm);
-  struct {
-    BYTE  rc;
-  } Data;
-  ULONG DataLen = sizeof (Data);
+  if (hPCI) {
+    struct {
+      BYTE SubFunction;
+      BYTE Bus, DevFunc;
+      BYTE Register;
+      BYTE Size;
+      ULONG Data;
+    } Parm = {4, 0, 0, 0, 1, 0};
+    ULONG ParmLen = sizeof (Parm);
+    struct {
+      BYTE  rc;
+    } Data;
+    ULONG DataLen = sizeof (Data);
 
-  Parm.Bus	= Bus;
-  Parm.DevFunc	= (Device << 3) | (Function & 0x07);
-  Parm.Register = Reg;
-  Parm.Data	= Value;
+    Parm.Bus	  = Bus;
+    Parm.DevFunc  = (Device << 3) | (Function & 0x07);
+    Parm.Register = Reg;
+    Parm.Data	  = Value;
 
-  DosDevIOCtl (hPCI, 0x80, 0x0B, &Parm, ParmLen, &ParmLen, &Data, DataLen, &DataLen);
-  return (Data.rc);
+    DosDevIOCtl (hPCI, 0x80, 0x0B, &Parm, ParmLen, &ParmLen, &Data, DataLen, &DataLen);
+    return (Data.rc);
+  } else {
+    WritePCIcfgB ((Bus << 16) | (Device << 11) | (Function << 8) | Reg, Value);
+    return (0);
+  }
 }
 
 static ULONG GetRangeSize (char Bus, char Device, char Function, int Reg) {
@@ -532,10 +716,12 @@ static ULONG GetRangeSize (char Bus, char Device, char Function, int Reg) {
     Test &= 0xFFFFFFF0UL;
   }
   Test = ~Test + 1;
-  if (Save & 1)
+  if (Save & 1) {
     PCIWriteConfigW (Bus, Device, Function, Reg, Save);
-  else
+    Test &= 0xFFFF;
+  } else {
     PCIWriteConfigL (Bus, Device, Function, Reg, Save);
+  }
 
   return (Test);
 }
@@ -610,13 +796,14 @@ static pAdapter matchAdapter (UCHAR Bus, UCHAR Dev, UCHAR Fnc) {
   return (NULL);
 }
 
-static void HandlePCIFunction (UCHAR Bus, UCHAR Dev, UCHAR Fnc, USHORT Class) {
+static UCHAR HandlePCIFunction (UCHAR Bus, UCHAR Dev, UCHAR Fnc, USHORT Class) {
   union {
     struct {
       UCHAR Sub, Base;
     } Cls;
     USHORT Class;
   } ClassCode;
+  UCHAR numHiddenFunctions = 0;
 
   ClassCode.Class = Class;
 
@@ -651,7 +838,7 @@ static void HandlePCIFunction (UCHAR Bus, UCHAR Dev, UCHAR Fnc, USHORT Class) {
 
 	q->Bus = Bus;
 	q->Dev = Dev;
-	q->Fnc = Fnc & 7;
+	q->Fnc = Fnc & (MAX_PCI_FUNCTIONS - 1);
 	q->Rev = Revision;
 	q->ProgIF = ProgIF;
 	q->Vendor = ChipID.Vendor;
@@ -659,8 +846,19 @@ static void HandlePCIFunction (UCHAR Bus, UCHAR Dev, UCHAR Fnc, USHORT Class) {
 	q->PCIIRQ  = (IRQ == 0xFF) ? 0 : IRQ;
 	q->Adapter = p;
       }
+
+      if (0 == Fnc) numHiddenFunctions = (p->Config >> 4) & (MAX_PCI_FUNCTIONS - 1);
+      if (numHiddenFunctions) {
+	UCHAR HeaderType;
+
+	PCIReadConfigB (Bus, Dev, Fnc, PCIREG_HEADER_TYPE, &HeaderType);
+	HeaderType |= 0x80;
+	PCIWriteConfigB (Bus, Dev, Fnc, PCIREG_HEADER_TYPE, HeaderType);
+      }
     }
   }
+
+  return (numHiddenFunctions);
 }
 
 static void ScanPCIDevices (void) {
@@ -698,7 +896,7 @@ static void ScanPCIDevices (void) {
 	if (HeaderType == 0xFF) continue;
 
 if (verboseScan)
-  printf ("Bus:%d Dev:%2d Fnc:%d   Class:%04X   Hdr:%02X\n", Bus, Dev, Fnc, Class, HeaderType);
+  printf ("%2d:%02d.%02d  Class:%04X  Hdr:%02X", Bus, Dev, Fnc, Class, HeaderType);
 
 	if ((0 == Fnc) && !(HeaderType & 0x80)) {
 
@@ -722,10 +920,13 @@ if (verboseScan)
 	    PCIReadConfigB (Bus, Dev, Fnc, PCIREG_SECONDARY_BUS,   &SecBus);
 	    PCIReadConfigB (Bus, Dev, Fnc, PCIREG_SUBORDINATE_BUS, &SubBus);
 
-if (verboseScan)
-  printf ("   Bridge %d->%d..%d\n", PriBus, SecBus, SubBus);
-
-	    /* check for invalid values */
+if (verboseScan) {
+  if (SecBus == SubBus)
+    printf ("   Bridge %d->%d", PriBus, SecBus);
+  else
+    printf ("   Bridge %d->%d..%d", PriBus, SecBus, SubBus);
+}
+	     /* check for invalid values */
 
 	    if ((PriBus == 0xFF) || (PriBus != Bus)) continue;
 	    if (SecBus == 0) continue;
@@ -751,14 +952,32 @@ if (verboseScan)
 
 	  if (Class == PCI_CLASS_BRIDGE_HOST) {
 	    USHORT  Command;
-	    pBridge pB;
+	    pBridge pB = Bridges + Bus;
 
-	    PCIReadConfigW (Bus, Dev, Fnc, PCIREG_COMMAND, &Command);
-	    if ((Command == 0) || (Command == 0xFFFF)) continue;
+if (verboseScan)
+    printf ("   Bridge H->%d", Bus);
 
-	    /* this is an active HOST->PCI bridge */
+	    /* this is a HOST->PCI bridge
+	     *
+	     * on some systems there might be multiple 'fake' HOST->PCI bridges,
+	     * record them all and sort the correct one out in the ACPI scan.
+	     * additional bridges get stored in the top region of the bridge
+	     * list, linked by the SubBus member
+	     */
 
-	    pB = Bridges + Bus;
+	    if (pB->BridgeType) {
+	      pBridge pPrev = pB;
+
+	      while ((pPrev->BridgeType == Class) && (pPrev->SubBus != Bus))
+		pPrev = Bridges + pPrev->SubBus;
+
+	      pB = Bridges + (UCHAR)((pPrev - Bridges) - 1);
+	      while (pB->BridgeType && (pB > Bridges))
+		pB--;
+
+	      if (!pB->BridgeType)
+		pPrev->SubBus = pB - Bridges;
+	    }
 
 	    if (!pB->BridgeType) {
 	      pB->Bus = Bus;
@@ -768,12 +987,17 @@ if (verboseScan)
 	      pB->BridgeType = Class;
 	      pB->PriBus = -1;
 	      pB->SecBus = Bus;
-	      pB->SubBus = 0;
+	      pB->SubBus = Bus;
 	    }
 	  } else {
-	    HandlePCIFunction (Bus, Dev, Fnc, Class);
+	    UCHAR numHidden;
+
+	    numHidden = HandlePCIFunction (Bus, Dev, Fnc, Class);
+	    if ((maxFnc + numHidden) <= MAX_PCI_FUNCTIONS)
+	      maxFnc += numHidden;
 	  }
 	}
+if (verboseScan) printf ("\n");
       }
     }
   }
@@ -850,6 +1074,13 @@ ACPI_STATUS AcpiEvaluateObject (
   return (Packet.Status);
 }
 
+ACPI_STATUS AcpiGetPCIIRQs (
+  KNOWNDEVICE *Dev)
+{
+  CallAcpiCA (Dev, sizeof (KNOWNDEVICE), FIND_PCI_DEVICE);
+  return (0);
+}
+
 /* --------------------------------------------------------------------------*/
 
 #if defined (IBMVAC3)
@@ -863,10 +1094,10 @@ static UCHAR queryPCIIntPin (UCHAR Bus, UCHAR Dev, UCHAR Fnc) {
 
   PCIReadConfigB (Bus, Dev, Fnc, PCIREG_INT_PIN, &IntPin);
   switch (IntPin) {
-    case 0x01: IntPin = 0; break;
-    case 0x02: IntPin = 1; break;
-    case 0x04: IntPin = 2; break;
-    case 0x08: IntPin = 3; break;
+    case 0x01:
+    case 0x02:
+    case 0x03:
+    case 0x04: IntPin--  ; break;
     default  : IntPin = 0; break;  /* error in PCI INTx info, assume INTA */
   }
   return (IntPin);
@@ -925,6 +1156,14 @@ static int queryIRQforPCIFunction (UCHAR Bus, UCHAR Dev, UCHAR Fnc, tRouterModes
 	  /* assume PCI INT swizzle as per PCI-to-PCI bridge spec. ECN */
 	  IntPin = (IntPin + Dev) & 3;
 	  break;
+      }
+
+      if (PCIBus == pB->PriBus) {
+	/* Oops, we can't wind up to the parent bus,
+	 * is there a bridge missing ?
+	 */
+	 PCIBus = -1;
+	 break;
       }
 
       PCIBus = pB->PriBus;
@@ -1009,10 +1248,12 @@ static UCHAR EvaluateCRSforBus (ACPI_HANDLE Handle, UCHAR *minBus, UCHAR *maxBus
   return (rc);
 }
 
-static UCHAR EvaluateRSforSingleIRQ (ACPI_HANDLE Handle, char getPRS) {
+static UCHAR EvaluateRSforSingleIRQ (ACPI_HANDLE Handle, char getPRS, ULONG * const Possible) {
   ACPI_BUFFER ResultBuffer;
   char *MethodName = getPRS ? METHOD_NAME__PRS : METHOD_NAME__CRS;
   int IRQ = 0;
+
+  *Possible = 0;
 
   if (EvaluateMethod (Handle, MethodName, &ResultBuffer)) {
     /* _CRS evaluates to a buffer pointing to the resource byte stream */
@@ -1033,6 +1274,8 @@ static UCHAR EvaluateRSforSingleIRQ (ACPI_HANDLE Handle, char getPRS) {
 	  AML_RESOURCE_IRQ *r = (AML_RESOURCE_IRQ *)Resource;
 	  USHORT Bits = r->IrqMask;
 
+	  *Possible = Bits;
+
 	  if (Bits != 0) {
 	    for (IRQ = 0; IRQ <= 15; IRQ++, Bits >>= 1)
 	      if (Bits & 1) break;
@@ -1043,8 +1286,18 @@ static UCHAR EvaluateRSforSingleIRQ (ACPI_HANDLE Handle, char getPRS) {
 
 	} else if (DescriptorType == 0x89) { /* extended IRQ tag */
 	  AML_RESOURCE_EXTENDED_IRQ *r = (AML_RESOURCE_EXTENDED_IRQ *)Resource;
-	  if (r->InterruptCount >= 1)
+	  ULONG Bits = 0;
+	  int i;
+
+	  if (r->InterruptCount >= 1) {
 	    IRQ = r->Interrupts[0];
+
+	    for (i = 0; i < r->InterruptCount; i++)
+	      if (r->Interrupts[i] < 32)
+		Bits |= 1UL << r->Interrupts[i];
+	  }
+
+	  *Possible = Bits;
 
 	  if (getPRS && (r->InterruptCount > 1))
 	    /* _PRS returned more than one IRQ value */
@@ -1119,11 +1372,23 @@ static void EvaluatePRTElement (pIRQRoute pI, ACPI_OBJECT *pO) {
 
       case ACPI_TYPE_ANY:
 	rc = (F->Reference.Handle != NULL);
-	if (rc)
-	  IRQ = EvaluateRSforSingleIRQ (F->Reference.Handle, FALSE); // try _CRS
-	  if (!IRQ)
-	    IRQ = EvaluateRSforSingleIRQ (F->Reference.Handle, TRUE); // try _PRS
+	if (rc) {
+	  ULONG PossibleCRS, PossiblePRS;
+	  UCHAR IrqC,IrqP;
+
+	  IrqC = EvaluateRSforSingleIRQ (F->Reference.Handle, FALSE, &PossibleCRS); // try _CRS
+	  IrqP = EvaluateRSforSingleIRQ (F->Reference.Handle, TRUE,  &PossiblePRS); // try _PRS
+
+	  IRQ = IrqC;
+	  if (!(PossibleCRS & (1 << IRQ))) // mismatch in IrqCRS and PossibleCRS
+	    IRQ = IrqP;
+
+	  if (!(PossiblePRS & (1 << IRQ))) {  // mismatch in IrqPRS and PossiblePRS
+	    for (IRQ = 0; PossiblePRS; IRQ++, PossiblePRS >>= 1)
+	      if (PossiblePRS & 1) break;
+	  }
 	  pI->IRQ = IRQ;
+	}
 	break;
 
       default: rc = FALSE;
@@ -1281,6 +1546,24 @@ static int testRootBridge (ACPI_HANDLE Object, ACPI_DEVICE_INFO *Info) {
   pB = Bridges + Bus;
 
   if (pB->BridgeType != PCI_CLASS_BRIDGE_HOST) return (-1);
+
+  /* in case of multiple host bridges to this bus, sort out the correct one */
+
+  if (pB->SubBus != Bus) {
+    UCHAR n = Bus;
+    do {
+      pBridge p = Bridges + n;
+
+      if (p->BridgeType != PCI_CLASS_BRIDGE_HOST) break;
+
+      if ((p->Dev == Dev) && (p->Fnc == Fnc))
+	*pB = *p;
+      else
+	p->BridgeType = 0;
+
+      n = p->SubBus;
+    } while (n != Bus);
+  }
 
   pB->SecBus = minBus;
   pB->SubBus = maxBus;
@@ -1707,6 +1990,7 @@ static void FindPiixSB (pAdapter p) {
 
 static ULONG GetBAR5 (pAdapter p, ULONG *Len, BOOL doDump) {
   ULONG SCRPorts;
+  ULONG Length;
 
   if (PCIConfigArea.BaseAddr[5] & 1)
     SCRPorts = PCIConfigArea.BaseAddr[5] & 0x0000FFFC;
@@ -1719,17 +2003,22 @@ static ULONG GetBAR5 (pAdapter p, ULONG *Len, BOOL doDump) {
     return 0;
   }
 
-  *Len = GetRangeSize (p->Bus, p->Dev, p->Fnc, 0x24);
+  *Len = Length = GetRangeSize (p->Bus, p->Dev, p->Fnc, 0x24);
 
-  printf ("BAR5:\n");
+  if (Length > sizeof (BMData)) Length = sizeof (BMData);
+  if (doDump) printf ("BAR5:\n");
+
   if (PCIConfigArea.BaseAddr[5] & 1) {
     if (doDump) {
-      ReadBMIFArea (SCRPorts, 0, *Len, BMData);
-      DumpBMIFArea (0x00, *Len, BMData);
+      ReadBMIFArea (SCRPorts, 0, Length, BMData);
+      DumpBMIFArea (0x00, Length, BMData);
     }
   } else {
-    SCRPorts = MapPhysicalToLinear (SCRPorts, *Len);
-    if (doDump) DumpBMIFArea (0x00, *Len, (char *)SCRPorts);
+    SCRPorts = MapPhysicalToLinear (SCRPorts, Length);
+    if (doDump && SCRPorts) {
+      memcpy (BMData, (void *)SCRPorts, Length);
+      DumpBMIFArea (0x00, Length, BMData);
+    }
   }
 
   return SCRPorts;
@@ -1756,11 +2045,31 @@ static ULONG GetBAR3 (pAdapter p, ULONG *Len) {
     ReadBMIFArea (SCRPorts, 0, *Len, BMData);
     DumpBMIFArea (0x00, *Len, BMData);
   } else {
-    SCRPorts = MapPhysicalToLinear (SCRPorts, *Len);
-    DumpBMIFArea (0x00, 0x100, (char *)SCRPorts);
+    if (SCRPorts) {
+      SCRPorts = MapPhysicalToLinear (SCRPorts, *Len);
+      DumpBMIFArea (0x00, 0x100, (char *)SCRPorts);
+    }
   }
 
   return SCRPorts;
+}
+
+static void getSCR (pAdapter p, ULONG SCRPorts) {
+  PULONG s = (PULONG)&SCR;
+  int j;
+
+  for (j = 0; j < (sizeof (tSCR) / sizeof (ULONG)); j++, SCRPorts += sizeof (ULONG)) {
+    if (SCRPorts < 0x100) {
+      PCIReadConfigL (p->Bus, p->Dev, p->Fnc, SCRPorts, s++);
+      if (clearSATAStatus && (j == 1)) PCIWriteConfigL (p->Bus, p->Dev, p->Fnc, SCRPorts, -1);
+    } else if (SCRPorts < 0x10000) {
+      *(s++) = in32 (SCRPorts);
+      if (clearSATAStatus && (j == 1)) out32 (SCRPorts, -1);
+    } else {
+      *(s++) = *(PULONG)SCRPorts;
+      if (clearSATAStatus && (j == 1)) *(PULONG)SCRPorts = -1;
+    }
+  }
 }
 
 static void GetViaSCR (pAdapter p) {
@@ -1794,13 +2103,7 @@ static void GetViaSCR (pAdapter p) {
   }
 
   for (i = 0; i < Ports; i++) {
-    s = (PULONG)&SCR;
-    q = SCRPorts;
-    for (j = 0; j < (sizeof (tSCR) / sizeof (ULONG)); j++, q += sizeof (ULONG)) {
-      *(s++) = (q < 0x10000) ? in32 (q) : *(PULONG)q;
-      if (clearSATAStatus && (j == 1))
-	if (q < 0x10000) out32 (q, -1); else *(PULONG)q = -1;
-    }
+    getSCR (p, SCRPorts);
     DumpSCR (i, 3);
 
     SCRPorts += SCRInc;
@@ -1820,13 +2123,7 @@ static void GetNvidiaSCR (pAdapter p) {
   }
 
   for (i = 0; i < 2; i++) {
-    s = (PULONG)&SCR;
-    q = SCRPorts;
-    for (j = 0; j < (sizeof (tSCR) / sizeof (ULONG)); j++, q += sizeof (ULONG)) {
-      *(s++) = (q < 0x10000) ? in32 (q) : *(PULONG)q;
-      if (clearSATAStatus && (j == 1))
-	if (q < 0x10000) out32 (q, -1); else *(PULONG)q = -1;
-    }
+    getSCR (p, SCRPorts);
     DumpSCR (i, 3);
 
     SCRPorts += 0x40;
@@ -1840,54 +2137,72 @@ static void GetSiSSCR (pAdapter p) {
   ULONG Len;
   ULONG Cfg;
   USHORT DID;
-  UCHAR PortCtrl;
-  ULONG SCRInc, Ports;
+  ULONG SCRInc, SCRMul;
+  ULONG Ports;
 
   PCIReadConfigL (p->Bus, p->Dev, p->Fnc, 0x54, &Cfg);
-  if (Cfg & (1 << 26))
+
+  SCRInc = 0;
+
+  switch (PCIConfigArea.DeviceID) {
+    case 0x180:
+    case 0x181: {
+      UCHAR PortCtrl;
+      PCIReadConfigB (p->Bus, p->Dev, p->Fnc, 0x90, &PortCtrl);
+      if (!PortCtrl) return; // PATA only!
+
+      printf ("\nPHY configuration: ");
+      switch ((PortCtrl & 0x30) >> 4) {
+	case 0 : SCRMul = 2; printf ("2xSATA (master only)\n"); break;
+	default: SCRMul = 1; printf ("2xSATA (master/slave) & 1xPATA primary\n"); break;
+      }
+      Ports = 2;
+      break;
+    }
+
+    case 0x1180:
+    case 0x1184: {
+      UCHAR PortCtrl;
+
+      Cfg &= ~(1 << 26);
+      PCIReadConfigB (p->Bus, p->Dev, p->Fnc, 0x67, &PortCtrl);
+      printf ("\n966 config67: %02X\n", PortCtrl);
+      if (PortCtrl & 0x10) {  // 2 ports, master only
+	SCRMul = 2;
+	Ports  = 2;
+      } else {		      // 4 ports, master/slave
+	SCRMul = 1;
+	Ports  = 4;
+      }
+      break;
+    }
+
+    default:		      // 4 ports, master/slave
+    case 0x182:
+    case 0x1182:
+    case 0x1183:
+      SCRInc = 0x10;
+      SCRMul = 1;
+      Ports  = 4;
+      break;
+  }
+
+  if (Cfg & (1 << 26)) {
     SCRPorts = GetBAR5 (p, &Len, TRUE);
-  else
+    if (!SCRInc) SCRInc = 0x20;
+  } else {
     SCRPorts = 0xC0;
+    if (!SCRInc) SCRInc = 0x10;
+  }
   if (!SCRPorts) {
     printf ("SATA PHY control registers inaccessible\n");
     return;
   }
 
-  PCIReadConfigB (p->Bus, p->Dev, p->Fnc, 0x90, &PortCtrl);
-  if (PCIConfigArea.DeviceID == 0x182) PortCtrl = 0x20;
-  printf ("\nPHY configuration: ");
-  switch ((PortCtrl & 0x30) >> 4) {
-    case 0: Ports = 2; SCRInc = 0x40; printf ("2xSATA (master only)\n"); break;
-    case 3: Ports = 2; SCRInc = 0x20; printf ("2xSATA (master/slave) & 1xPATA primary\n"); break;
-    case 1: Ports = 2; SCRInc = 0x20; printf ("2xSATA (master/slave) & 1xPATA secondary\n"); break;
-    case 2: Ports = 4; SCRInc = 0x20; printf ("4xSATA (master/slave)\n"); break;
-  }
-
-  if (SISspecial) {
-    printf ("Port 0x90 before: %02X", PortCtrl);
-    PortCtrl ^= ((SISspecial & 3) << 4);
-    printf (" -> after: %02X\n", PortCtrl);
-    PCIWriteConfigB (p->Bus, p->Dev, p->Fnc, 0x90, PortCtrl);
-  }
-
   for (i = 0; i < Ports; i++) {
-    s = (PULONG)&SCR;
-    q = SCRPorts;
-    if (SCRPorts < 0x100) {
-      for (j = 0; j < (sizeof (tSCR) / sizeof (ULONG)); j++, s++, q += sizeof (ULONG)) {
-	PCIReadConfigL (p->Bus, p->Dev, p->Fnc, q, s);
-	if (clearSATAStatus && (j == 1))
-	  PCIWriteConfigL (p->Bus, p->Dev, p->Fnc, q, (ULONG)-1);
-      }
-      SCRPorts += 0x10;
-    } else {
-      for (j = 0; j < (sizeof (tSCR) / sizeof (ULONG)); j++, q += sizeof (ULONG)) {
-	*(s++) = (q < 0x10000) ? in32 (q) : *(PULONG)q;
-	if (clearSATAStatus && (j == 1))
-	  if (q < 0x10000) out32 (q, -1); else *(PULONG)q = -1;
-      }
-      SCRPorts += SCRInc;
-    }
+    getSCR (p, SCRPorts);
+    SCRPorts += SCRInc * SCRMul;
+
     DumpSCR (i, 3);
   }
 }
@@ -1926,6 +2241,31 @@ static void GetSiISCR (pAdapter p) {
   }
 }
 
+static void GetSwSCR (pAdapter p) {
+  int i, j;
+  ULONG *SCRPorts;
+  ULONG Len;
+
+  SCRPorts = (PULONG) GetBAR5 (p, &Len, FALSE);
+  if (!SCRPorts) {
+    printf ("SATA PHY control registers inaccessible\n");
+    return;
+  }
+
+  for (i = 0, j = 0; i < 4; i++, j += 0x100) {
+    memset (BMData, 0, 0x100);
+    memcpy (BMData + 0x04, 0x04 + j + (char *)SCRPorts, 0x100 - 4);
+    DumpBMIFArea (j, 0x100, BMData);
+  }
+
+  for (i = 0; i < 4; i++) {
+    getSCR (p, (ULONG)SCRPorts + 0x40);
+    DumpSCR (i, 3);
+
+    SCRPorts += 0x100 / sizeof (ULONG);
+  }
+}
+
 static void GetInitioSCR (pAdapter p) {
   int i, j;
   ULONG *SCRPorts, *q;
@@ -1935,7 +2275,7 @@ static void GetInitioSCR (pAdapter p) {
   SCRPorts = (PULONG) GetBAR5 (p, &Len, FALSE);
 
   // map page 0
-  q = (ULONG *)(SCRPorts + 0x7C);
+  q = (ULONG *)((char *)SCRPorts + 0x7C);
   GCTRL = *(USHORT *)q;
   GCTRL &= ~0xE000;
   *(USHORT *)q = GCTRL;
@@ -1944,6 +2284,26 @@ static void GetInitioSCR (pAdapter p) {
   memcpy (BMData + 0x01, 0x01 + (char *)SCRPorts, 0x3B);
   memcpy (BMData + 0x41, 0x41 + (char *)SCRPorts, 0x3B);
   memcpy (BMData + 0x7C, 0x7C + (char *)SCRPorts, 0x80);
+
+  if (InitioSpecial) {
+    USHORT *r;
+
+    printf ("before: 14:%08lX  54:%08lX  7C:%08lX", *(ULONG *)(BMData + 0x14), *(ULONG *)(BMData + 0x54),*(ULONG *)(BMData + 0x7C));
+
+    r = (USHORT *)((char *)SCRPorts + 0x7C);
+    *r |= (1 << 13);
+
+    r = (USHORT *)((char *)SCRPorts + 0x14);
+    *r |= (1 << 5) | (1 << 2);
+    DosSleep (100);
+    *r &= ~((1 << 5) | (1 << 2));
+    DosSleep (100);
+
+    memcpy (BMData + 0x01, 0x01 + (char *)SCRPorts, 0x3B);
+    memcpy (BMData + 0x41, 0x41 + (char *)SCRPorts, 0x3B);
+    memcpy (BMData + 0x7C, 0x7C + (char *)SCRPorts, 0x80);
+    printf (" -> after: 14:%08lX  54:%08lX  7C:%08lX\n", *(ULONG *)(BMData + 0x14), *(ULONG *)(BMData + 0x54),*(ULONG *)(BMData + 0x7C));
+  }
 
   DumpBMIFArea (0, 0x100, BMData);
 
@@ -1962,51 +2322,107 @@ static void GetInitioSCR (pAdapter p) {
 }
 
 static void GetAHCISCR (pAdapter p, ULONG numPorts) {
-  int i, j;
+  int i, j, k;
   ULONG *s;
-  ULONG SCRPorts, q;
+  ULONG BAR5, SCRPorts, q;
   ULONG Len;
+  ULONG CAP, GHC, PI;
 
-  SCRPorts = GetBAR5 (p, &Len, TRUE);
+  BAR5 = SCRPorts = GetBAR5 (p, &Len, TRUE);
   if (!SCRPorts) {
     printf ("AHCI registers inaccessible\n");
     return;
   }
 
-  s = (PULONG)SCRPorts;
-  printf ("AHCI CAP:%08lX GHC:%08lX PI:%08lX\n", s[0], s[1], s[3]);
-  if ((s[0] != 0) && (numPorts > (s[0] & 0x1F)))
-    numPorts = (s[0] & 0x1F) + 1;
+  s = (PULONG)BMData;
+  printf ("\nAHCI CAP:%08lX GHC:%08lX PI:%08lX\n", s[0], s[1], s[3]);
+  CAP = s[0];
+  GHC = s[2];
+  PI  = s[3];
+
+  if (CAP != 0)
+    numPorts = (CAP & 0x1F) + 1;
+
+  if (PI != 0) {
+    j = 0;
+    for (i = PI; i > 0; i >>= 1)
+      if (i & 1) j++;
+
+    if (j > numPorts) numPorts = j;
+  } else {
+    for (i = 0; i < numPorts; i++)
+      PI |= 1 << i;
+  }
+
+  j = (Len - 0x100) / 0x80;
+  if (j < numPorts) numPorts = j;
 
   SCRPorts += 0x128;
-  for (i = 0; i < numPorts; i++) {
+  for (i = 0; i < numPorts; i++, SCRPorts += 0x80) {
+    static char Offsets[] = { 0, 2, 1, 3, 4};
+
+    if (!(PI & (1 << i))) continue;
     s = (PULONG)&SCR;
     q = SCRPorts;
     for (j = 0; j < (sizeof (tSCR) / sizeof (ULONG)); j++, q += sizeof (ULONG)) {
-      *(s++) = *(PULONG)q;
-      if (clearSATAStatus && (j == 1))
+      if ((q - BAR5) >= Len) break;
+      k = Offsets[j];
+      s[k] = *(PULONG)q;
+      if (clearSATAStatus && (k == 1))
 	*(PULONG)q = -1;
     }
     DumpSCR (i, 3);
-
-    SCRPorts += 0x80;
   }
 }
 
 static void GetIntelSCR (pAdapter p) {
-  GetAHCISCR (p, 4);
+  if (!(PCIConfigArea.BaseAddr[5] & 1)) { // mem mapped: AHCI
+    GetAHCISCR (p, 32);
+  } else {
+    if (PCIConfigArea.BaseAddr[5] & 1) { // IO mapped: Index/Data pair
+      ULONG Len;
+      ULONG SCRPorts = GetBAR5 (p, &Len, FALSE);
+
+      if (SCRPorts) {
+	int i, j;
+	ULONG *s;
+
+	for (i = 0; i < 4; i++) {
+	  out32 (SCRPorts, (i << 8) | 0);
+	  SCR.Status  = in32 (SCRPorts + 4);
+	  out32 (SCRPorts, (i << 8) | 1);
+	  SCR.Control = in32 (SCRPorts + 4);
+	  out32 (SCRPorts, (i << 8) | 2);
+	  SCR.Error   = in32 (SCRPorts + 4);
+	  DumpSCR (i, 3);
+	}
+      }
+    }
+  }
 }
 
-static void GetJMicronSCR (pAdapter p) {
+static void GetAhci32SCR (pAdapter p) {
   GetAHCISCR (p, 32);
 }
 
-static void GetViaAHCISCR (pAdapter p) {
-  GetAHCISCR (p, 32);
+static void GetMarvellSCR (pAdapter p) {
+  GetAHCISCR (p, 4);
 }
 
-static void GetIxpSCR (pAdapter p) {
-  GetAHCISCR (p, 4);
+static void JMicronFnc (pAdapter p) {
+  if (!p->Fnc && InitioSpecial) {
+    ULONG Control;
+
+    PCIReadConfigL (p->Bus, p->Dev, p->Fnc, 0x40, &Control);
+    printf ("0x40: %lX -> ", Control);
+//    Control ^= 1ul << 1; // enable/disable dual function mode
+//    Control ^= 3ul << 16; // switch mode
+    Control =  0x808051B1;
+    printf ("%lX ", Control);
+    PCIWriteConfigL (p->Bus, p->Dev, p->Fnc, 0x40, Control);
+    PCIReadConfigL (p->Bus, p->Dev, p->Fnc, 0x40, &Control);
+    printf ("=> %lX\n", Control);
+  }
 }
 
 static void GetPdcSCR (pAdapter p, ULONG SCRPorts, int numPorts) {
@@ -2017,13 +2433,7 @@ static void GetPdcSCR (pAdapter p, ULONG SCRPorts, int numPorts) {
 
   SCRPorts += 0x400;
   for (i = 0; i < numPorts; i++) {
-    s = (PULONG)&SCR;
-    q = SCRPorts;
-    for (j = 0; j < (sizeof (tSCR) / sizeof (ULONG)); j++, q += sizeof (ULONG)) {
-      *(s++) = *(PULONG)q;
-      if (clearSATAStatus && (j == 1))
-	*(PULONG)q = -1;
-    }
+    getSCR (p, SCRPorts);
     DumpSCR (i, 3);
     printf ("PHY ctl: %08lX  (Marvell specific)\n", SCR.Active);
 
@@ -2086,15 +2496,7 @@ static void GetPdcSCR_Combo2 (pAdapter p) {
 }
 
 static void GetALiSCRcommon (pAdapter p, int Port, ULONG q) {
-  int j;
-  ULONG *s;
-
-  s = (PULONG)&SCR;
-  for (j = 0; j < (sizeof (tSCR) / sizeof (ULONG)); j++, s++, q += sizeof (ULONG)) {
-    PCIReadConfigL (p->Bus, p->Dev, p->Fnc, q, s);
-    if (clearSATAStatus && (j == 1))
-      PCIWriteConfigL (p->Bus, p->Dev, p->Fnc, q, (ULONG)-1);
-  }
+  getSCR (p, q);
   DumpSCR (Port, 3);
 }
 
@@ -2231,12 +2633,24 @@ static int ReadBMIFArea (WORD Adr, WORD Idx, WORD Len, void *pC) {
 
 static void DumpBMIFArea (WORD Idx, WORD Len, void *pC) {
   int i, j, a;
+  unsigned l;
   UCHAR *p;
 
   if (!pC) {
     printf ("PROBLEM: registers are inaccessible\n");
     return;
   }
+
+  for (l = Len - 1; l > 0; l--)
+    if (((UCHAR *)pC)[l] != 0xFF) break;
+  l = (l + 15) & ~15;
+
+  for (--l; l > 0; l--)
+    if (((UCHAR *)pC)[l] != 0) break;
+  l = (l + 15) & ~15;
+
+  if (l < 16) l = 16;
+  if (Len > l) Len = l;
 
   p = (UCHAR *)pC;
   for (a = 0; a < Len; a += 16, Idx += 16) {
@@ -2360,13 +2774,15 @@ ULONG MapPhysicalToLinear (ULONG PhysicalAddress, ULONG Length) {
 
   if (rc == 0) {
     /* Attempt to open up the device driver.				      */
-    if ((hMapDev == NULLHANDLE) && (rc == 0)) {
-      rc = DosOpen ("\\DEV\\SSM$", &hMapDev, &ActionTaken, 0,
-		    FILE_SYSTEM,
-		    OPEN_ACTION_OPEN_IF_EXISTS, OPEN_SHARE_DENYNONE |
-		    OPEN_FLAGS_NOINHERIT | OPEN_ACCESS_READONLY, NULL);
+    rc = DosOpen ("\\DEV\\SSM$", &hMapDev, &ActionTaken, 0,
+		  FILE_SYSTEM,
+		  OPEN_ACTION_OPEN_IF_EXISTS, OPEN_SHARE_DENYNONE |
+		  OPEN_FLAGS_NOINHERIT | OPEN_ACCESS_READONLY, NULL);
+    if (hMapDev == NULLHANDLE) {
       if (rc != 0) {
-	fprintf (stderr, "Oops, something is missing ...\nPlease add DEVICE=SSMDD.SYS to CONFIG.SYS\nCannot access memory mapped controller registers\n");
+	char *Msg = "Oops, something is missing ...\nPlease add DEVICE=SSMDD.SYS to CONFIG.SYS\nCannot access memory mapped controller registers\n";
+	fprintf (stderr, Msg);
+	printf (Msg);
 	return (0);
       }
     }
@@ -2425,17 +2841,20 @@ int main (int argc, char *argv[]) {
   for (i = 1; i < argc; i++) {
     clearSATAStatus = (argv[i][0] == 'c');
     VIAspecial = 0;
-//    if (argv[i][0] == 'v') VIAspecial = argv[i][1] & 3;
+    if (argv[i][0] == 'v') VIAspecial = argv[i][1] & 3;
     SISspecial = 0;
-//    if (argv[i][0] == 's') SISspecial = argv[i][1] & 3;
+    if (argv[i][0] == 's') SISspecial = argv[i][1] & 3;
+    InitioSpecial = 0;
+    if (argv[i][0] == 'i') InitioSpecial = 1;
     if (argv[i][0] == 'b') verboseScan = TRUE;
     if (argv[i][0] == 'a') scanACPI = FALSE;
   }
 
+  printf ("DumpIDE 20080205\n");
+
   rc = DosOpen ("OEMHLP$", &hPCI, &Action, 0, 0, FILE_OPEN,
        OPEN_SHARE_DENYNONE | OPEN_FLAGS_FAIL_ON_ERROR | OPEN_ACCESS_READWRITE,
        NULL);
-  if (rc != 0) exit (98);
   rc = DosOpen ("TESTCFG$", &hIO, &Action, 0, 0, FILE_OPEN,
        OPEN_SHARE_DENYNONE | OPEN_FLAGS_FAIL_ON_ERROR | OPEN_ACCESS_READWRITE,
        NULL);
@@ -2449,8 +2868,7 @@ int main (int argc, char *argv[]) {
 
   rc = PCIBIOSPresent (&VersionMajor, &VersionMinor, &BusCount);
   if (rc != 0) {
-    printf ("PCI BIOS not present (rc=%02Xh).\n", rc);
-    exit (1);
+    printf ("PCI BIOS not present.\n");
   } else {
     printf ("PCI BIOS V%X.%02X detected, ", VersionMajor, VersionMinor);
     printf ("%d PCI bus%s reported.\n", BusCount+1, BusCount ? "es" : "");
@@ -2459,6 +2877,7 @@ int main (int argc, char *argv[]) {
   ScanPCIDevices();
   if (isACPIpresent && scanACPI) {
     pAdapter pA;
+    KNOWNDEVICE Dev;
 
     ScanACPITree();
 
@@ -2466,6 +2885,14 @@ int main (int argc, char *argv[]) {
       if (pA->ProgIF & 0x05) {	/* native PCI mode */
 	pA->PicIRQ  = queryIRQforPCIFunction (pA->Bus, pA->Dev, pA->Fnc, PICmode);
 	pA->APicIRQ = queryIRQforPCIFunction (pA->Bus, pA->Dev, pA->Fnc, APICmode);
+
+	memset (&Dev, 0, sizeof (Dev));
+	Dev.PciId.Bus	   = pA->Bus;
+	Dev.PciId.Device   = pA->Dev;
+	Dev.PciId.Function = pA->Fnc;
+	rc = AcpiGetPCIIRQs (&Dev);
+	printf ("AcpiGetPCIIRQs (%2d:%02d.%02d): rc=%d, PIC:%u APIC:%u\n",
+		pA->Bus, pA->Dev, pA->Fnc, rc, Dev.PicIrq, Dev.ApicIrq);
       } else {
 	pA->PicIRQ  = 14;
 	pA->APicIRQ = 15;
@@ -2545,6 +2972,7 @@ int main (int argc, char *argv[]) {
       }
     }
 
+  printf ("done\n");
   DosClose (hACPI);
   DosClose (hPCI);
   DosClose (hIO);
