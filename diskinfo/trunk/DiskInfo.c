@@ -1,8 +1,22 @@
-#define INCL_DOS
-#include <OS2.h>
+/**************************************************************************
+ * Diskinfo.c
+ * $Id: $
+ *
+ * Copyright : COPYRIGHT IBM CORPORATION, 1991, 1992
+ *	       COPYRIGHT Daniela Engert 1999-2009
+ * Portions Copyright (c) 2010, 2011 Steven H. Levine
+ * distributed under the terms of the GNU Lesser General Public License
+ *
+ *****************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
+
+#define INCL_DOS
+#include <OS2.h>
+
 
 #include "HDParm.h"
 
@@ -157,7 +171,6 @@ typedef struct _DeviceCountersData
   USHORT      ReadErrors[4];
   USHORT      WriteErrors[2];
   USHORT      SeekErrors[2];
-  USHORT      SATAErrors;
 } DeviceCountersData, *PDeviceCountersData;
 
 /* Identify Data */
@@ -311,10 +324,10 @@ int main (int argc, char *argv[]) {
   if (argc > 1) {
     for (i = 1; i < argc; i++) {
       if ((i == 1) && isdigit (argv[1][0])) {
-	char c = atoi (argv[1]);
+	unsigned char c = atoi (argv[1]);
 	char d = argv[1][strlen (argv[1]) - 1];
 
-	if ((c >= 0) && (c < MAX_ADAPTERS)) {
+	if (c < MAX_ADAPTERS) {
 	  if ((d == 'm') || (d == 'M'))
 	    UnitLow = UnitHigh = c * 2;
 	  else if ((d == 's') || (d == 'S'))
@@ -593,7 +606,7 @@ int main (int argc, char *argv[]) {
 
     if ((Options & OptStatistics) && !(UnitInfo.wFlags & UIF_ATAPI)) {
       ULONG CountersLen = sizeof (DeviceCountersData);
-      DeviceCountersData Counters = { 0 };
+      DeviceCountersData Counters;
 
       rc = DosDevIOCtl (hDevice, DSKSP_CAT_GENERIC, DSKSP_GEN_GET_COUNTERS,
 			(PVOID)&Parms, PLen, &PLen, (PVOID)&Counters, CountersLen, &CountersLen);
@@ -603,7 +616,7 @@ int main (int argc, char *argv[]) {
       printf ("Total sectors       : %8u reads, %8u writes\n", Counters.TotalSectorsRead, Counters.TotalSectorsWritten);
       printf ("Busmaster operations: %8u reads, %8u writes, %8u misaligned\n",
 	Counters.TotalBMReadOperations, Counters.TotalBMWriteOperations, Counters.ByteMisalignedBuffers);
-      printf ("Total errors        : %5u reads, %5u writes, %5u seeks, %5u SATA\n", Counters.TotalReadErrors, Counters.TotalWriteErrors, Counters.TotalSeekErrors, Counters.SATAErrors);
+      printf ("Total errors        : %5u reads, %5u writes, %5u seeks\n", Counters.TotalReadErrors, Counters.TotalWriteErrors, Counters.TotalSeekErrors);
       printf ("Total lost states   : %5u IRQs,  %5u DRQs,   %5u BUSY\n", Counters.TotalIRQsLost, Counters.TotalDRQsLost, Counters.TotalBusyErrors);
       printf ("Total bad states    : %5u BMSTA, %5u BMSTA2, %5u BMERR, %5u Chip\n", Counters.TotalBMStatus, Counters.TotalBMStatus2, Counters.TotalBMErrors, Counters.TotalChipStatus);
       printf ("Subtotal errors     : %u r0, %u r1, %u r2, %u r3, %u w0, %u w1, %u s0, %u s1\n", Counters.ReadErrors[0], Counters.ReadErrors[1], Counters.ReadErrors[2], Counters.ReadErrors[3], Counters.WriteErrors[0], Counters.WriteErrors[1], Counters.SeekErrors[0], Counters.SeekErrors[1]);

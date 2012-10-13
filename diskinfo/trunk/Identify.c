@@ -1,4 +1,13 @@
-/* identify.c - by Mark Lord (C) 2000-2007 -- freely distributable */
+/**************************************************************************
+ * identify.c - by Mark Lord (C) 2000-2007 -- freely distributable
+ * $Id: $
+ *
+ * Portions Copyright Daniela Engert 1999-2009
+ * Portions Copyright (c) 2012 Steven H. Levine
+ * distributed under the terms of the GNU Lesser General Public License
+ *
+ *****************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,7 +19,7 @@ typedef double __u64;
 /* device types */
 /* ------------ */
 #define NO_DEV			0xffff
-#define ATA_DEV 		0x0000
+#define ATA_DEV			0x0000
 #define ATAPI_DEV		0x0001
 
 /* word definitions */
@@ -26,15 +35,15 @@ typedef double __u64;
 #define LENGTH_SERIAL		10  /* 10 words (20 bytes or characters) */
 #define BUF_TYPE		20  /* buffer type (ATA-1) */
 #define BUF_SIZE		21  /* buffer size (ATA-1) */
-#define RW_LONG 		22  /* extra bytes in R/W LONG cmd ( < ATA-4)*/
+#define RW_LONG			22  /* extra bytes in R/W LONG cmd ( < ATA-4)*/
 #define START_FW_REV		23  /* ASCII firmware revision */
 #define LENGTH_FW_REV		 4  /*	4 words (8 bytes or characters) */
 #define START_MODEL		27  /* ASCII model number */
 #define LENGTH_MODEL		20  /* 20 words (40 bytes or characters) */
-#define SECTOR_XFER_MAX 	47  /* r/w multiple: max sectors xfered */
+#define SECTOR_XFER_MAX		47  /* r/w multiple: max sectors xfered */
 #define DWORD_IO		48  /* can do double-word IO (ATA-1 only) */
-#define CAPAB_0 		49  /* capabilities */
-#define CAPAB_1 		50
+#define CAPAB_0			49  /* capabilities */
+#define CAPAB_1			50
 #define PIO_MODE		51  /* max PIO mode supported (obsolete)*/
 #define DMA_MODE		52  /* max Singleword DMA mode supported (obs)*/
 #define WHATS_VALID		53  /* what fields are valid */
@@ -43,7 +52,7 @@ typedef double __u64;
 #define LSECTS_CUR		56  /* current logical sectors/track */
 #define CAPACITY_LSB		57  /* current capacity in sectors */
 #define CAPACITY_MSB		58
-#define SECTOR_XFER_CUR 	59  /* r/w multiple: current sectors xfered */
+#define SECTOR_XFER_CUR		59  /* r/w multiple: current sectors xfered */
 #define LBA_SECTS_LSB		60  /* LBA: total number of user */
 #define LBA_SECTS_MSB		61  /*	    addressable sectors */
 #define SINGLE_DMA		62  /* singleword DMA modes */
@@ -51,11 +60,11 @@ typedef double __u64;
 #define ADV_PIO_MODES		64  /* advanced PIO modes supported */
 				    /* multiword DMA xfer cycle time: */
 #define DMA_TIME_MIN		65  /*	 - minimum */
-#define DMA_TIME_NORM		66  /*	 - manufacturer's recommended   */
+#define DMA_TIME_NORM		66  /*	 - manufacturer's recommended */
 				    /* minimum PIO xfer cycle time: */
 #define PIO_NO_FLOW		67  /*	 - without flow control */
 #define PIO_FLOW		68  /*	 - with IORDY flow control */
-#define PKT_REL 		71  /* typical #ns from PKT cmd to bus rel */
+#define PKT_REL			71  /* typical #ns from PKT cmd to bus rel */
 #define SVC_NBSY		72  /* typical #ns from SERVICE cmd to !BSY */
 #define CDR_MAJOR		73  /* CD ROM: major version number */
 #define CDR_MINOR		74  /* CD ROM: minor version number */
@@ -76,18 +85,18 @@ typedef double __u64;
 				    /* time to complete security erase */
 #define ERASE_TIME		89  /*	 - ordinary */
 #define ENH_ERASE_TIME		90  /*	 - enhanced */
-#define ADV_PWR 		91  /* current advanced power management level
+#define ADV_PWR			91  /* current advanced power management level
 				       in low byte, 0x40 in high byte. */
 #define PSWD_CODE		92  /* master password revision code	*/
 #define HWRST_RSLT		93  /* hardware reset result */
 #define ACOUSTIC		94  /* acoustic mgmt values ( >= ATA-6) */
-#define LBA_LSB 		100 /* LBA: maximum.  Currently only 48 */
-#define LBA_MID 		101 /*	    bits are used, but addr 103 */
+#define LBA_LSB			100 /* LBA: maximum.  Currently only 48 */
+#define LBA_MID			101 /*	    bits are used, but addr 103 */
 #define LBA_48_MSB		102 /*	    has been reserved for LBA in */
 #define LBA_64_MSB		103 /*	    the future. */
 #define CMDS_SUPP_3		119
 #define CMDS_EN_3		120
-#define RM_STAT 		127 /* removable media status notification feature set support */
+#define RM_STAT			127 /* removable media status notification feature set support */
 #define SECU_STATUS		128 /* security status */
 #define CFA_PWR_MODE		160 /* CFA power mode 1 */
 #define START_MEDIA		176 /* media serial number */
@@ -95,8 +104,8 @@ typedef double __u64;
 #define START_MANUF		196 /* media manufacturer I.D. */
 #define LENGTH_MANUF		10  /* 10 words (20 bytes or characters) */
 #define SCT_SUPP		206 /* SMART command transport (SCT) support */
-#define TRANSPORT_MAJOR 	222 /* PATA vs. SATA etc.. */
-#define TRANSPORT_MINOR 	223 /* minor revision number */
+#define TRANSPORT_MAJOR		222 /* PATA vs. SATA etc.. */
+#define TRANSPORT_MINOR		223 /* minor revision number */
 #define INTEGRITY		255 /* integrity word */
 
 /* bit definitions within the words */
@@ -106,13 +115,13 @@ typedef double __u64;
 #define VALID			0xc000
 #define VALID_VAL		0x4000
 /* many words are considered invalid if they are either all-0 or all-1 */
-#define NOVAL_0 		0x0000
-#define NOVAL_1 		0xffff
+#define NOVAL_0			0x0000
+#define NOVAL_1			0xffff
 
 /* word 0: gen_config */
-#define NOT_ATA 		0x8000
+#define NOT_ATA			0x8000
 #define NOT_ATAPI		0x4000	/* (check only if bit 15 == 1) */
-#define MEDIA_REMOVABLE 	0x0080
+#define MEDIA_REMOVABLE		0x0080
 #define DRIVE_NOT_REMOVABLE	0x0040	/* bit obsoleted in ATA 6 */
 #define INCOMPLETE		0x0004
 #define CFA_SUPPORT_VAL1	0x848a	/* 848a=CFA feature set support */
@@ -122,8 +131,8 @@ typedef double __u64;
 #define DRQ_INTR_VAL		0x0020
 #define DRQ_50US_VAL		0x0040
 #define PKT_SIZE_SUPPORTED	0x0003
-#define PKT_SIZE_12_VAL 	0x0000
-#define PKT_SIZE_16_VAL 	0x0001
+#define PKT_SIZE_12_VAL		0x0000
+#define PKT_SIZE_16_VAL		0x0001
 #define EQPT_TYPE		0x1f00
 #define SHIFT_EQPT		8
 
@@ -202,8 +211,8 @@ const char *ata1_cfg_str[] = {			/* word 0 in ATA-1 mode */
 					   0=vendor specific values */
 #define IORDY_SUP		0x0800	/* 1=support; 0=may be supported */
 #define IORDY_OFF		0x0400	/* 1=may be disabled */
-#define LBA_SUP 		0x0200	/* 1=Logical Block Address support */
-#define DMA_SUP 		0x0100	/* 1=Direct Memory Access support */
+#define LBA_SUP			0x0200	/* 1=Logical Block Address support */
+#define DMA_SUP			0x0100	/* 1=Direct Memory Access support */
 #define DMA_IL_SUP		0x8000	/* 1=interleaved DMA support (ATAPI) */
 #define CMD_Q_SUP		0x4000	/* 1=command queuing support (ATAPI) */
 #define OVLP_SUP		0x2000	/* 1=overlap operation support (ATAPI) */
@@ -226,8 +235,8 @@ const char *ata1_cfg_str[] = {			/* word 0 in ATA-1 mode */
 					 * defined in a new dma_mode word!) */
 
 /* word 64: PIO transfer modes */
-#define PIO_SUP 		0x00ff	/* only bits 0 & 1 are used so far,  */
-#define PIO_MODE_MAX		8	/* but all 8 bits are defined	     */
+#define PIO_SUP			0x00ff	/* only bits 0 & 1 are used so far, */
+#define PIO_MODE_MAX		8	/* but all 8 bits are defined */
 
 /* word 75: queue_depth */
 #define DEPTH_BITS		0x001f	/* bits used for queue depth */
@@ -322,16 +331,16 @@ const char actual_ver[MINOR_MAX+2] = {
 #define SUPPORT_48_BIT		0x0400
 #define NUM_CMD_FEAT_STR	48
 
-static const char unknown[8] = "obsolete";
-//static const char unknown[8] = "unknown";
+// static const char unknown[8] = "obsolete";
+// static const char unknown[8] = "unknown";
 #define unknown "unknown-"
 
 static const char *feat_word82_str[16] = {
-	"obsolete 82[15]",                              /* word 82 bit 15: obsolete  */
+	"obsolete 82[15]",                              /* word 82 bit 15: obsolete */
 	"NOP cmd",                                      /* word 82 bit 14 */
 	"READ_BUFFER command",                          /* word 82 bit 13 */
 	"WRITE_BUFFER command",                         /* word 82 bit 12 */
-	"WRITE_VERIFY command",                         /* word 82 bit 11: obsolete  */
+	"WRITE_VERIFY command",                         /* word 82 bit 11: obsolete */
 	"Host Protected Area feature set",              /* word 82 bit 10 */
 	"DEVICE_RESET command",                         /* word 82 bit  9 */
 	"SERVICE interrupt",                            /* word 82 bit  8 */
@@ -439,7 +448,7 @@ static const char *feat_sata0_str[16] = {
 /* use cmd_feat_str[] to display what commands and features have
  * been enabled with words 85-87
  */
-#define WWN_SUP 	0x100 /* 1=support; 0=not supported */
+#define WWN_SUP		0x100 /* 1=support; 0=not supported */
 
 /* words 89, 90, SECU ERASE TIME */
 #define ERASE_BITS		0x00ff
@@ -450,7 +459,7 @@ static const char *feat_sata0_str[16] = {
 /* word 93: hw reset result */
 #define CBLID			0x2000	/* CBLID status */
 #define RST0			0x0001	/* 1=reset to device #0 */
-#define DEV_DET 		0x0006	/* how device num determined */
+#define DEV_DET			0x0006	/* how device num determined */
 #define JUMPER_VAL		0x0002	/* device num determined by jumper */
 #define CSEL_VAL		0x0004	/* device num determined by CSEL_VAL */
 
@@ -499,7 +508,7 @@ static const char *feat_sct_str[16] = {
 
 /* word 255: integrity */
 #define SIG			0x00ff	/* signature location */
-#define SIG_VAL 		0x00A5	/* signature value */
+#define SIG_VAL			0x00A5	/* signature value */
 
 __u8 mode_loop(__u16 mode_sup, __u16 mode_sel, int cc, __u8 *have_mode);
 void print_ascii(__u16 *p, __u8 length);
@@ -510,11 +519,11 @@ void print_ascii(__u16 *p, __u8 length);
 // of the bits corresponding to an older revision.
 static __u16 min_ata_std (__u16 major)
 {
-	if (major <= 4) 	// up to ata4, no obsolete bits
+	if (major <= 4)		// up to ata4, no obsolete bits
 		return 1;
-	if (major == 5) 	// ata5 obsoleted the ata1 bit
+	if (major == 5)		// ata5 obsoleted the ata1 bit
 		return 2;
-	if (major <= 7) 	// ata6,7 obsoleted the ata2 bit
+	if (major <= 7)		// ata6,7 obsoleted the ata2 bit
 		return 3;
 	return 4;		// ata8 obsoleted the ata3 bit
 }
