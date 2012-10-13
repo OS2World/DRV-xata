@@ -34,6 +34,8 @@ ULONG _Optlink WriteTF (USHORT Sel, USHORT Port, PUCHAR Data);
 #define DSKSP_SET_PROTECT_MBR	    0x45  /* set protection of sector 0 */
 #define DSKSP_READ_SECTOR	    0x46  /* read one sector */
 #define DSKSP_GET_DEVICETABLE	    0x47  /* query devicetable */
+#define DSKSP_POWER		    0x48  /* set powerstate */
+#define DSKSP_RESET		    0x49  /* reset adapter */
 
 typedef struct _DSKSP_CommandParameters {
   BYTE byPhysicalUnit;		   /* physical unit number 0-n */
@@ -155,6 +157,7 @@ typedef struct _DeviceCountersData
   USHORT      ReadErrors[4];
   USHORT      WriteErrors[2];
   USHORT      SeekErrors[2];
+  USHORT      SATAErrors;
 } DeviceCountersData, *PDeviceCountersData;
 
 /* Identify Data */
@@ -165,7 +168,7 @@ typedef struct _IDENTIFYDATA
 {
   USHORT	GeneralConfig;		/*  0 General configuration bits      */
   USHORT	TotalCylinders; 	/*  1 Default Translation - Num cyl   */
-  USHORT	Reserved;		/*  2 Reserved			      */
+  USHORT	SpecificConfig; 	/*  2 Spin up type		      */
   USHORT	NumHeads;		/*  3			  - Num heads */
   USHORT	NumUnformattedbpt;	/*  4 Unformatted Bytes   - Per track */
   USHORT	NumUnformattedbps;	/*  5			  - Per sector*/
@@ -180,34 +183,50 @@ typedef struct _IDENTIFYDATA
   CHAR		FirmwareRN[8];		/* 23 Firmware Revision 	      */
   CHAR		ModelNum[40];		/* 27 Model number		      */
   USHORT	NumSectorsPerInt;	/* 47 Multiple Mode - Sec/Blk	      */
-  USHORT	DoubleWordIO;		/* 48 Double Word IO Flag	*/
-  USHORT	IDECapabilities;	/* 49 Capability Flags Word	*/
-  USHORT	Reserved2;		/* 50				 */
-  USHORT	PIOCycleTime;		/* 51 Transfer Cycle Timing - PIO     */
-  USHORT	DMACycleTime;		/* 52			    - DMA     */
-  USHORT	AdditionalWordsValid;	/* 53 Additional Words valid	*/
+  USHORT	DoubleWordIO;		/* 48 Double word IO Flag	      */
+  USHORT	IDECapabilities;	/* 49 Capability Flags Word	      */
+  USHORT	IDECapabilities2;	/* 50				      */
+  USHORT	PIOMode;		/* 51 Transfer Cycle Timing - PIO     */
+  USHORT	DMAMode;		/* 52			    - DMA     */
+  USHORT	AdditionalWordsValid;	/* 53 Additional words valid	      */
   USHORT	LogNumCyl;		/* 54 Current Translation - Num Cyl   */
   USHORT	LogNumHeads;		/* 55			    Num Heads */
   USHORT	LogSectorsPerTrack;	/* 56			    Sec/Trk   */
   ULONG 	LogTotalSectors;	/* 57			    Total Sec */
   USHORT	LogNumSectorsPerInt;	/* 59				      */
-  ULONG 	LBATotalSectors;	/* 60 LBA Mode - Sectors	      */
-  USHORT	DMASWordFlags;		/* 62				      */
+  ULONG 	LBATotalSectors;	/* 60 ULONG Mode - Sectors	      */
+  USHORT	DMADir; 		/* 62 ATAPI: DMADir	    ATA:SWDMA */
   USHORT	DMAMWordFlags;		/* 63				      */
-  USHORT	AdvancedPIOModes;	/* 64 Advanced PIO modes supported */
-  USHORT	MinMWDMACycleTime;	/* 65 Minimum multiWord DMA cycle time */
-  USHORT	RecMWDMACycleTime;	/* 66 Recommended MW DMA cycle time */
+  USHORT	AdvancedPIOModes;	/* 64 Advanced PIO modes supported    */
+  USHORT	MinMWDMACycleTime;	/* 65 Minimum multiword DMA cycle time */
+  USHORT	RecMWDMACycleTime;	/* 66 Recommended MW DMA cycle time   */
   USHORT	MinPIOCycleTimeWOFC;	/* 67 Minimum PIO cycle time without IORDY */
-  USHORT	MinPIOCycleTime;	/* 68 Minimum PIO cycle time	*/
-  USHORT	Reserved3[82-69];	/* 69			 */
-  USHORT	CommandSetSupported[3]; /* 82			 */
-  USHORT	CommandSetEnabled[3];	/* 85			 */
-  USHORT	UltraDMAModes;		/* 88 Ultra DMA Modes	 */
-  USHORT	Reserved4[93-89];	/* 89			 */
-  USHORT	HardwareTestResult;	/* 93 hardware test result*/
-  USHORT	Reserved5[127-94];	/* 94			  */
-  USHORT	MediaStatusWord;	/* 127 media status Word  */
-  USHORT	Reserved6[256-128];	/*			  */
+  USHORT	MinPIOCycleTime;	/* 68 Minimum PIO cycle time   */
+  USHORT	Reserved2[71-69];	/* 69			       */
+  USHORT	ReleaseDelay;		/* 71			       */
+  USHORT	ServiceDelay;		/* 72			       */
+  USHORT	ATAPIMajorVersion;	/* 73			       */
+  USHORT	ATAPIMinorVersion;	/* 74			       */
+  USHORT	QueueDepth;		/* 75			       */
+  USHORT	SATACapabilities;	/* 76			       */
+  USHORT	SATAreserved;		/* 77			       */
+  USHORT	SATAFeatSupported;	/* 78			       */
+  USHORT	SATAFeatEnabled;	/* 79			       */
+  USHORT	MajorVersion;		/* 80			       */
+  USHORT	MinorVersion;		/* 81			       */
+  USHORT	CommandSetSupported[3]; /* 82			       */
+  USHORT	CommandSetEnabled[3];	/* 85			       */
+  USHORT	UltraDMAModes;		/* 88 Ultra DMA Modes	       */
+  USHORT	Reserved5[93-89];	/* 89			       */
+  USHORT	HardwareTestResult;	/* 93 hardware test result     */
+  USHORT	AcousticManagement;	/* 94			       */
+  USHORT	Reserved6[100-95];	/* 95			       */
+  ULONG 	LBA48TotalSectorsL;	/* 100			       */
+  ULONG 	LBA48TotalSectorsH;	/* 102			       */
+  USHORT	Reserved7[127-104];	/* 104			       */
+  USHORT	MediaStatusWord;	/* 127 media status word       */
+  USHORT	Reserved8[256-128];	/*			       */
+
 } IDENTIFYDATA;
 
 typedef struct _getNativeMax {
@@ -240,7 +259,24 @@ int main (int argc, char *argv[]) {
   APIRET rc;
   HFILE hDevice;
   ULONG ActionTaken;
-  ULONG Options = 0;
+  enum {
+    noOpt = 0,
+    OptVerbose = 1,
+    OptStatistics = 2,
+    OptIdentify = 4,
+    OptSmart = 8,
+    OptHPA = 16,
+    OptSet = 32,
+    OptProtection = 64,
+    OptReadSector = 128,
+    OptIdentifyTxt = 256,
+    OptRWTaskFile = 32768,
+    OptDeviceTable = 65536,
+    OptPowerstate = OptDeviceTable + 1,
+    OptReset = OptDeviceTable + 2,
+    OptSuppressInq = 1 << 31
+  } Options = noOpt;
+
   int i, j;
   DSKSP_CommandParameters Parms;
   ULONG PLen = 1;
@@ -255,6 +291,7 @@ int main (int argc, char *argv[]) {
   ULONG setNativeMaxC = 0;
   char Model[41], FirmWare[9], SerialNo[21];
   ULONG LBA = 0;
+  UCHAR Powerstate = 0;
   UCHAR Cmd, Feat = 0, Opt = 0;
   UCHAR Sector[512];
 
@@ -285,28 +322,28 @@ int main (int argc, char *argv[]) {
 	  continue;
 	}
       }
-      if (strchr (argv[i], 'i')) Options |= 4;
-      if (strchr (argv[i], 'I')) Options |= 256;
-      if (strchr (argv[i], 'c')) Options |= 2;
-      if (strchr (argv[i], 'C')) Options |= 2 | 0x80000000;
-      if (strchr (argv[i], 'v')) Options |= 1;
+      if (strchr (argv[i], 'i')) Options |= OptIdentify;
+      if (strchr (argv[i], 'I')) Options |= OptIdentifyTxt;
+      if (strchr (argv[i], 'c')) Options |= OptStatistics;
+      if (strchr (argv[i], 'C')) Options |= OptStatistics | OptSuppressInq;
+      if (strchr (argv[i], 'v')) Options |= OptVerbose;
       if (strchr (argv[i], 's')) {
-	Options |= 8;
+	Options |= OptSmart;
 	if ((i + 1) < argc)
 	  if (!stricmp (argv[i+1], "1")) {
 	    Enable = 1;
-	    Options |= 32;
+	    Options |= OptSet;
 	    i += 1;
 	    continue;
 	  } else  if (!stricmp (argv[i+1], "0")) {
 	    Enable = 0;
-	    Options |= 32;
+	    Options |= OptSet;
 	    i += 1;
 	    continue;
 	  }
       }
       if (strchr (argv[i], 'm')) {
-	Options |= 16;
+	Options |= OptHPA;
 	j = i + 1;
 	if ((j < argc) && (UnitLow == UnitHigh)) {
 	  if (!stricmp (argv[j], "32G")) {
@@ -327,14 +364,14 @@ int main (int argc, char *argv[]) {
 	    setNativeMax = strtoul (argv[j], NULL, 10);
 	  }
 	  if (setNativeMax || setNativeMaxC) {
-	    Options |= 32;
+	    Options |= OptSet;
 	    i = j;
 	    continue;
 	  }
 	}
       }
       if (strchr (argv[i], 'p')) {
-	Options |= 64;
+	Options |= OptProtection;
 	j = i + 1;
 	if ((j < argc) && (UnitLow == UnitHigh)) {
 	  Enable = atoi (argv[j]);
@@ -342,8 +379,23 @@ int main (int argc, char *argv[]) {
 	  continue;
 	}
       }
+      if (strchr (argv[i], '#')) {
+	if (UnitLow == UnitHigh) {
+	  Options = OptReset;
+	  break;
+	}
+	continue;
+      }
+      if (strchr (argv[i], 'a') && (i == 1)) {
+	Options = OptPowerstate;
+	j = i + 1;
+	if (j < argc) {
+	  Powerstate = atoi (argv[j]);
+	  break;
+	}
+      }
       if (strchr (argv[i], 'r')) {
-	Options |= 128;
+	Options |= OptReadSector;
 	j = i + 1;
 	if ((j < argc) && (UnitLow == UnitHigh)) {
 	  LBA = strtoul (argv[j], NULL, 10);
@@ -353,16 +405,16 @@ int main (int argc, char *argv[]) {
       }
       if (strchr (argv[i], '=')) {
 	if (UnitLow == UnitHigh)
-	  Options |= 32768 | 0x80000000;
+	  Options |= OptRWTaskFile | OptSuppressInq;
       }
       if (strchr (argv[i], '*')) {
-	Options = 512;
+	Options = OptDeviceTable;
       }
       if (strchr (argv[i], '!')) {
 	j = i + 1;
 	if ((j < argc) && (UnitLow == UnitHigh)) {
 	  Cmd = strtoul (argv[j], NULL, 16);
-	  Options |= 16384 | 32768 | 0x80000000;
+	  Options |= OptRWTaskFile | OptSet | OptSuppressInq;
 
 	  if ((j + 1) < argc) {
 	    j++;
@@ -377,7 +429,7 @@ int main (int argc, char *argv[]) {
 	}
       }
     }
-    if (Options == 0) {
+    if (Options == noOpt) {
       printf ("Usage: %s {i}{I}{c}{v}{s}{m}{p}\n", argv[0]);
       printf ("       %s <unit> {i}{I}{c}{v}{s}{m}{p}\n", argv[0]);
       printf ("       %s <unit> s {0|1} (SMART off/on)\n", argv[0]);
@@ -395,7 +447,23 @@ int main (int argc, char *argv[]) {
 		 OPEN_FLAGS_NOINHERIT | OPEN_ACCESS_READONLY, NULL);
   if (rc) exit (rc);
 
-  if (Options & 512) {
+  Parms.byPhysicalUnit = 0x80 + UnitLow;
+
+  if (Options == OptReset) {
+    ULONG DataLen;
+
+    rc = DosDevIOCtl (hDevice, DSKSP_CAT_GENERIC, DSKSP_RESET,
+		      (PVOID)&Parms, PLen, &PLen, NULL, 0, &DataLen);
+    goto Close;
+
+  } else if (Options == OptPowerstate) {
+    ULONG DataLen;
+
+    rc = DosDevIOCtl (hDevice, DSKSP_CAT_GENERIC, DSKSP_POWER,
+		      (PVOID)&Parms, PLen, &PLen, (PVOID)&Powerstate, 1, &DataLen);
+    goto Close;
+
+  } else if (Options == OptDeviceTable) {
     int k;
     UCHAR *p;
     ULONG DLen = sizeof (Sector);
@@ -444,7 +512,7 @@ int main (int argc, char *argv[]) {
       continue;
     }
 
-    if (!(Options & 0x80000000)) {
+    if (!(Options & OptSuppressInq)) {
       rc = DosDevIOCtl (hDevice, DSKSP_CAT_GENERIC, DSKSP_GET_INQUIRY_DATA,
 			(PVOID)&Parms, PLen, &PLen, (PVOID)&Id, IDLen, &IDLen);
       if (rc == 0xFF02) {
@@ -466,10 +534,10 @@ int main (int argc, char *argv[]) {
       }
     }
 
-    if (Options & 32768) {
+    if (Options & OptRWTaskFile) {
       UCHAR Regs[8];
 
-      if (Options & 16384) {
+      if (Options & OptSet) {
 	Regs[1] = Feat;
 	Regs[2] = Opt;
 	Regs[7] = Cmd;
@@ -482,7 +550,7 @@ int main (int argc, char *argv[]) {
       printf (" [%lX,%X]\n", UnitInfo.UnitFlags1, UnitInfo.UnitFlags2);
     }
 
-    if (Options & 1) {
+    if (Options & OptVerbose) {
       switch (UnitInfo.wRevisionNumber) {
 	case 0:
 	  printf ("Port %4X/%4X, Irq %d",
@@ -505,11 +573,11 @@ int main (int argc, char *argv[]) {
       printf ("\n\n");
     }
 
-    if ((Options & 8) && !(UnitInfo.wFlags & UIF_ATAPI)) {
+    if ((Options & OptSmart) && !(UnitInfo.wFlags & UIF_ATAPI)) {
       ULONG value = 0;
       ULONG DataLen;
 
-      if (Options & 32) {
+      if (Options & OptSet) {
 	rc = DosDevIOCtl (hDevice, DSKSP_CAT_SMART, DSKSP_SMART_ONOFF,
 			  (PVOID)&Parms, PLen, &PLen, (PVOID)&Enable, 1, &DataLen);
       }
@@ -523,9 +591,9 @@ int main (int argc, char *argv[]) {
 	printf ("device is%s reliable\n\n", value ? " NOT" : "");
     }
 
-    if ((Options & 2) && !(UnitInfo.wFlags & UIF_ATAPI)) {
+    if ((Options & OptStatistics) && !(UnitInfo.wFlags & UIF_ATAPI)) {
       ULONG CountersLen = sizeof (DeviceCountersData);
-      DeviceCountersData Counters;
+      DeviceCountersData Counters = { 0 };
 
       rc = DosDevIOCtl (hDevice, DSKSP_CAT_GENERIC, DSKSP_GEN_GET_COUNTERS,
 			(PVOID)&Parms, PLen, &PLen, (PVOID)&Counters, CountersLen, &CountersLen);
@@ -535,24 +603,27 @@ int main (int argc, char *argv[]) {
       printf ("Total sectors       : %8u reads, %8u writes\n", Counters.TotalSectorsRead, Counters.TotalSectorsWritten);
       printf ("Busmaster operations: %8u reads, %8u writes, %8u misaligned\n",
 	Counters.TotalBMReadOperations, Counters.TotalBMWriteOperations, Counters.ByteMisalignedBuffers);
-      printf ("Total errors        : %5u reads, %5u writes, %5u seeks\n", Counters.TotalReadErrors, Counters.TotalWriteErrors, Counters.TotalSeekErrors);
+      printf ("Total errors        : %5u reads, %5u writes, %5u seeks, %5u SATA\n", Counters.TotalReadErrors, Counters.TotalWriteErrors, Counters.TotalSeekErrors, Counters.SATAErrors);
       printf ("Total lost states   : %5u IRQs,  %5u DRQs,   %5u BUSY\n", Counters.TotalIRQsLost, Counters.TotalDRQsLost, Counters.TotalBusyErrors);
       printf ("Total bad states    : %5u BMSTA, %5u BMSTA2, %5u BMERR, %5u Chip\n", Counters.TotalBMStatus, Counters.TotalBMStatus2, Counters.TotalBMErrors, Counters.TotalChipStatus);
       printf ("Subtotal errors     : %u r0, %u r1, %u r2, %u r3, %u w0, %u w1, %u s0, %u s1\n", Counters.ReadErrors[0], Counters.ReadErrors[1], Counters.ReadErrors[2], Counters.ReadErrors[3], Counters.WriteErrors[0], Counters.WriteErrors[1], Counters.SeekErrors[0], Counters.SeekErrors[1]);
       printf ("\n");
     }
 
-    if ((Options & 16) && !(UnitInfo.wFlags & UIF_ATAPI) && (Id.CommandSetSupported[0] & 0x0400)) {
+    if ((Options & OptHPA) && !(UnitInfo.wFlags & UIF_ATAPI) && (Id.CommandSetSupported[0] & 0x0400)) {
       ULONG MaxSectors = (ULONG)-1;
       ULONG DLen = sizeof (MaxSectors);
 
       rc = DosDevIOCtl (hDevice, DSKSP_CAT_GENERIC, DSKSP_GET_NATIVE_MAX,
 			(PVOID)&Parms, PLen, &PLen, (PVOID)&MaxSectors, DLen, &DLen);
 
-      if (!rc && (MaxSectors != (ULONG)-1))
-	printf ("Disk native capacity:        %ld sectors\nCurrently reported capacity: %ld sectors\n", MaxSectors, Id.LBATotalSectors);
+      if (!rc && (MaxSectors != (ULONG)-1)) {
+	printf ("Disk native capacity:              %lu sectors\n", MaxSectors);
+	printf ("Currently reported LBA28 capacity: %lu sectors\n", Id.LBATotalSectors);
+	printf ("Currently reported LBA48 capacity: %lu sectors\n", Id.LBA48TotalSectorsL);
+      }
 
-      if (Options & 32) {
+      if (Options & OptSet) {
 	SetNativeMax set;
 	IDENTIFYDATA newId;
 
@@ -589,7 +660,7 @@ int main (int argc, char *argv[]) {
       printf ("\n");
     }
 
-    if (Options & 64) {
+    if (Options & OptProtection) {
       ULONG DataLen = sizeof (Enable);
 
       rc = DosDevIOCtl (hDevice, DSKSP_CAT_GENERIC, DSKSP_SET_PROTECT_MBR,
@@ -597,7 +668,7 @@ int main (int argc, char *argv[]) {
       printf ("Write protection: %s\n\n", Enable ? (Enable > 1 ? "disk" : "track 0") : "off");
     }
 
-    if (Options & 4) {
+    if (Options & OptIdentify) {
       int k;
       USHORT *p;
 
@@ -616,13 +687,13 @@ int main (int argc, char *argv[]) {
       printf ("\n");
     }
 
-    if (Options & 256) {
+    if (Options & OptIdentifyTxt) {
 //	printf ("%sIDENTIFY response\n", (UnitInfo.wFlags & UIF_ATAPI) ? "ATAPI " : "");
       Identify ((USHORT *)&Id);
       printf ("\n");
     }
 
-    if (Options & 128) {
+    if (Options & OptReadSector) {
       int k;
       UCHAR *p;
       ULONG DLen = sizeof (Sector);
@@ -658,7 +729,7 @@ int main (int argc, char *argv[]) {
 Close:
   DosClose (hDevice);
 
-  if (Options == 0)
+  if (Options == noOpt)
     printf ("\nmore info with %s {?}{i}{I}{c}{v}{s}{m}{p}\n", argv[0]);
 
   return (rc);
