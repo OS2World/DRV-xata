@@ -1043,7 +1043,8 @@ PCI_DEVICE PCIDevice[] =
       CListCBCMSata, CListFBCMSata,
       0x04, 0x04, 0x00, 0x00, 0x10,
       BroadcomMsgtxt },
-  { { 0, 0x8086, Intel, MODE_COMPAT_ONLY, 0, 1,
+  // 2012-10-12 SHL Intel Atom SCH requires word aligned DMA
+  { { 0, 0x8086, Intel, MODE_COMPAT_ONLY, 0, 2,
       AcceptSCH, CfgNull,
       NULL, NonsharedCheckIRQ,
       GetSCHPio, SetupCommon,

@@ -1031,9 +1031,10 @@ VOID NEAR SetIOAddress (NPA npA)
   /*						    */
   /*------------------------------------------------*/
 
-  if ((InitActive == BIOSActive) &&
-      (npU->Flags & UCBF_BM_DMA) && (npA->ReqFlags & (ACBR_READ | ACBR_WRITE))) {
-    /* Check forced PIO mode flag and try to create scatter/gather list */
+  if (InitActive == BIOSActive &&
+      (npU->Flags & UCBF_BM_DMA) && (npA->ReqFlags & (ACBR_READ | ACBR_WRITE)))	{
+    // Try to create scatter/gather list unles PIO mode already forced
+    // If list create fails, fall back to PIO mode
     if (!(npA->ReqFlags & ACBR_BM_DMA_FORCEPIO) && !(CreateBMSGList (npA))) {
 
       CmdIdx = (CmdIdx & 1) | 8;
@@ -1047,7 +1048,7 @@ VOID NEAR SetIOAddress (NPA npA)
 
       /* Shut down Bus Master DMA controller if active */
       BMSTATUS = 0;
-      METHOD(npA).SetupDMA (npA);
+      METHOD(npA).SetupDMA (npA);	// GenericSetupDMA
 
       /*
        * Bus Master DMA is now ready for the transfer.	It must be started after the
@@ -1058,7 +1059,7 @@ VOID NEAR SetIOAddress (NPA npA)
 
       npA->ReqFlags |= ACBR_DMAIO;
     }
-  }
+  } // if DMA read/write
 
   npA->IOPendingMask = FM_LOW | FM_PDRHD;
   if (npA->RBA & 0xF0000000) {	// LBA48 addressing required
@@ -1844,8 +1845,8 @@ UCHAR NEAR SendCmdPacket (NPA npA)
   // 17 Aug 10 SHL fixme to know if this can happen
   if (npA->atInterrupt > 0) DISABLE;
 
-  METHOD(npA).SetTF (npA, npA->IOPendingMask);
-  METHOD(npA).StartDMA (npA);
+  METHOD(npA).SetTF (npA, npA->IOPendingMask);	// GenericSetTF
+  METHOD(npA).StartDMA (npA);			// GenericStartOp
   return (0);
 
 Send_Error:

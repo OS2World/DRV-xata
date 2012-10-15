@@ -175,16 +175,16 @@ typedef enum {
 /*-------------------------------*/
 
 typedef struct _PCI_IDENT {
-   USHORT     Device;
-   USHORT     Vendor;
-   UCHAR      Index;	  // in PCI device array: hardware type
-   UCHAR      Revision;   // in PCI device array: PCI native mode allowed
-   UCHAR      TModes;	  // PIO, MWDMA, Channel Timing restrictions
-   UCHAR      SGAlign;	  // DMA buffer alignment restriction, run time value is bit mask
-			  // Init time value is byte count
+   USHORT     Device;	  // 0
+   USHORT     Vendor;	  // 2
+   UCHAR      Index;	  // 4 - in PCI device array: hardware type
+   UCHAR      Revision;   // 5 - in PCI device array: PCI native mode allowed
+   UCHAR      TModes;	  // 6 - PIO, MWDMA, Channel Timing restrictions
+   UCHAR      SGAlign;	  // 7 - DMA buffer alignment restriction, run time value is bit mask
+			  // Init time value in PCIInfo.Ident is byte count
 
    /* PCI device specific functions to call:	       */
-   BOOL       (NEAR *ChipAccept) (struct _A NEAR *);
+   BOOL       (NEAR *ChipAccept) (struct _A NEAR *);	// 8
    NPUSHORT   CfgTable;
    VOID       (NEAR *PCIFunc_InitComplete)(struct _A NEAR *);
    int	      (NEAR *CheckIRQ) (struct _A NEAR *);

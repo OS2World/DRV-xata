@@ -282,11 +282,11 @@ int NEAR BMCheckIRQ (NPA npA) {
   }
 }
 
-/*--------------------------------------------*/
-/* GenericSetupTaskFile 		      */
-/*--------------------------------------------*/
-
 #define outpdelay(Port,Data) OutBd (Port,Data,npA->IODelayCount)
+
+/**
+ * Set up Task File registers using method supported by most hardware
+ */
 
 VOID NEAR GenericSetTF (NPA npA, USHORT IOMask)
 {
@@ -303,6 +303,10 @@ VOID NEAR GenericSetTF (NPA npA, USHORT IOMask)
     if (IOMask & FM_LBA1   ) { outpdelay (LBA1REG,   LBA1); } // LBA1
     if (IOMask & FM_LBA2   ) { outpdelay (LBA2REG,   LBA2); } // LBA2
 }
+
+/**
+ * Get Task File registers using method supported by most hardware
+ */
 
 VOID NEAR GenericGetTF (NPA npA, USHORT IOMask)
 {
@@ -322,38 +326,40 @@ VOID NEAR GenericGetTF (NPA npA, USHORT IOMask)
   if (IOMask & FM_LBA2	 ) { LBA2   = InB (LBA2REG); } // LBA2
 }
 
-/*--------------------------------------------*/
-/* GenericStartOperation		      */
-/*--------------------------------------------*/
+/**
+ * Start operation using method supported by most hardware
+ */
 
 VOID NEAR GenericStartOp (NPA npA)
 {
   if (npA->BM_CommandCode & BMICOM_START) {
+    // DMA needs to see leading edge to start
     OutB (BMCMDREG, (UCHAR)(npA->BM_CommandCode & ~BMICOM_START));
     OutB (COMMANDREG, COMMAND);
-    OutB (BMCMDREG, npA->BM_CommandCode); /* Start BM controller */
+    OutB (BMCMDREG, npA->BM_CommandCode); // Start BM controller
   } else {
+    // PIO
     OutB (COMMANDREG, COMMAND);
   }
 }
 
-/*---------------------------------------------*/
-/* SetupDMAdefault			       */
-/*---------------------------------------------*/
+/**
+ * Set up for DMA using method supported by most hardware
+ */
 
 VOID NEAR GenericSetupDMA (NPA npA)
 {
-  OutB (BMSTATUSREG, (UCHAR)(BMISTA_ERROR |  /* clear Error Bit       */
-		      BMISTA_INTERRUPT |     /* clear INTR flag       */
+  OutB (BMSTATUSREG, (UCHAR)(BMISTA_ERROR |  // Clear Error Bit
+		      BMISTA_INTERRUPT |     // Clear INTR flag
 		      npA->BMStatus));
 
-  OutD (npA->BMIDTP, npA->ppSGL);
+  OutD (npA->BMIDTP, npA->ppSGL);	// Set physical address of scatter/gatter list
 }
 
 
-/*--------------------------------------------*/
-/* GenericStopDMA			      */
-/*--------------------------------------------*/
+/**
+ * Stop DMA using method supported by most hardware
+ */
 
 VOID NEAR GenericStopDMA (NPA npA)
 {
@@ -369,14 +375,14 @@ VOID NEAR GenericStopDMA (NPA npA)
   }
 }
 
-/*--------------------------------------------*/
-/* GenericErrorDMA			      */
-/*--------------------------------------------*/
+/**
+ * Clear DMA error status using method supported by most hardware
+ */
 
 VOID NEAR GenericErrorDMA (NPA npA)
 {
-  OutB (BMSTATUSREG, (UCHAR)(BMISTA_ERROR |   /* clear Error Bit       */
-			     npA->BMStatus)); /* clear INTR flag       */
+  OutB (BMSTATUSREG, (UCHAR)(BMISTA_ERROR |   // Clear Error Bit
+			     npA->BMStatus)); // Clear INTR flag
 }
 
 /*--------------------------------------------*/
