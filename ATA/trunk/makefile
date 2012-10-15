@@ -6,6 +6,7 @@
 # 2010-06-07 SHL Sync with LGPL sources
 # 2011-03-04 SHL Comments and bldlevel tweaks
 # 2011-06-07 SHL Correct icat debug build
+# 2012-08-21 DAZ Fixed makefile so it doesn't have to be in the DDK tree
 # 2012-10-04 SHL Support mapsymi
 
 #/************************************************************************/
@@ -30,6 +31,8 @@
 #  BUILDTIME - build time (yyyy/mm/dd hh:mm:ss) - make fails if not set
 #  LIBOBJ - points to prebuild runtime .obj file directory (defaults to LibObj)
 #  ACPI - points to ACPI toolkit header directory (defaults to ACPI)
+#  DDK - The location of the DDK
+#  ACPI_SUPPORT - build with the obsolete ACPI interface
 
 # Build options that can be set on nmake command line
 #  icat - generate ICAT symbolic debug data (default is no ICAT data)
@@ -60,6 +63,10 @@ _VENDOR = unknown
 BUILDMACH = unknown
 !endif
 
+!ifndef DDK
+!error DDK must be defined in environment
+!endif
+
 # Spacing and width matters to bldlevel
 # Define BUILDTIME as YYYY/MM/DD HH:MM:SS
 # Bldlevel requires TIMESTAMP and trailing spaces to be exactly 25 characters
@@ -86,13 +93,13 @@ TIMESTAMP = $(BUILDTIME)      $(BUILDMACH)
 
 # Compiler Location w/ includes, libs and tools
 
-INC	  = ..\..\..\..\..\inc
-H	  = ..\..\..\..\..\h
-LIB	  = ..\..\..\..\..\lib
-TOOLS	  = ..\..\..\..\..\tools
-DISKH	  = ..\..\diskh
-RMLIB	  = ..\..\..\resource\rmcalls
-APM	  = ..\..\..\thinkpad\dockii\apmcalls
+INC=$(DDK)\base\inc
+H=$(DDK)\base\h
+LIB=$(DDK)\base\lib
+TOOLS=$(DDK)\base\tools
+DISKH=$(DDK)\base\src\dev\dasd\diskh
+RMLIB=$(DDK)\base\src\dev\resource\rmcalls
+APM=$(DDK)\base\src\dev\thinkpad\dockii\apmcalls
 
 !ifndef ACPI
 ACPI	  = Acpi
@@ -139,6 +146,9 @@ PACK=nelite
 
 AFLAGS = -MX -T -Z -M
 AINC   = -I. -I$(INC)
+!ifdef ACPI_SUPPORT
+AFLAGS = $(AFLAGS) -DACPI_SUPPORT
+!endif
 
 # /Zp pack 1
 # /G2sr 286, no stack probes, fastcall
@@ -158,19 +168,23 @@ CFLAGS = $(CFLAGS) /Zi /Od /Oi
 LFLAGS = $(LFLAGS) /co
 !endif
 
-!ifdef notraces
+!ifdef NOTRACES
 CFLAGS = $(CFLAGS) /DTRACES=0
 !else
 CFLAGS = $(CFLAGS) /DTRACES=1
+!endif
+
+!ifdef ACPI_SUPPORT
+CFLAGS = $(CFLAGS) /DACPI_SUPPORT
 !endif
 
 # Enable this to generate .cod listing
 # CFLAGS = $(CFLAGS) /Fc
 
 # Define in CL variable to keep command lines shorter
-!if [set CL=$(CFLAGS)]
-!endif
-CFLAGS=
+#!if [set CL=$(CFLAGS)]
+#!endif
+#CFLAGS=
 
 LIBS  =  $(APM)\apmcalls.lib $(RMLIB)\rmcalls.lib $(LIB)\libh.lib $(LIB)\os2286p.lib
 
@@ -197,7 +211,10 @@ OBJ3 =	S506TIMR.OBJ S506CSUB.OBJ S506OSM2.OBJ S506OEM.OBJ  S506MATH.OBJ S506MPIF
 OBJ4 =	S506INIT.OBJ CMDPARSE.OBJ S506PRTF.OBJ S506OEMI.OBJ S506GEOM.OBJ S506I13.OBJ
 OBJ5 =	S506COMN.OBJ S506PIIX.OBJ S506VIA.OBJ  S506GNRC.OBJ S506ALI.OBJ  S506SIS.OBJ
 OBJ6 =	S506CMD.OBJ  S506PDC.OBJ  S506CX.OBJ   S506HPT.OBJ  S506AEC.OBJ  S506SW.oBJ
-OBJ7 =	S506OPTI.OBJ S506SII.OBJ  S506ITE.OBJ  S506JMB.OBJ  S506NTIO.OBJ ACPI.OBJ
+OBJ7 =	S506OPTI.OBJ S506SII.OBJ  S506ITE.OBJ  S506JMB.OBJ  S506NTIO.OBJ
+!ifdef ACPI_SUPPORT
+OBJ7 =	$(OBJ7) ACPI.OBJ
+!endif
 OBJL =	$(LIBOBJ)\anfaulsh.obj $(LIBOBJ)\anfauldi.obj $(LIBOBJ)\anfaulre.obj
 
 OBJS = $(OBJ1) $(OBJ2) $(OBJ3) $(OBJ4) $(OBJ5) $(OBJ6) $(OBJ7)
@@ -214,7 +231,6 @@ OBJS = $(OBJ1) $(OBJ2) $(OBJ3) $(OBJ4) $(OBJ5) $(OBJ6) $(OBJ7)
 	$(AS) -l -n $(AFLAGS) $(AINC) $*.asm;
 
 .c.obj:
-	echo CL=%%CL
 	$(CC) $(CFLAGS) $(CINC) $*.c
 
 .c.i:

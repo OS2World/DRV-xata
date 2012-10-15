@@ -88,7 +88,7 @@ UCHAR  NEAR _fastcall safeINC (NPVBYTE counter);
  * Atomically decrements the counter by 1.
  * Returns 0 if new value is zero otherwise the result is 1
  */
-UCHAR  NEAR _fastcall safeDEC (NPVBYTE counter); /* returns 1 if 
+UCHAR  NEAR _fastcall safeDEC (NPVBYTE counter); /* returns 1 if
 
 
 /*----------------------------------------------------------------------------*
@@ -733,6 +733,7 @@ VOID FAR  _cdecl StubVDMInt13CallBack (VOID);
 #pragma alloc_text (FCode, Int13DoRequest)
 #pragma alloc_text (FCode, VDMInt13CallBack)
 
+#ifdef ACPI_SUPPORT
 /*---------------------------------------------------------------*
  *	ACPI.C Procedures					 *
  *---------------------------------------------------------------*/
@@ -745,5 +746,6 @@ LIN FAR AcpiPointer (PVOID p);
 #pragma alloc_text (ACPICode, ACPISetup)
 #pragma alloc_text (ACPICode, ACPIGetPCIIRQs)
 #pragma alloc_text (ACPICode, AcpiPointer)
+#endif
 
 

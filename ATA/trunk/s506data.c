@@ -99,6 +99,8 @@ USHORT	       Fixes		      = 0;
 NPPCI_INFO     CurPCIInfo	      = 0;
 UCHAR	       CurLevel 	      = 0;
 UCHAR	       RegOffset	      = 0;
+UCHAR          Suspended          = 0;
+
 
 NPU	       LastAccessedUnit       = NULL;
 NPA	       LastAccessedPCCardUnit = NULL;
@@ -1088,10 +1090,14 @@ USHORT	       ReqCount = 0;
 UCHAR	       TimerPool[TIMER_POOL_SIZE] = { 0 };
 CHAR	       OEMHLP_DDName[9] = "OEMHLP$ ";
 CHAR	       PCMCIA_DDName[9] = "PCMCIA$ ";
+#ifdef ACPI_SUPPORT
 CHAR	       ACPICA_DDName[9] = "ACPICA$ ";
+#endif
 IDCTABLE       OemHlpIDC =  { 0 };
 IDCTABLE       CSIDC = { 0 };
+#ifdef ACPI_SUPPORT
 IDCTABLE       ACPIIDC = { 0 };
+#endif
 USHORT	       CSHandle = 0;
 UCHAR	       CSRegistrationComplete = 0;
 UCHAR	       NumSockets = 0;
@@ -1134,7 +1140,9 @@ BOOT_RECORD	      BootRecord	  = { 0 };
 PARTITION_BOOT_RECORD PartitionBootRecord = { 0 };
 
 RP_GENIOCTL    IOCtlRP	 = {{sizeof (IOCtlRP), 0, 0x10}, 0x80, PCI_FUNC};
+#ifdef ACPI_SUPPORT
 RP_GENIOCTL    IOCtlACPI = {{sizeof (IOCtlACPI), 0, 0x10}, 0x88};
+#endif
 IORB_EXECUTEIO InitIORB 		  = { 0 };
 CHAR	       DTMem[(MAX_ADAPTERS+1)*MR_1K_LIMIT-1] = { 0 };
 

@@ -165,6 +165,7 @@ ExitIOCtl:
 	}
       }
 
+      #ifdef ACPI_SUPPORT
       if (APICRewire && !(Fixes & 8)) {
 	NPIHDRS p;
 	DISABLE
@@ -188,6 +189,7 @@ ExitIOCtl:
 
 	ENABLE
       }
+      #endif
 
 #if AUTOMOUNT
       // search OS2LVM.DMD
@@ -279,6 +281,11 @@ ExitIOCtl:
       }
       break;
     }
+
+    case CMDSaveRestore :
+      if (((PRPSAVERESTORE)pRPH)->FuncCode) APMResume();
+      else APMSuspend(APM_PWRSTATESUSPEND);
+      break;
 
     default :
       StatusError (pRPH, STATUS_DONE | STATUS_ERR_UNKCMD);

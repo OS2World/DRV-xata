@@ -607,7 +607,9 @@ void NEAR SetupPCI (void) {
 void AssignPCIChips (void) {
   UCHAR Count;
 
+#ifdef ACPI_SUPPORT
   ACPISetup();
+#endif
   Count = EnumPCIDevices();
 
   TWRITE(8)
@@ -1603,8 +1605,12 @@ VOID NEAR PrintAdapterInfo (NPA npA) {
   UCHAR IRQ;
 
   Port = PortToPhys (DATAREG, npA);
+  #ifdef ACPI_SUPPORT
   IRQ  = APICRewire ? npA->npC->IrqAPIC : 0;
   if (!IRQ) IRQ = npA->IRQLevel;
+  #else
+  IRQ = npA->IRQLevel;
+  #endif
 
   if (npA->FlagsT & ATBF_PCMCIA) {
     if (npA->Socket != (UCHAR)-1) {
@@ -1985,9 +1991,12 @@ USHORT FAR AllocAdapterResources (NPA npA)
   /*-----------------------*/
   /* AllocIRQResource	   */
   /*-----------------------*/
-
+  #ifdef ACPI_SUPPORT
   IRQ  = APICRewire ? npA->npC->IrqAPIC : 0;
   if (!IRQ) IRQ = npA->IRQLevel;
+  #else
+  IRQ = npA->IRQLevel;
+  #endif
 
   Resource.ResourceType		 = RS_TYPE_IRQ;
   Resource.IRQResource.IRQLevel  = IRQ;

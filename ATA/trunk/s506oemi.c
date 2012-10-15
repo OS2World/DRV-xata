@@ -211,7 +211,6 @@ UCHAR NEAR ProbeChannel (NPA npA)
 # endif
 
 // DEVHDREG - Device/Head register, typically baseaddr+6, orginally called Drive/Head
-
 #define DEVHD_RO7	0x80      // 7 - reserved, typically r/o = 1, but not always
 #define DEVHD_LBA	0x40      // 6 - LBA - r/w, 1 = LBA mode enabled
 #define DEVHD_RO5	0x20      // 5 - reserved, typically r/o = 1, but not always
@@ -223,7 +222,6 @@ UCHAR NEAR ProbeChannel (NPA npA)
 
   // 2011-07-20 SHL fixme to know why - probably empirically determine by Daniela?
   if (Dev == DEVHD_RO7 || Dev == (DEVHD_RO7|DEVHD_LBA|DEVHD_DEV1)) return (1); // OK - 0x80 or 0xD0
-
   #define LBA_RO5_BITS3_0 (DEVHD_LBA|DEVHD_RO5|0xF) // 0x6F - fixme to understand why
   #define LBA_DEV0 (DEVHD_RO7|DEVHD_LBA|DEVHD_RO5)	// 0xE0
   if ((Dev & LBA_RO5_BITS3_0) == LBA_RO5_BITS3_0) {
@@ -541,7 +539,11 @@ USHORT FAR EnumPCIDevices (void)
     for (i = 0; i <= 5; i++)
       GetBAR (npC->BAR + i, Enum.PCIAddr, i);
 
+    #ifdef ACPI_SUPPORT
     *(NPUSHORT)(&npC->IrqPIC) = ACPIGetPCIIRQs (Enum.PCIAddr);
+    #else
+    *(NPUSHORT)(&npC->IrqPIC) = 0;
+    #endif
     if (!npC->IrqPIC)  npC->IrqPIC  = Int;
     if (!npC->IrqAPIC) npC->IrqAPIC = npC->IrqPIC;
 
@@ -618,8 +620,10 @@ USHORT FAR EnumPCIDevices (void)
 
       if (npDev->Ident.ChipAccept (npA) && !HandleFoundAdapter (npA, npDev)) {
 	count++;
+	#ifdef ACPI_SUPPORT
 	if (*(NPUSHORT)(&npC->IrqPIC) && (npC->IrqPIC != Int) && !(npA->FlagsT & ATBF_DISABLED))
 	  APICRewire |= 1 << (npA - AdapterTable);
+	#endif
 
 #       if TRACES
 	  if (Debug & 8) TS("%d ",count)

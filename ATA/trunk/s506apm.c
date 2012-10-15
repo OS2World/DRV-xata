@@ -131,7 +131,7 @@ USHORT NEAR APMSuspend (USHORT PowerState)
   NPU	npU;
   UCHAR Adapter, Unit;
 
-  if (PowerState == APM_PWRSTATESUSPEND) {
+  if (!Suspended && (PowerState == APM_PWRSTATESUSPEND) ) {
     for (Adapter = 0; Adapter < cAdapters; Adapter++) {
       npA = ACBPtrs[Adapter];
       npU = npA->UnitCB;
@@ -152,6 +152,7 @@ USHORT NEAR APMSuspend (USHORT PowerState)
       }
 #endif
     }
+    Suspended = 1;
   }
   return 0;
 }
@@ -163,7 +164,8 @@ USHORT NEAR APMResume()
   NPC  npC;
   CHAR Adapter, Unit;
 
-DevHelp_Beep (200, 30);
+  if (!Suspended) return 0;
+//DevHelp_Beep (200, 30);
 
   for (npC = ChipTable; npC < (ChipTable + MAX_ADAPTERS); npC++) {
     if ((USHORT)npC->npA[0] | (USHORT)npC->npA[1])
@@ -210,7 +212,8 @@ DevHelp_Beep (200, 30);
       }
     }
   }
-DevHelp_Beep (2000, 30);
+//DevHelp_Beep (2000, 30);
+  Suspended = 0;
   return 0;
 }
 

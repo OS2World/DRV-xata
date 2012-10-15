@@ -56,6 +56,7 @@ extern USHORT	    Fixes;
 extern NPPCI_INFO   CurPCIInfo;
 extern UCHAR	    CurLevel;
 extern UCHAR	    RegOffset;
+extern UCHAR        Suspended;
 extern SEL	    DSSel, CSSel, FlatSel, SelSAS;
 extern NPU	    LastAccessedUnit;
 extern NPA	    LastAccessedPCCardUnit;
@@ -173,12 +174,16 @@ extern ULONG	      Queue;
 extern UCHAR	      TimerPool[TIMER_POOL_SIZE];
 extern CHAR	      OEMHLP_DDName[];
 extern CHAR	      PCMCIA_DDName[];
+#ifdef ACPI_SUPPORT
 extern CHAR	      ACPICA_DDName[];
+#endif
 extern IDCTABLE       OemHlpIDC;
 extern IDCTABLE       CSIDC;
+#ifdef ACPI_SUPPORT
 extern IDCTABLE       ACPIIDC;
 #define isACPIPresent (SELECTOROF (ACPIIDC.ProtIDCEntry) != NULL)
 #define APICRewire    (ACPIIDC.Reserved[0])
+#endif
 
 extern USHORT	      CSHandle;
 extern UCHAR	      CSRegistrationComplete;
