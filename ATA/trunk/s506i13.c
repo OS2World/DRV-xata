@@ -62,7 +62,7 @@ BOOL NEAR VDMInt13Create (VOID)
   VDMInt13.Int13CreateRc = 0;
 
   if (!(rc = DevHelp_CreateInt13VDM ((char far *)&VDMInt13))) {
-    DevHelp_ProcBlock ((ULONG)VDMDskBlkID,	 // Wait for VDM to run
+    DevHelp_ProcBlock (VDMDskBlkID,	 // Wait for VDM to run
 		       (ULONG)-1, 0);
   }
 
@@ -118,9 +118,9 @@ BOOL NEAR Int13DoRequest (VOID)
   VDMInt13Active = TRUE;
   VDMInt13.Int13State = VDMINT13_START;
 					      // Ready VDM Worker thread
-  if (!(rc = DevHelp_ProcRun ((ULONG)VDMInt13BlkID,
+  if (!(rc = DevHelp_ProcRun (VDMInt13BlkID,
 			      (PUSHORT)&AwakeCount))) {
-    DevHelp_ProcBlock ((ULONG)VDMDskBlkID, (ULONG)-1, (USHORT)0);
+    DevHelp_ProcBlock (VDMDskBlkID, (ULONG)-1, (USHORT)0);
   }
 
   VDMInt13Active = FALSE;
@@ -150,7 +150,7 @@ VOID NEAR _loadds _cdecl VDMInt13CallBack (VOID)
   rc = 0;
 
   // Wake up DiskDD Thread
-  if (!(rc = DevHelp_ProcRun ((ULONG)VDMDskBlkID,
+  if (!(rc = DevHelp_ProcRun (VDMDskBlkID,
 			      (PUSHORT)&AwakeCount))) {
     // Block this (Int13 VDM) thread.  Wait is NOT interruptable.
     DevHelp_ProcBlock ((ULONG)VDMInt13BlkID, (ULONG)-1, 0);
