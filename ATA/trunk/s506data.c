@@ -437,7 +437,7 @@ USHORT CListCIntel[] = {
 	0x3B2C, 0x3A00,     // PCH SATA RAID-> ICH10 SATA 4p
 	0x3B2D, 0x3A06,     // PCH SATA2 2p -> ICH10 SATA 2p
 	0x3B2E, 0x3A00,     // PCH SATA2 4p -> ICH10 SATA 4p
-
+    0x1E00, 0x3A00,     // PCH SATA2 4p -> ICH10 SATA 4p - Added per Ken Ames
 #if 0 // 2011-04-11 SHL	fixme to be gone or used
 	0x1300, 0x3A00,     // PCH SATA2 4p -> ICH10 SATA 4p (Paul's GA-P67A-UD3R-B3, Cougar Point 4 port SATA IDE Controller)
 #endif
