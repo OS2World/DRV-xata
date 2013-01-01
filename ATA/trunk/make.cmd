@@ -3,6 +3,7 @@
 :: $Id$
 
 :: 2010-09-13 SHL Ensure 4OS2; switch to ISO dates; switch to BUILDTIME BUILDMACH
+:: 2013-01-01 SHL Default VENDOR - suggested by Andy Willis - ticket# 14
 
 :: Ensure 4OS2
 if "%@eval[0]" == "0" goto is4xxx
@@ -22,6 +23,10 @@ iff not defined BUILDMACH then
     echo Warning: BUILDMACH and HOSTNAME not defined - BUILDMACH defaulted to %BUILDMACH
     beep
   endiff
+endiff
+
+iff not defined VENDOR then
+  set VENDOR=%BUILDMACH
 endiff
 
 echo on
