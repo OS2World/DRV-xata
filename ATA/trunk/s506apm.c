@@ -43,7 +43,7 @@ extern RP_GENIOCTL IOCtlRP;
 USHORT NEAR NotifyFLT (NPU npU, UCHAR CardEvent)
 {
   NPIORB_CHANGE_UNITSTATUS npTI = (NPIORB_CHANGE_UNITSTATUS)&InitIORB;
-  NPA	    npA = npU->npA;
+  NPA       npA = npU->npA;
   PUNITINFO pUI;
 
   pUI = npU->pUnitInfoF;
@@ -51,18 +51,18 @@ USHORT NEAR NotifyFLT (NPU npU, UCHAR CardEvent)
 
   clrmem (npTI, sizeof(*npTI));
 
-  npTI->iorbh.Length	      = sizeof(IORB_CHANGE_UNITSTATUS);
+  npTI->iorbh.Length          = sizeof(IORB_CHANGE_UNITSTATUS);
   npTI->iorbh.UnitHandle      = (USHORT)(pUI->UnitHandle);
   npTI->iorbh.CommandCode     = IOCC_UNIT_CONTROL;
   npTI->iorbh.CommandModifier = IOCM_CHANGE_UNITSTATUS;
   npTI->iorbh.RequestControl  = IORB_ASYNC_POST | IORB_DISABLE_RETRY;
-  npTI->UnitStatus	      = (npU->Flags & UCBF_NOTPRESENT ? 0 : US_PRESENT)
-			      | (npU->Flags & UCBF_BM_DMA ? US_BM_READ | US_BM_WRITE : 0)
-			      | (CardEvent ? US_PORT_UPDATE : 0);
-  npTI->pIdentifyData	      = (NPIDENTIFYDATA)ScratchBuf + npU->UnitIndex;
-  npTI->BasePort	      = DATAREG;
-  npTI->StatusPort	      = DEVCTLREG;
-  npTI->IRQLevel	      = npA->IRQLevel;
+  npTI->UnitStatus            = (npU->Flags & UCBF_NOTPRESENT ? 0 : US_PRESENT)
+                              | (npU->Flags & UCBF_BM_DMA ? US_BM_READ | US_BM_WRITE : 0)
+                              | (CardEvent ? US_PORT_UPDATE : 0);
+  npTI->pIdentifyData         = (NPIDENTIFYDATA)ScratchBuf + npU->UnitIndex;
+  npTI->BasePort              = DATAREG;
+  npTI->StatusPort            = DEVCTLREG;
+  npTI->IRQLevel              = npA->IRQLevel;
 
   return (Execute ((UCHAR)pUI->FilterADDHandle, (NPIORB)npTI));
 }
@@ -76,9 +76,9 @@ VOID NEAR Delay (USHORT ms)
 }
 
 /*------------------------------------*/
-/* APM Suspend/Resume Support	      */
+/* APM Suspend/Resume Support         */
 /* Reinitializes adapters and units   */
-/* following a resume event.	      */
+/* following a resume event.          */
 /*------------------------------------*/
 
 USHORT FAR _cdecl APMEventHandler (PAPMEVENT Event)
@@ -91,7 +91,7 @@ USHORT FAR _cdecl APMEventHandler (PAPMEVENT Event)
     if (PwrState != APM_PWRSTATEREADY)
       return (APMSuspend (PwrState));
   } else if ((Message == APM_CRITRESUMEEVENT) ||
-	     (Message == APM_STBYRESUMEEVENT)) {
+             (Message == APM_STBYRESUMEEVENT)) {
     PowerState = 0;
     return (APMResume());
   }
@@ -100,16 +100,16 @@ USHORT FAR _cdecl APMEventHandler (PAPMEVENT Event)
 
 void NEAR InitUnitSync (NPU npU) {
   npU->Flags &= ~(UCBF_MULTIPLEMODE | UCBF_DIAG_FAILED);
-					 npU->ReqFlags |= UCBR_SETPIOMODE;
-  if (npU->Flags & UCBF_BM_DMA) 	 npU->ReqFlags |= UCBR_SETDMAMODE;
-  if (npU->IdleTime != 0)		 npU->ReqFlags |= UCBR_SETIDLETIM;
-  if (npU->LPMLevel != 0)		 npU->ReqFlags |= UCBR_ENABLEDIPM;
+                                         npU->ReqFlags |= UCBR_SETPIOMODE;
+  if (npU->Flags & UCBF_BM_DMA)          npU->ReqFlags |= UCBR_SETDMAMODE;
+  if (npU->IdleTime != 0)                npU->ReqFlags |= UCBR_SETIDLETIM;
+  if (npU->LPMLevel != 0)                npU->ReqFlags |= UCBR_ENABLEDIPM;
   if (npU->SATACmdSupported & FX_SSPSUP) npU->ReqFlags |= UCBR_ENABLESSP;
   if (npU->Flags & UCBF_ATAPIDEVICE) return;
-  if (npU->CmdSupported & UCBS_WCACHE)	 npU->ReqFlags |= UCBR_ENABLEWCACHE;
-  if (npU->CmdSupported & UCBS_RAHEAD)	 npU->ReqFlags |= UCBR_ENABLERAHEAD;
+  if (npU->CmdSupported & UCBS_WCACHE)   npU->ReqFlags |= UCBR_ENABLEWCACHE;
+  if (npU->CmdSupported & UCBS_RAHEAD)   npU->ReqFlags |= UCBR_ENABLERAHEAD;
   if (npU->CmdSupported & UCBS_SECURITY) npU->ReqFlags |= UCBR_FREEZELOCK;
-  if (npU->Flags & UCBF_SMSENABLED)	 npU->ReqFlags |= UCBR_SETMULTIPLE;
+  if (npU->Flags & UCBF_SMSENABLED)      npU->ReqFlags |= UCBR_SETMULTIPLE;
 }
 
 void NEAR ReInitUnit (NPU npU) {
@@ -122,41 +122,51 @@ void NEAR ReInitUnit (NPU npU) {
 void NEAR UnitFlush (NPU npU) {
   npU->LongTimeout = TRUE;
   IssueOneByte (npU, (UCHAR)(((npU->CmdSupported >> 16) & FX_FLUSHXSUPPORTED) ?
-		FX_FLUSHEXT : FX_FLUSH));
+                FX_FLUSHEXT : FX_FLUSH));
 }
 
 USHORT NEAR APMSuspend (USHORT PowerState)
 {
-  NPA	npA;
-  NPU	npU;
+  NPA   npA;
+  NPU   npU;
+  NPC  npC;
   UCHAR Adapter, Unit;
 
-  if (!Suspended && (PowerState == APM_PWRSTATESUSPEND) ) {
-    for (Adapter = 0; Adapter < cAdapters; Adapter++) {
+  if (Suspended || (PowerState != APM_PWRSTATESUSPEND) ) return 0;
+
+  for (Adapter = 0; Adapter < cAdapters; Adapter++) {
       npA = ACBPtrs[Adapter];
       npU = npA->UnitCB;
 
       for (Unit = 0; Unit < npA->cUnits; Unit++, npU++) {
-	if (npU->Flags & (UCBF_ATAPIDEVICE | UCBF_NOTPRESENT | UCBF_CFA)) continue;
+        if (npU->Flags & (UCBF_ATAPIDEVICE | UCBF_NOTPRESENT | UCBF_CFA)) continue;
 
-	UnitFlush (npU);
-	if ((Adapter | Unit) == 0) {
-	  if (npU->CmdEnabled & UCBS_HPROT) {
-	    IssueSetMax (npU, (PULONG)&(npU->FoundLBASize), TRUE);
-	  }
-	}
+        UnitFlush (npU);
+        if ((Adapter | Unit) == 0) {
+          if (npU->CmdEnabled & UCBS_HPROT) {
+            IssueSetMax (npU, (PULONG)&(npU->FoundLBASize), TRUE);
+          }
+        }
       }
 #if ENABLEBUS
       if ((npA->FlagsT & (ATBF_PCMCIA | ATBF_BAY | ATBF_DISABLED)) == ATBF_BAY) {
-	if (METHOD(npA).EnableBus) METHOD(npA).EnableBus (npA, 0);
+        if (METHOD(npA).EnableBus) METHOD(npA).EnableBus (npA, 0);
       }
 #endif
-    }
-    Suspended = 1;
   }
+
+  /* DAZ 05-Jan-2013 added */
+  for (npC = ChipTable; npC < (ChipTable + MAX_ADAPTERS); npC++) {
+    if ((USHORT)npC->npA[0] | (USHORT)npC->npA[1])
+      ConfigurePCI (npC, PCIC_SUSPEND);
+  }
+
+  Suspended = 1;
+
   return 0;
 }
 
+//void NEAR SetupPCI (void);
 USHORT NEAR APMResume()
 {
   NPA  npA;
@@ -165,8 +175,13 @@ USHORT NEAR APMResume()
   CHAR Adapter, Unit;
 
   if (!Suspended) return 0;
-//DevHelp_Beep (200, 30);
 
+  /* DAZ don't know if we need to do this.
+   * Resume works with or without this on the systems I tested.
+   */
+  //SetupPCI();
+
+  /* DAZ 05-Jan-2013 added */
   for (npC = ChipTable; npC < (ChipTable + MAX_ADAPTERS); npC++) {
     if ((USHORT)npC->npA[0] | (USHORT)npC->npA[1])
       ConfigurePCI (npC, PCIC_RESUME);
@@ -192,27 +207,27 @@ USHORT NEAR APMResume()
 
       // de-bunk some ATAPI devices...
       { USHORT i;
-	for (i = ATA_BACKOFF /2 ; i > 0; i--) IODly (2 * IODelayCount);
+        for (i = ATA_BACKOFF /2 ; i > 0; i--) IODly (2 * IODelayCount);
       }
       // static adapter: wake up units
 
       npU = npA->UnitCB;
       for (npU = npA->UnitCB, Unit = npA->cUnits; --Unit >= 0; npU++) {
-	CHAR k;
+        CHAR k;
 
-	if (npU->Flags & UCBF_NOTPRESENT) continue;
+        if (npU->Flags & UCBF_NOTPRESENT) continue;
 
-	SelectUnit (npU);
-	for (k = 20; --k >= 0;)
-	  if (!CheckBusy (npA)) break;
+        SelectUnit (npU);
+        for (k = 20; --k >= 0;)
+          if (!CheckBusy (npA)) break;
 
-	npU->LongTimeout = TRUE;
-	ReInitUnit (npU);
-	NoOp (npU); // issue settings
+        npU->LongTimeout = TRUE;
+        ReInitUnit (npU);
+        NoOp (npU); // issue settings
       }
     }
   }
-//DevHelp_Beep (2000, 30);
+
   Suspended = 0;
   return 0;
 }
@@ -220,7 +235,7 @@ USHORT NEAR APMResume()
 
 USHORT NEAR ReConfigureUnit (NPU npU)
 {
-  NPA	npA;
+  NPA   npA;
   UCHAR ConfigChange = FALSE;
 
   npA = npU->npA;
@@ -235,7 +250,7 @@ USHORT NEAR ReConfigureUnit (NPU npU)
 
 #if PCITRACER
   outpw (TRPORT, 0xDF00);
-  OutD	(TRPORT-2, npU->Flags);
+  OutD  (TRPORT-2, npU->Flags);
   outpw (TRPORT-2, npA->FlagsT);
   outpw (TRPORT-2, npA->Cap);
 #endif
@@ -251,9 +266,9 @@ USHORT NEAR ReConfigureUnit (NPU npU)
     ConfigureUnit (npU);
 
     ConfigChange = ((PIO != npU->CurPIOMode) ||
-		    (DMA != npU->CurDMAMode) ||
-		   (UDMA != npU->UltraDMAMode) ||
-		    (npU->Flags & UCBF_BM_DMA));
+                    (DMA != npU->CurDMAMode) ||
+                   (UDMA != npU->UltraDMAMode) ||
+                    (npU->Flags & UCBF_BM_DMA));
     npU->Flags |= UCBF_READY;
 #if PCITRACER
   OutD (TRPORT-2, npU->Flags);
@@ -307,18 +322,18 @@ VOID NEAR IssueSATAReset (NPU npU) {
 
 //  DISABLE
   temp = InD (SCONTROL) & ~0xF;
-  OutD (SCONTROL, temp);	      // deassert COMRESET
-  OutD (SCONTROL, temp | 1);	      // issue COMRESET
+  OutD (SCONTROL, temp);              // deassert COMRESET
+  OutD (SCONTROL, temp | 1);          // issue COMRESET
 //  ENABLE
   InDd (SSTATUS, SATA_RESET_ASSERT_TIME * IODelayCount);  // flush write, wait
-  OutD (SCONTROL, temp);	      // deassert COMRESET
+  OutD (SCONTROL, temp);              // deassert COMRESET
   InDd (SSTATUS, SATA_RESET_ASSERT_TIME * IODelayCount);  // flush write, wait
-  OutD (SERROR, InD (SERROR));				  // clear SERROR
-  InDd (SSTATUS, IODelayCount); 			  // flush write, wait
+  OutD (SERROR, InD (SERROR));                            // clear SERROR
+  InDd (SSTATUS, IODelayCount);                           // flush write, wait
   for (loop = 10; --loop > 0;) {
     if (!(temp = InD (SERROR))) break;
-    OutD (SERROR, temp);				  // clear SERROR
-    InDd (SSTATUS, IODelayCount);			  // flush write, wait
+    OutD (SERROR, temp);                                  // clear SERROR
+    InDd (SSTATUS, IODelayCount);                         // flush write, wait
   }
 }
 
@@ -367,130 +382,130 @@ VOID FAR _cdecl InsertHandler (USHORT hTimer, PACB pA, ULONG Unused)
 
     switch (npA->InsertState) {
       case ACBI_SATA_WAITPhy1:
-	npA->InsertState = ACBI_SATA_WAITPhy2;
-	break;
+        npA->InsertState = ACBI_SATA_WAITPhy2;
+        break;
 
       case ACBI_SATA_WAITPhy2:
-	npA->Retries = TICKS (1000);
-	npA->InsertState = npA->Cap & CHIPCAP_SATA ? ACBI_SATA_WAITPhyReady
-						   : ACBI_WAITReset;
-	break;
+        npA->Retries = TICKS (1000);
+        npA->InsertState = npA->Cap & CHIPCAP_SATA ? ACBI_SATA_WAITPhyReady
+                                                   : ACBI_WAITReset;
+        break;
 
       case ACBI_SATA_WAITPhyReady:
-	if ((InD (SSTATUS) & SSTAT_DET) != SSTAT_COM_OK) {
-	  if (--npA->Retries == 0) {
-	    npU->Flags &= ~UCBF_PHYREADY;
-	    npA->InsertState = ACBI_STOP;    // give up
-	  }
-	} else {
-	  OutD (SERROR, InD (SERROR));	      // clear SERROR
-	  npU->Flags |= UCBF_PHYREADY;
-	  npA->InsertState = ACBI_WAITReset;
-	}
-	break;
+        if ((InD (SSTATUS) & SSTAT_DET) != SSTAT_COM_OK) {
+          if (--npA->Retries == 0) {
+            npU->Flags &= ~UCBF_PHYREADY;
+            npA->InsertState = ACBI_STOP;    // give up
+          }
+        } else {
+          OutD (SERROR, InD (SERROR));        // clear SERROR
+          npU->Flags |= UCBF_PHYREADY;
+          npA->InsertState = ACBI_WAITReset;
+        }
+        break;
 
       case ACBI_WAITReset:
-	npA->Retries = TICKS (30000);
-	npA->InsertState = ACBI_WAITCtrlr;
-	break;
+        npA->Retries = TICKS (30000);
+        npA->InsertState = ACBI_WAITCtrlr;
+        break;
 
       case ACBI_WAITCtrlr:
-	if (TESTBUSY) {
-	  if (--npA->Retries == 0) npA->InsertState = ACBI_STOP;    // give up
-	} else {
-	  UCHAR Controller = CtNone;
+        if (TESTBUSY) {
+          if (--npA->Retries == 0) npA->InsertState = ACBI_STOP;    // give up
+        } else {
+          UCHAR Controller = CtNone;
 
-	  npA->npU = npU = &npA->UnitCB[0];
+          npA->npU = npU = &npA->UnitCB[0];
 
-	  OutBdms (DRVHDREG , DRVHD);
-	  OutBdms (DEVCTLREG, (DEVCTL = FX_DCRRes | FX_nIEN));
+          OutBdms (DRVHDREG , DRVHD);
+          OutBdms (DEVCTLREG, (DEVCTL = FX_DCRRes | FX_nIEN));
 
-	  if (InBdms (DRVHDREG) == DRVHD) {
-	    UCHAR Data1 = InBdms (CYLLREG);
-	    if (((Data1 ==  ATAPISIGL) && (InBdms (CYLHREG) ==	ATAPISIGH)) ||
-		((Data1 == SATAPISIGL) && (InBdms (CYLHREG) == SATAPISIGH))) {
-	      Controller = CtATAPI;
-	      npU->Flags |= UCBF_ATAPIDEVICE;
-	    } else {
-	      Controller = CtATA;
-	      npU->Flags &= ~UCBF_ATAPIDEVICE;
-	    }
-	  } else {
-	    break;
-	  }
-	  npA->Controller[0] = Controller;
+          if (InBdms (DRVHDREG) == DRVHD) {
+            UCHAR Data1 = InBdms (CYLLREG);
+            if (((Data1 ==  ATAPISIGL) && (InBdms (CYLHREG) ==  ATAPISIGH)) ||
+                ((Data1 == SATAPISIGL) && (InBdms (CYLHREG) == SATAPISIGH))) {
+              Controller = CtATAPI;
+              npU->Flags |= UCBF_ATAPIDEVICE;
+            } else {
+              Controller = CtATA;
+              npU->Flags &= ~UCBF_ATAPIDEVICE;
+            }
+          } else {
+            break;
+          }
+          npA->Controller[0] = Controller;
 
-	  if (!Controller || !(npU->Flags & UCBF_FORCE)) {
-	    npA->InsertState = ACBI_STOP;
-	  } else {
-	    OutBdms (DRVHDREG, npU->DriveHead);
-	    OutB (COMMANDREG, FX_CFA_GET_EXT_ERROR);
-	    npA->Retries = TICKS (200);
-	    npA->InsertState = ACBI_WAITCmd1;
-	  }
-	}
-	break;
+          if (!Controller || !(npU->Flags & UCBF_FORCE)) {
+            npA->InsertState = ACBI_STOP;
+          } else {
+            OutBdms (DRVHDREG, npU->DriveHead);
+            OutB (COMMANDREG, FX_CFA_GET_EXT_ERROR);
+            npA->Retries = TICKS (200);
+            npA->InsertState = ACBI_WAITCmd1;
+          }
+        }
+        break;
 
       case ACBI_WAITCmd1:
-	if (TESTBUSY) {
-	  if (--npA->Retries == 0) npA->InsertState = ACBI_STOP;    // give up
-	} else {
-	  OutBdms (FEATREG, FX_ENABLE_CFA_POWER1);
-	  OutB (COMMANDREG, FX_SETFEAT);
-	  npA->Retries = TICKS (200);
-	  npA->InsertState = ACBI_WAITCmd2;
-	}
-	break;
+        if (TESTBUSY) {
+          if (--npA->Retries == 0) npA->InsertState = ACBI_STOP;    // give up
+        } else {
+          OutBdms (FEATREG, FX_ENABLE_CFA_POWER1);
+          OutB (COMMANDREG, FX_SETFEAT);
+          npA->Retries = TICKS (200);
+          npA->InsertState = ACBI_WAITCmd2;
+        }
+        break;
 
       case ACBI_WAITCmd2:
-	if (TESTBUSY) {
-	  if (--npA->Retries == 0) npA->InsertState = ACBI_STOP;    // give up
-	} else {
-	  OutBdms (COMMANDREG, (UCHAR)(
-		(npA->Controller[0] == CtATAPI) ? FX_ATAPI_IDENTIFY : FX_IDENTIFY));
-	  npA->Retries = TICKS (30000);
-	  npA->InsertState = ACBI_WAITIdent;
-	}
-	break;
+        if (TESTBUSY) {
+          if (--npA->Retries == 0) npA->InsertState = ACBI_STOP;    // give up
+        } else {
+          OutBdms (COMMANDREG, (UCHAR)(
+                (npA->Controller[0] == CtATAPI) ? FX_ATAPI_IDENTIFY : FX_IDENTIFY));
+          npA->Retries = TICKS (30000);
+          npA->InsertState = ACBI_WAITIdent;
+        }
+        break;
 
       case ACBI_WAITIdent:
-	if (TESTDRDY) {
-	  if (--npA->Retries == 0) npA->InsertState = ACBI_STOP;    // give up
-	} else {
-	  UCHAR i = 0;
+        if (TESTDRDY) {
+          if (--npA->Retries == 0) npA->InsertState = ACBI_STOP;    // give up
+        } else {
+          UCHAR i = 0;
 
-	  ADD_CancelTimer (hTimer);
+          ADD_CancelTimer (hTimer);
 
-	  do {
-	    InWdms (DATAREG);
-	  } while (--i != 0);
+          do {
+            InWdms (DATAREG);
+          } while (--i != 0);
 #if 1
-	  npA->InsertState = ACBI_ExecDefer;
-	  DevHelp_ArmCtxHook (0, CSCtxHook);
+          npA->InsertState = ACBI_ExecDefer;
+          DevHelp_ArmCtxHook (0, CSCtxHook);
 #else
-	  npA->InsertState = ACBI_STOP;
+          npA->InsertState = ACBI_STOP;
 #endif
-	}
-	break;
+        }
+        break;
 
       case ACBI_STOP:
-	npA->InsertState = -1;
-	ADD_CancelTimer (hTimer);
-	if (npA->FlagsT & ATBF_PCMCIA) CSUnconfigure (npA);
+        npA->InsertState = -1;
+        ADD_CancelTimer (hTimer);
+        if (npA->FlagsT & ATBF_PCMCIA) CSUnconfigure (npA);
 #if ENABLEBUS
-	if ((npA->FlagsT & (ATBF_PCMCIA | ATBF_BAY | ATBF_DISABLED)) == ATBF_BAY) {
-	  if (METHOD(npA).EnableBus) METHOD(npA).EnableBus (npA, 0);
-	}
+        if ((npA->FlagsT & (ATBF_PCMCIA | ATBF_BAY | ATBF_DISABLED)) == ATBF_BAY) {
+          if (METHOD(npA).EnableBus) METHOD(npA).EnableBus (npA, 0);
+        }
 #endif
-	return;
+        return;
     }
   } while (npA->InsertState == ACBI_STOP);
 }
 
 VOID NEAR _fastcall CardInsertionDeferred (VOID) {
   USHORT rc;
-  NPA	 npA;
-  NPU	 npU;
+  NPA    npA;
+  NPU    npU;
 
   for (npA = AdapterTable; npA < (AdapterTable + MAX_ADAPTERS); npA++) {
     if (!(npA->FlagsT & ATBF_FORCE) || (npA->InsertState != ACBI_ExecDefer)) continue;
@@ -528,14 +543,14 @@ Reconfigure:
       rc = IssueOneByte (npU, FX_IDLEIMM);
 
       if (!rc || (rc == IOERR_DEVICE_REQ_NOT_SUPPORTED)) {
-	DevHelp_Beep (3000, 50);
-	goto Reconfigure;
+        DevHelp_Beep (3000, 50);
+        goto Reconfigure;
       } else {
 Fail:
-	DevHelp_Beep (300, 50);
-	DevHelp_ProcBlock ((ULONG)(PVOID)&CardInsertionDeferred, 100UL, 0);
-	DevHelp_Beep (300, 50);
-	CSUnconfigure (npA);
+        DevHelp_Beep (300, 50);
+        DevHelp_ProcBlock ((ULONG)(PVOID)&CardInsertionDeferred, 100UL, 0);
+        DevHelp_Beep (300, 50);
+        CSUnconfigure (npA);
       }
     }
   }
@@ -552,8 +567,8 @@ Fail:
       IOCtlRP.DataPacket = (PUCHAR)&UStatus + 0;
 
       _asm { push ds
-	     pop es
-	     mov bx, offset IOCtlRP }
+             pop es
+             mov bx, offset IOCtlRP }
       OS2LVM();
     }
 #endif

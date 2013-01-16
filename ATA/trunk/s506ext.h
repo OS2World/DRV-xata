@@ -381,4 +381,4 @@ extern UCHAR VPIOString[];
 extern UCHAR VPauseVerbose0[];
 extern UCHAR VPauseVerbose1[];
 
- extern void *_CodeEnd;
+extern void *_CodeEnd;

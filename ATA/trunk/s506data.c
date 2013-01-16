@@ -101,7 +101,6 @@ UCHAR	       CurLevel 	      = 0;
 UCHAR	       RegOffset	      = 0;
 UCHAR          Suspended          = 0;
 
-
 NPU	       LastAccessedUnit       = NULL;
 NPA	       LastAccessedPCCardUnit = NULL;
 #if AUTOMOUNT
