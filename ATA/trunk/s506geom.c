@@ -647,10 +647,11 @@ BOOL NEAR CheckMBRConsistency (NPGEO2 npGeo)
 	  MBRconsistent = FALSE;
       }
       if ((npGeo->NumHeads != 0) && (npGeo->NumHeads != Heads)) break;
-      if ((npGeo->SectorsPerTrack != 0) && (npGeo->SectorsPerTrack != Sectors)) break;
 
       npGeo->NumHeads	     = Heads;
-      npGeo->SectorsPerTrack = Sectors;
+      /* use the largest calculated number of sectors because different partition sizes
+       * may calculate different number of sectors */
+      if (Sectors > npGeo->SectorsPerTrack) npGeo->SectorsPerTrack = Sectors;
       MBRconsistent = TRUE;
     } // if partitionType
   } // for
@@ -736,9 +737,26 @@ BOOL NEAR BPBGeometryGet (NPU npU)
     }
   } else {  // look for LVM data
     if (npU->BPBLogGeom.SectorsPerTrack) {
+      /* check all possible locations for LVM data because SectorsPerTrack may
+       * not be calculated correctly by CheckMBRConsistency()
+       *
+       * On partially partitioned 1TB or 2TB disks, CheckMBRConsistency() may calculate
+       * a smaller SectorsPerTrack value than what is needed.
+       *
+       * On >512GB disks partioned by Windows using 63 sectors per track, CheckMBRConsistency()
+       * may calculate a SectorsPerTrack larger than 63 when 63 is what is needed.
+       *
+       * First check the sector calculated by CheckMBRConsistency()
+       * If not there, then find the highest sector with valid LVM data.
+       */
       if (!ReadDrive (npU, npU->BPBLogGeom.SectorsPerTrack - 1, 1, (NPBYTE)&BootRecord) &&
 	  CheckLVM (&npU->BPBLogGeom))
 	return (FALSE);
+      for (i = 255; i >= 63; i >>= 1) {
+        if (i == npU->BPBLogGeom.SectorsPerTrack) continue;
+        if (!ReadDrive (npU, i-1, 1, (NPBYTE)&BootRecord) && CheckLVM (&npU->BPBLogGeom))
+	  return (FALSE);
+      }
     }
     for (i = BIOS_MAX_SECTORSPERTRACK - 1; i > 0; i--)
       if (!ReadDrive (npU, i, 1, (NPBYTE)&BootRecord) &&
