@@ -33,10 +33,10 @@
  #include "s506ext.h"
  #include "s506pro.h"
 
-#define YEAR  2012			// Update to match release date
-#define MONTH 10
-#define DAY   02
-#define PCMCIAVERSION 0x1812		// Update to match driver version
+#define YEAR  2013			// Update to match release date
+#define MONTH 04
+#define DAY   23
+#define PCMCIAVERSION 0x1815		// Update to match driver version
 
 /*-------------------------------------------------------------------*/
 /*								     */

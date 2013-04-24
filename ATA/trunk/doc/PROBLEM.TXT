@@ -1,13 +1,14 @@
 
-		      Daniela's S506 ADD - Release 1.8.12
+		      Daniela's S506 ADD - Release 1.8.15
 		      -----------------------------------
+
 
 == How to report problems ==
 ============================
 
 // Daniela had this to say...
 // To those people who still don't understand the meaning of REQUIRED:
-// Do not ask if the info is, simply generate it - even if you think you
+// Do not ask if the info is optional, simply generate it - even if you think you
 // can't do that - and attach it  -  UNCONDITIONALLY, ALWAYS, WITHOUT ASKING!
 
 // Before sending the report.* files, check if they contain data! The first line
@@ -63,7 +64,8 @@ and
 
   DumpIDE b > report.dumpide
 
-If the "Total errors" lines of report.diskinfo are not all zero, enter the follow command
+If the "Total errors" lines of report.diskinfo are not all zero, enter the following
+command
 
  SmartCtl -a DiskID > report.smart
 
@@ -113,3 +115,4 @@ can submit a support ticket at
 
   http://www.ecomstation.com/support/
 
+$Id$

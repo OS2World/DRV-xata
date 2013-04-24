@@ -1,7 +1,6 @@
 
-		      Daniela's S506 ADD - Release 1.8.12
+		      Daniela's S506 ADD - Release 1.8.15
 		      -----------------------------------
-		                    BETA
 
 NAME
 
@@ -136,6 +135,7 @@ DESCRIPTION
 ***  - resolve ticket #8 (8086:2411 ICH1 controller #1 w/ATAPI device detect)
 ***  - resolve ticket #8 (8086:244B ICH2 controller #1 w/ATAPI device detect)
 ***  - fix Paulsbro SCH setup (8086:811A) to require word aligned DMA
+***  - correct ProbeChannel svn ticket #8 regression, fixes svn #16 bugtracker #3445, #3419 etc.
 
 ###  Caution: users of DaniBoot v1.0 need to upgrade to version 1.0.2!
 ###  Caution: users of DaniATAPI v0.3.x need to upgrade to version 0.4.0!

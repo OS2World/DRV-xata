@@ -1,6 +1,7 @@
 /**************************************************************************
  *
  * SOURCE FILE NAME = S506SII.C
+ * $Id$
  *
  * DESCRIPTIVE NAME = DANIS506.ADD - Adapter Driver for PATA/SATA DASD
  *
@@ -347,7 +348,8 @@ int NEAR SIICheckIRQ (NPA npA) {
   DISABLE
   BM.Status2 = InD (BMCMDREG);
   BMSTATUS = BM.Status;
-  if ((BMSTATUS & BMISTA_INTERRUPT) || (BM.Cmd & 0x10)) { // interrupt is signalled pending
+  if ((BMSTATUS & BMISTA_INTERRUPT) || (BM.Cmd & 0x10)) {
+    // interrupt is signalled pending
     UCHAR Data;
 
     if (BM.Cmd & 0x10) {
@@ -358,9 +360,9 @@ int NEAR SIICheckIRQ (NPA npA) {
     BM.Status &= BMISTA_MASK;
     BM.Cmd     = (BM.Cmd & ~BMICOM_START) | 0x10;
     BM.filler2 = 0;
-BM.filler1 |= 0x3F;
+    BM.filler1 |= 0x3F;
     OutD (BMCMDREG, BM.Status2);
-//	if (Data & 0x10) OutB (DATAREG | 0x21, Data); // Watchdog!
+    // if (Data & 0x10) OutB (DATAREG | 0x21, Data); // Watchdog!
     if (BMSTATUS & BMISTA_INTERRUPT) {
       STATUS = InB (STATUSREG);
       npA->Flags |= ACBF_BMINT_SEEN;

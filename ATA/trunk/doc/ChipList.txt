@@ -1,5 +1,5 @@
 ================================================================================
-                            DANI506.ADD v1.8.12
+                            DANI506.ADD v1.8.15
 ================================================================================
 		    Parallel ATA/ATAPI	(PATA/PATAPI)
 ================================================================================
@@ -658,3 +658,4 @@ Documentation status:
 ( ) means "documentation partially available" or
 	  "other documentation applies here as well"
 
+$Id$

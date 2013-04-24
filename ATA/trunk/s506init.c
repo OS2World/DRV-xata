@@ -65,7 +65,8 @@ UCHAR NEAR TestStatus50us (NPA npA)
   UCHAR  Data;
 
   Stop = 50;
-  while (--Stop != 0) { // wait for BUSY | DRDY | ERR within 50us
+  // wait for BUSY | DRDY | ERR within 50us
+  while (--Stop != 0) {
     Data = InBdms (STATUSREG);
     if (Data & (FX_BUSY | FX_DRQ | FX_ERROR)) break;
   }
@@ -101,6 +102,11 @@ UCHAR NEAR WaitNotBusyDRQ (NPA npA)
   return ((Data & (FX_BUSY | FX_DRQ)) || (Data == 0x7F));
 }
 
+/**
+ * Try to start command
+ * @return 0 if started OK, 1 if failed
+ */
+
 UCHAR NEAR TryCommand (NPA npA, UCHAR Command)
 {
   UCHAR Data;
@@ -116,6 +122,12 @@ UCHAR NEAR TryCommand (NPA npA, UCHAR Command)
   }
   return (0);
 }
+
+/**
+ * Test if channel operational and determine device type (ATA, ATAPI)
+ * Sets npA->Controller[UnitId] to device type as side effect
+ * @returns 0 if OK and device detected, 1 if not
+ */
 
 USHORT NEAR TestChannel (NPA npA, UCHAR UnitId)
 {
@@ -173,7 +185,8 @@ USHORT NEAR TestChannel (NPA npA, UCHAR UnitId)
   if (TryCommand (npA, FX_IDENTIFY)) goto Fault;
 
   Data1 = InBdms (STATUSREG);
-  if (Data1 & FX_ERROR) {  // possibly ATAPI
+  if (Data1 & FX_ERROR) {
+    // possibly ATAPI
     UCHAR haveSig = FALSE;
 
     Controller = CtATAPI;
@@ -198,7 +211,7 @@ USHORT NEAR TestChannel (NPA npA, UCHAR UnitId)
       }
     }
 
-    if ((Controller == CtATAPI) && !(Data1 & FX_DRQ)) goto MakeDecision; //broken device
+    if ((Controller == CtATAPI) && !(Data1 & FX_DRQ)) goto MakeDecision; // broken device
   }
 
   if (Data1 & FX_DRQ) {
@@ -233,6 +246,11 @@ MakeDecision:
   return (!Controller);
 }
 
+/**
+ * Check controller and attached devices
+ * @returns 0 if OK, 1 if problem
+ */
+
 USHORT NEAR CheckController (NPA npA)
 {
   USHORT rc;
@@ -243,14 +261,14 @@ USHORT NEAR CheckController (NPA npA)
   npA->Controller[1] = CtNone;
 
   if (!(npA->UnitCB[0].FlagsT & UTBF_DISABLED)) TestChannel (npA, 0);
-  rc = !(npA->Controller[0]);
+  rc = !(npA->Controller[0]);	// Set to 1 if no device detected yet
 
   if (npA->FlagsT & (ATBF_PCMCIA | ATBF_BAY)) {
-    //npA->Controller[1] = CtATA;
+    // npA->Controller[1] = CtATA;
   } else {
     if (npA->maxUnits >= 2) {
       if (!(npA->UnitCB[1].FlagsT & UTBF_DISABLED)) TestChannel (npA, 1);
-      rc &= !(npA->Controller[1]);
+      rc &= !(npA->Controller[1]);	// Set to 1 if still no device
     }
   }
 
@@ -1175,14 +1193,14 @@ USHORT FAR ParseCmdLine (PSZ pCmdLine)
 	/* Pause Verbose Mode - /!W /W /WL /WLL      */
 	/*-------------------------------------------*/
 
-	case TOK_V:	   Verbose++;
-	case TOK_VL:	   Verbose++;
-	case TOK_VLL:	   Verbose++;
+	case TOK_V:	   Verbose++;	// 3
+	case TOK_VL:	   Verbose++;	// 2
+	case TOK_VLL:	   Verbose++;	// 1
 			   break;
 
-	case TOK_VPAUSE:   Verbose++;
-	case TOK_VPAUSEL:  Verbose++;
-	case TOK_VPAUSELL: Verbose++;
+	case TOK_VPAUSE:   Verbose++;	// 3
+	case TOK_VPAUSEL:  Verbose++;	// 2
+	case TOK_VPAUSELL: Verbose++;	// 1
 			   Verbose |= 0x80;
 			   break;
 
@@ -1861,15 +1879,20 @@ USHORT TotalTime (VOID)
   return ((Delta + 50) / 100);
 }
 
+/**
+ * Write trace buffer content to message buffer and maybe to screen
+ * @param DbgLevel is message type mask
+ */
+
 VOID NEAR TWrite (USHORT DbgLevel)
 {
-  *npTrace = '\0';
+  *npTrace = '\0';			// Terminate current content
   if (Debug & DbgLevel)
     if (Verbose)
-      TTYWrite (99, TraceBuffer);
+      TTYWrite (99, TraceBuffer);	// Output to screen
     else
-      SaveMsg (TraceBuffer);
-  npTrace = TraceBuffer;
+      SaveMsg (TraceBuffer);		// Output to trace buffer
+  npTrace = TraceBuffer;		// Reset output pointer
 }
 
 #else // !TRACES
@@ -1877,15 +1900,20 @@ USHORT NEAR DiffTime (VOID) {}
 VOID TraceTTime (VOID) {}
 #endif
 
-/*-------------------------------*/
-/*				 */
-/* SaveMsg ()			 */
-/*				 */
-/*-------------------------------*/
+/**
+ * Write message to message buffer
+ * @param Buf points to nul terminated message
+ * WritePtr is far pointer to current output position in message buffer
+ * Output truncated if message buffer fills
+ * Save bypassed if not init time
+ */
+
 VOID FAR SaveMsg  (PSZ Buf)
 {
   if (InitActive) {
+    // Init time
     if (*(PULONG)Buf != 0x20535953) {  /* != 'SYS ' */
+      // Not a SYS message
       CHAR c;
 
       while ((WritePtr < &MsgBufferEnd) && ((c = *(Buf++)) != 0))
@@ -1898,11 +1926,17 @@ VOID FAR SaveMsg  (PSZ Buf)
   }
 }
 
-/*-------------------------------*/
-/*				 */
-/* TTYWrite()			 */
-/*				 */
-/*-------------------------------*/
+/**
+ * Write message to screen using and trace buffer depending on options
+ * @param Level is message verbosity level (1..3 and 99, 99 means buffer only)
+ * @param Buf point to message
+ * Writes bypassed if not init time
+ * Writes message to screen using DevHelp_Save_Message
+ * Writes to screen depends on verbosity level
+ * Counts lines output to screen
+ * Writes messages to trace output buffer using SaveMsg
+ */
+
 VOID FAR TTYWrite (UCHAR Level, NPSZ Buf)
 {
   if (InitActive) {

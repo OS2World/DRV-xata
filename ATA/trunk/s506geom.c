@@ -1,6 +1,7 @@
 /**************************************************************************
  *
  * SOURCE FILE NAME = S506GEOM.C
+ * $Id$
  *
  * DESCRIPTIVE NAME = DANIS506.ADD - Adapter Driver for PATA/SATA DASD
  *
@@ -105,7 +106,7 @@ VOID DetermineUnitGeometry (NPU npU)
   }
 #endif
 
-  // Reconsile the logical geometries.
+  // Reconcile the logical geometries.
 
  if (npU->FlagsT & UTBF_BPBGEOMETRYVALID)
     npGEO = (NPGEO)&npU->BPBLogGeom;

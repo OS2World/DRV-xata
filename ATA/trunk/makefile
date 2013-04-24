@@ -49,7 +49,7 @@ _VERSION = 1.8
 !ifdef FIXLEVEL
 _FIXLEVEL = $(FIXLEVEL)
 !else
-_FIXLEVEL = 14
+_FIXLEVEL = 15
 !endif
 
 # Allow override
@@ -312,11 +312,13 @@ $*.map
 $(LIBS)
 $(@B).def
 <<keep
-	     $(MAPSYM) $*.map
+	$(MAPSYM) $*.map
 !ifndef icat
-	     $(PACK) $@ $@ $(PACKFLAGS)
+	$(PACK) $@ $@ $(PACKFLAGS)
 !endif
-########     trcust $*.tsf
+######	trcust $*.tsf
+	bldlevel $@
+	
 
 #****************************************************************************
 #  Dependency generation and Checking

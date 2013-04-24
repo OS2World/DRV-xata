@@ -1,6 +1,7 @@
 /**************************************************************************
  *
  * SOURCE FILE NAME = S506SM.C
+ * $Id$
  *
  * DESCRIPTIVE NAME = DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
@@ -1885,9 +1886,11 @@ UCHAR NEAR WaitDRQ (NPA npA)
   return (1);
 }
 
-/*---------------------------------------------*/
-/* CheckReady				       */
-/*---------------------------------------------*/
+/**
+ * Wait for status register to match expected value
+ * Match will fail if 100 mSec timeout exceeded
+ * @returns 1 if failed to match, 0 if matched
+ */
 
 UCHAR NEAR CheckWorker (NPA npA, UCHAR Mask, UCHAR Value)
 {

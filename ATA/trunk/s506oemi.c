@@ -210,24 +210,25 @@ UCHAR NEAR ProbeChannel (NPA npA)
     if (Debug & 8) TS(" P(%02X",Dev)
 # endif
 
-// DEVHDREG - Device/Head register, typically baseaddr+6, orginally called Drive/Head
+// DEVHDREG - Device/Head register, typically baseaddr + 6, originally called Drive/Head
 #define DEVHD_RO7	0x80      // 7 - reserved, typically r/o = 1, but not always
 #define DEVHD_LBA	0x40      // 6 - LBA - r/w, 1 = LBA mode enabled
 #define DEVHD_RO5	0x20      // 5 - reserved, typically r/o = 1, but not always
-#define DEVHD_DEV1	0x10      // 4 - Device# = r/w, 0 = device#0, 1 = device#1
-#define DEVHD_RW3	0x08      // 3 - LBA27, HS3 - typically r/w
-#define DEVHD_RW2	0x04      // 2 - LBA26, HS2 - typicall r/w
-#define DEVHD_RW1	0x02      // 1 - LBA25, HS1 - typically r/w
-#define DEVHD_RW0	0x01      // 0 - LBA24, HS0 - typically r/w
+#define DEVHD_DEV1	0x10      // 4 - Device select = r/w, 0 = device#0, 1 = device#1
+#define DEVHD_RW3	0x08      // 3 - LBA27 or HS3 - typically r/w
+#define DEVHD_RW2	0x04      // 2 - LBA26 or, HS2 - typicall r/w
+#define DEVHD_RW1	0x02      // 1 - LBA25 or HS1 - typically r/w
+#define DEVHD_RW0	0x01      // 0 - LBA24 or HS0 - typically r/w
 
-  // 2011-07-20 SHL fixme to know why - probably empirically determine by Daniela?
+  // 2011-07-20 SHL fixme to know why - probably empirically determined by Daniela?
   if (Dev == DEVHD_RO7 || Dev == (DEVHD_RO7|DEVHD_LBA|DEVHD_DEV1)) return (1); // OK - 0x80 or 0xD0
   #define LBA_RO5_BITS3_0 (DEVHD_LBA|DEVHD_RO5|0xF) // 0x6F - fixme to understand why
   #define LBA_DEV0 (DEVHD_RO7|DEVHD_LBA|DEVHD_RO5)	// 0xE0
   if ((Dev & LBA_RO5_BITS3_0) == LBA_RO5_BITS3_0) {
-    // All r/w bits set, try to select LBA, device#0
+    // All r/w bits (0x6f) set, try to select LBA, device#0
     OutBdms (DRVHDREG, LBA_DEV0);	// Try LBA, device#0, 0xE0
     Dev = InB (DRVHDREG);
+
 #   if TRACES
       if (Debug & 8) TS(":%02X",Dev)
 #   endif
@@ -266,23 +267,37 @@ UCHAR NEAR ProbeChannel (NPA npA)
 
   if ((Dev & ~DEVHD_DEV1) == DEVHD_RO5) return (0);	// fail - can't set RO7 (~0x20 - 0xDF)
 
-  Dev &= ~DEVHD_DEV1;	// ~0xEF = 0xA0, typically 0xE0 here
+  Dev &= DEVHD_DEV1;	// ~0xEF = 0x10, typically 0xE0 here
 
   #define MASK1 (DEVHD_RW2 | DEVHD_RW0)	// 0x05
   OutBdms (DRVHDREG, (UCHAR)(Dev | MASK1));	// Try to set to 0xE5
   #define MASK2 (DEVHD_RO7|DEVHD_LBA|DEVHD_RO5|DEVHD_RW3|DEVHD_RW1)	// 0xEA
-  OutBdms (DRVHDREG, (UCHAR)(Dev | MASK2));	// Try to set to 0xEA
+  OutBdms (DRVHDREG, (UCHAR)(Dev | MASK2));	// Try to set to 0xEA - invert bits 6, 3..0
   Dev = InB (DRVHDREG);
 # if TRACES
     if (Debug & 8) TS(":%02X)", Dev)
 # endif
 
-  #define OK1_MASK (DEVHD_RO7|DEVHD_LBA|DEVHD_RO5|0xf) // 0xEF
-  #define OK1_BITS (DEVHD_RO7|DEVHD_LBA|DEVHD_RO5|DEVHD_RW3|DEVHD_RW1) // 0xEA
-  #define OK2_MASK (DEVHD_RO7|DEVHD_RO5|0xf) // 0xAF
-  #define OK2_BITS (DEVHD_RO7|DEVHD_RO5) // 0xA0
-  // expected result - some ATAPI units have non-writable bits 3..0
-  return (Dev & OK1_MASK) == OK1_BITS || (Dev & OK2_MASK) == OK2_BITS;
+  #define OKSTD_MASK (DEVHD_RO7|DEVHD_LBA|DEVHD_RO5|0xf) // 0xEF
+  #define OKSTD_BITS (DEVHD_RO7|DEVHD_LBA|DEVHD_RO5|DEVHD_RW3|DEVHD_RW1) // 0xEA - per spec
+  #define OKATAPI_MASK (DEVHD_RO7|DEVHD_RO5|0xf) // 0xAF
+  #define OKATAPI_BITS (DEVHD_RO7|DEVHD_RO5) // 0xA0 - some ATAPI devices
+  /* The ATA1 spec says the bits 7 and 5 are R/O and read as 1s and rest are R/W,
+     so	0xEA is expected result of the above bit twiddling.
+     However, not all chipsets are spec compliant and the specs have changed.
+     Some ATAPI units do not support bit 4 (DEVHD_LBA) and have bits 3..0 that always read 0,
+     so we allow this (Dani says).
+     The ALi m5229 when booted from CD appear to have bit 0 stuck at 1 for unknown reasons,
+     so we allow this (2013-04-05 SHL).
+     FWIW, all of this changes in the later versions of the ATA spec.
+     Bits 7 and 5 are obsolete and there is no requirement to always return 1s.
+     Bits 6 (DEVHD_LBA) and 4 (DEVHD_DEV1) retain their original meaning.
+     The other bits are now command dependent.  All we can do is check if they are R/W.
+  */
+  // Return true if bits are as expected
+  // Expect 0xEF or 0xEA
+  return (Dev & OKSTD_MASK) == OKSTD_BITS ||
+	 (Dev & OKATAPI_MASK) == OKATAPI_BITS;
 }
 
 /**

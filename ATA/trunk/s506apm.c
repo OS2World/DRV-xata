@@ -1,6 +1,7 @@
 /**************************************************************************
  *
  * SOURCE FILE NAME = S506APM.C
+ * $Id$
  *
  * DESCRIPTIVE NAME = DaniS506.ADD - Adapter Driver for PATA/SATA DASD
  *
@@ -306,8 +307,9 @@ VOID NEAR StartDetect (NPA npA) {
   DRVHD = 0xA0;
 
   OutBdms (DRVHDREG, DRVHD);
+  // Issue software reset and put IRQ in high impedence state
   OutBd (DEVCTLREG, (DEVCTL = FX_DCRRes | FX_SRST | FX_nIEN), IODelayCount * RESET_ASSERT_TIME); // assert SRST
-  OutBdms (DEVCTLREG, (DEVCTL = FX_DCRRes | FX_nIEN));
+  OutBdms (DEVCTLREG, (DEVCTL = FX_DCRRes | FX_nIEN));  // Clear software reset request
 
   *(NPUSHORT)(npA->Controller) = 0;
   npA->InsertState = ACBI_SATA_WAITPhy1;
