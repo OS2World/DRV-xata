@@ -42,7 +42,7 @@
 !ifdef VERSION
 _VERSION = $(VERSION)
 !else
-_VERSION = 1.8
+_VERSION = 1.08
 !endif
 
 # Allow external define
@@ -76,6 +76,11 @@ TIMESTAMP = $(BUILDTIME)      $(BUILDMACH)
 !else
 !error BUILDTIME must be defined as YYYY/MM/DD HH:MM:SS in environment
 !endif
+
+ROOT=$(MAKEDIR)
+FULL_VERSION=$(_VERSION).$(_FIXLEVEL)
+ZIPDIR=$(ROOT)\tmp
+WPIFILE=$(ROOT)\DaniS506-$(FULL_VERSION)-WPI.zip
 
 #****************************************************************************
 #  Dot directive definition area (usually just suffixes)
@@ -264,6 +269,7 @@ clean:
 	if exist *.add	del *.add
 	if exist *.def	del *.def
 	if exist *.mak	del *.mak
+	if exist *-WPI.zip	del *-WPI.zip
 
 #*****************************************************************************
 #   Specific Description Block Information
@@ -333,3 +339,27 @@ dephold:
 	touch $@
 
 $(OBJS): $(HDR)
+
+release: DaniS506.add
+  @if exist $(WPIFILE) @del $(WPIFILE)
+  @!rm -rf $(ZIPDIR)
+
+  @md $(ZIPDIR)
+
+  @md $(ZIPDIR)\pkg1
+  @copy /b $(ROOT)\DaniS506.add $(ZIPDIR)\pkg1 >NUL
+  @copy /b $(ROOT)\DaniS506.sym $(ZIPDIR)\pkg1 >NUL
+
+  @md $(ZIPDIR)\pkg20
+  @copy $(ROOT)\README $(ZIPDIR)\pkg20 >NUL
+  @copy $(ROOT)\COPYING.LESSER $(ZIPDIR)\pkg20 >NUL
+  @copy $(ROOT)\doc\* $(ZIPDIR)\pkg20 >NUL
+
+  @md $(ZIPDIR)\wpi
+  @sed -e "s/\\X\\X\\X/\\0\\$(FULL_VERSION:.=\\)/" $(ROOT)\dani.wis >$(ZIPDIR)\wpi\dani.wis
+
+  @cd $(ZIPDIR)
+  @zip -r -X $(WPIFILE) *
+  @cd $(ROOT)
+  @!rm -rf $(ZIPDIR)
+
